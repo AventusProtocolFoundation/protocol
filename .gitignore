@@ -1,0 +1,5 @@
+build/
+node_modules/
+logs/
+contracts/AventusData.sol
+package-lock.json
