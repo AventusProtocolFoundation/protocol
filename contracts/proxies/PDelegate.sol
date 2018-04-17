@@ -1,8 +1,5 @@
 pragma solidity ^0.4.19;
 
-import "../interfaces/IAventusStorage.sol";
-import "../AventusData.sol";
-
 contract PDelegate {
 
   /**
@@ -39,14 +36,5 @@ contract PDelegate {
     }
 
     return size != 0;
-  }
-
-  function initProxy(string instanceKey) internal  {
-    AventusData data = new AventusData();
-    address target = IAventusStorage(data.s()).getAddress(keccak256(instanceKey));
-
-    require (target > 0);
-
-    delegatedFwd(target, msg.data);
   }
 }

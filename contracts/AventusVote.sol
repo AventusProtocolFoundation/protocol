@@ -1,25 +1,27 @@
 pragma solidity ^0.4.19;
 
 import './interfaces/IAventusStorage.sol';
+import './interfaces/IAVTManager.sol';
+import './interfaces/IProposalsManager.sol';
+import './libraries/LEvents.sol';
 import './libraries/LLock.sol';
 import './libraries/LProposal.sol';
 import './Owned.sol';
 
-contract AventusVote is Owned {
-  event WithdrawEvent(address indexed sender, uint amount);
-  event DepositEvent(address indexed sender, uint amount);
+// TODO: Move all LLock methods into new AventusLock contract so, eg, making a deposit for
+// events doesn't need to know about the AventusVote contract.
+contract AventusVote is IAVTManager, IProposalsManager, Owned {
+    // TODO: Consistent naming, eg make all event names start with "Log", or something similar.
+  event WithdrawEvent(address indexed sender, string fund, uint amount);
+  event DepositEvent(address indexed sender, string fund, uint amount);
   event ToggleLockFreezeEvent(address indexed sender);
   event ThresholdUpdateEvent(address indexed sender, bool restricted, uint amount, uint balance);
   event CreateProposalEvent(address indexed sender, string desc, uint proposalId);
-  event AddProposalOptionEvent(uint proposalId, string option);
   event ProposalFinalisedEvent(uint proposalId, uint start, uint interval);
   event CastVoteEvent(uint proposalId, address indexed sender, bytes32 secret, uint prevTime);
   event RevealVoteEvent(uint proposalId, uint optId);
-
-  modifier onlyProposalCreator(uint proposalId) {
-    require (msg.sender == s.getAddress(keccak256("Proposal", proposalId, "creator")));
-    _;
-  }
+  event LogEndProposal(uint proposalId, uint votesFor, uint votesAgainst);
+  event LogCreateEventChallenge(uint eventId, uint proposalId);
 
   IAventusStorage public s;
 
@@ -31,126 +33,93 @@ contract AventusVote is Owned {
     s = s_;
   }
 
-  /**
-  * @dev Withdraw locked, staked AVT not used in an active vote
-  * @param amount Amount to withdraw from lock
-  */
-  function withdraw(uint amount) public {
-    LLock.withdraw(s, msg.sender, amount);
-    WithdrawEvent(msg.sender, amount);
+  function withdraw(string fund, uint amount) external {
+    LLock.withdraw(s, fund, amount);
+    emit WithdrawEvent(msg.sender, fund, amount);
   }
 
-  /**
-  * @dev Deposit & lock AVT for stake weighted votes
-  * @param amount Amount to withdraw from lock
-  */
-  function deposit(uint amount) public {
-    LLock.deposit(s, msg.sender, amount);
-    DepositEvent(msg.sender, amount);
+  function deposit(string fund, uint amount) external {
+    LLock.deposit(s, fund, amount);
+    emit DepositEvent(msg.sender, fund, amount);
   }
 
-  // @dev Toggle the ability to lock funds for staking (For security)
+  function getBalance(string _fund, address _avtHolder)
+    external
+    view
+    returns (uint _balance)
+  {
+    _balance = LLock.getBalance(s, _fund, _avtHolder);
+  }
+
   function toggleLockFreeze()
-    public
+    external
     onlyOwner
   {
     LLock.toggleLockFreeze(s);
-    ToggleLockFreezeEvent(msg.sender);
+    emit ToggleLockFreezeEvent(msg.sender);
   }
 
-  /**
-  * @dev Set up safety controls for initial release of voting
-  * @param restricted True if we are in restricted mode
-  * @param amount Maximum amount of AVT any account can lock up at a time
-  * @param balance Maximum amount of AVT that can be locked up in total
-  */
   function setThresholds(bool restricted, uint amount, uint balance)
-    public
+    external
     onlyOwner
   {
     LLock.setThresholds(s, restricted, amount, balance);
-    ThresholdUpdateEvent(msg.sender, restricted, amount, balance);
+    emit ThresholdUpdateEvent(msg.sender, restricted, amount, balance);
   }
 
-  /**
-  * @dev Create a proposal to be voted on
-  * @param desc Either just a title or a pointer to IPFS details
-  * @return uint proposalID of newly created proposal
-  */
-  function createProposal(string desc) public returns (uint proposalId) {
-    proposalId = LProposal.createProposal(s, msg.sender, desc);
-    CreateProposalEvent(msg.sender, desc, proposalId);
+  function getGovernanceProposalDeposit() view external returns (uint proposalDeposit) {
+    proposalDeposit = LProposal.getGovernanceProposalDeposit(s);
   }
 
-  /**
-  * @dev Add an option to a proposal that voters can choose
-  * @param proposalId Proposal ID
-  * @param option Description of option
-  */
-  function addProposalOption(uint proposalId, string option)
-    public
-    onlyProposalCreator(proposalId)
-  {
-    LProposal.addProposalOption(s, proposalId, option);
-    AddProposalOptionEvent(proposalId, option);
+  function createGovernanceProposal(string desc) external returns (uint proposalId) {
+    proposalId = LProposal.createGovernanceProposal(s, desc);
+    emit CreateProposalEvent(msg.sender, desc, proposalId);
   }
 
-  /**
-  * @dev Finish setting up proposal with time intervals & start
-  * @param proposalId Proposal ID
-  * @param start The start date of the cooldown period, after which voting on proposal starts
-  * @param interval The amount of time the vote and reveal periods last for
-  */
-  function finaliseProposal(uint proposalId, uint start, uint interval)
-    public
-    onlyProposalCreator(proposalId)
-  {
+  function getExistingEventDeposit(uint _eventId) external view returns(uint) {
+    return LEvents.getExistingEventDeposit(s, _eventId);
+  }
+
+  function createEventChallenge(uint _eventId) external returns (uint _proposalId) {
+    _proposalId = LProposal.createEventChallenge(s, _eventId);
+    emit LogCreateEventChallenge(_eventId, _proposalId);
+  }
+
+  function finaliseProposal(uint proposalId, uint start, uint interval) external {
     LProposal.finaliseProposal(s, proposalId, start, interval);
-    ProposalFinalisedEvent(proposalId, start, interval);
+    emit ProposalFinalisedEvent(proposalId, start, interval);
   }
 
-  /**
-  * @dev Cast a vote on one of a given proposal's options
-  * @param proposalId Proposal ID
-  * @param secret The secret vote: Sha3(signed Sha3(option ID))
-  * @param prevTime The previous revealStart time that locked the user's funds
-  */
-  function castVote(uint proposalId, bytes32 secret, uint prevTime) public {
-    LProposal.castVote(s, proposalId, msg.sender, secret, prevTime);
-    CastVoteEvent(proposalId, msg.sender, secret, prevTime);
+  function endProposal(uint _proposalId) external {
+    LProposal.endProposal(s, _proposalId);
+    uint votesFor = s.getUInt(keccak256("Proposal", _proposalId, "revealedStake", uint(1)));
+    uint votesAgainst = s.getUInt(keccak256("Proposal", _proposalId, "revealedStake", uint(2)));
+    emit LogEndProposal(_proposalId, votesFor, votesAgainst);
   }
 
-  /**
-  * @dev Reveal a vote on a proposal
-  * @param proposalId Proposal ID
-  * @param optId ID of option that was voted on
-  * @param v User's ECDSA signature(keccak(optID)) v value
-  * @param r User's ECDSA signature(keccak(optID)) r value
-  * @param s_ User's ECDSA signature(keccak(optID)) s value
-  */
-  function revealVote(uint proposalId, uint optId, uint8 v, bytes32 r, bytes32 s_) public {
+  function getPrevTimeParamForCastVote(uint proposalId) external view returns (uint prevTime) {
+    prevTime = LProposal.getPrevTimeParamForCastVote(s, proposalId);
+  }
+
+  function castVote(uint proposalId, bytes32 secret, uint prevTime) external {
+    LProposal.castVote(s, proposalId, secret, prevTime);
+    emit CastVoteEvent(proposalId, msg.sender, secret, prevTime);
+  }
+
+  function revealVote(uint proposalId, uint optId, uint8 v, bytes32 r, bytes32 s_) external {
     LProposal.revealVote(s, proposalId, optId, v, r, s_);
-    RevealVoteEvent(proposalId, optId);
+    emit RevealVoteEvent(proposalId, optId);
   }
 
-
-  /**
-  * @dev Upgrade Storage if necessary
-  * @param s_ New Storage instance
-  */
   function updateStorage(IAventusStorage s_)
-    public
+    external
     onlyOwner
   {
     s = s_;
   }
 
-  /**
-  * @dev Update the owner of the storage contract
-  * @param owner_ New Owner of the storage contract
-  */
   function setStorageOwner(address owner_)
-    public
+    external
     onlyOwner
   {
     Owned(s).setOwner(owner_);

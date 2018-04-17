@@ -1,67 +1,102 @@
-var Migrations = artifacts.require("./Migrations");
-var AventusStorage = artifacts.require("./AventusStorage");
-var Vote = artifacts.require("./AventusVote");
-var AventusData = artifacts.require("./AventusData");
-var LProposal = artifacts.require("./libraries/LProposal");
-var LLock = artifacts.require("./libraries/LLock");
-var PProposal = artifacts.require("./proxies/PProposal");
-var PLock = artifacts.require("./proxies/PLock");
+const avtsaleJson = require('./AVTSale.json');
+const eip55 = require('eip55');
+const fs = require('fs');
+
+const Migrations = artifacts.require("Migrations");
+const AventusStorage = artifacts.require("AventusStorage");
+
+const storageJsonFile = "./api/storage.json";
+
+console.log("*** Version of web3: ", web3.version.api);
+
+/**
+ * @return Promise wrapping the address of the AVT contract.
+ */
+function getAVTContract(_deployer, _network, _storage) {
+  if (_network === "development") {
+    // Always recreate the AVT in development.
+    return createAVTContract();
+  }
+
+  // Create the AVT only if it doesn't exist.
+  let avtPromise = _storage.getAddress(web3.sha3("AVT"));
+  return avtPromise.then((avtAddress) => {
+    if (avtAddress) return avtPromise;
+    return createAVTContract();
+  });
+}
+
+function initialDeploy(_deployer, _network) {
+  return _deployer.deploy(Migrations).then(() =>
+    getStorageContract(_deployer, _network).then((s) => {
+      console.log("Storage address:", s.address);
+      return getAVTContract(_deployer, _network, s).then((avtAddress) => {
+        console.log("AVT address:", avtAddress);
+        return s.setAddress(web3.sha3("AVT"), avtAddress);
+      })
+    })
+  );
+}
+
+// Deploy a new (or use the old) storage contract.
+function getStorageContract(deployer, network) {
+  if (network === "development") {
+    // Always deploy a new one for dev.
+    console.log("Deploying storage contract");
+    return deployAndSaveStorageContract(deployer);
+  } else {
+    try {
+      console.log("Getting existing storage contract");
+      return getExistingStorageContract(deployer);
+    } catch (error) {
+      console.log("No existing storage contract");
+      return deployAndSaveStorageContract(deployer);
+    }
+  }
+}
+
+function getExistingStorageContract(deployer) {
+  const rawdata = fs.readFileSync(storageJsonFile);
+  console.log("Using existing storage contract");
+  return deployer.then(() => AventusStorage.at(JSON.parse(rawdata).address));
+}
+
+function deployAndSaveStorageContract(deployer) {
+  console.log("Deploying storage contract...");
+  return deployer.deploy(AventusStorage).then((s) => {
+    console.log("...saving storage contract for reuse.");
+    const sAddress = AventusStorage.address;
+    const storageObject = { address: eip55.encode(sAddress), abi: AventusStorage.abi };
+    fs.writeFileSync(storageJsonFile, JSON.stringify(storageObject, null, 4));
+    return AventusStorage.deployed();
+  });
+}
 
 module.exports = function(deployer, network, accounts) {
-  var addrLProposal, addrLLock;
-
-  var d;
-  var s;
-  var avt;
-  deployer.deploy(AventusData).then(function() {
-    console.log("deploying aventusdata");
-
-     return AventusData.deployed();
-   }).then(function(instance) {
-     d = instance;
-     return d.s();
-   }).then(function(storageAddress) {
-     s = AventusStorage.at(storageAddress);
-     return d.avt();
-   }).then(function(avt_) {
-     avt = avt_;
-     return deployer.deploy(Migrations);
-  }).then(function() {
-     return deployer.deploy(LProposal);
-  }).then(function() {
-    return deployer.deploy(LLock);
-  }).then(function() {
-    return deployer.deploy(PProposal);
-  }).then(function() {
-    return deployer.deploy(PLock);
-  }).then(function() {
-    addrLProposal = LProposal.address;
-    addrLLock = LLock.address;
-
-    // Link to the proxy not the actual implementation
-    LProposal.address = PProposal.address;
-    LLock.address = PLock.address;
-
-    deployer.link(LProposal, Vote);
-    deployer.link(LLock, Vote);
-
-    return deployer.deploy(Vote, s.address);
-  }).then(function() {
-    console.log("Setting AVT address = " + avt);
-
-    return s.setAddress(web3.sha3("AVT"), avt);
-  }).then(function() {
-    return s.setBoolean(web3.sha3("LockRestricted"), true);
-  }).then(function() {
-    return s.setUInt(web3.sha3("LockAmountMax"), web3.toWei(1, 'ether'));
-  }).then(function() {
-    return s.setUInt(web3.sha3("LockBalanceMax"), web3.toWei(1000, 'ether'));
-  }).then(function() {
-    return s.setAddress(web3.sha3("LProposalInstance"), addrLProposal);
-  }).then(function() {
-    return s.setAddress(web3.sha3("LLockInstance"), addrLLock);
-  }).then(function() {
-    return s.setOwner(Vote.address);
-  });
-
+  console.log("*** Starting setup...")
+  return initialDeploy(deployer, network).then(() => console.log("*** SETUP COMPLETE"));
 };
+
+function createAVTContract() {
+  const account =  web3.eth.accounts[0];
+  const start = web3.eth.getBlock('latest').timestamp;
+
+  const ethereumOptions = {
+    from: account,
+    data: avtsaleJson.bytecode,
+    gas: 4000000
+  };
+  // See https://github.com/AventusProtocolFoundation/token-sale/blob/master/src/AvtSale.sol for parameters.
+  return new Promise((resolve, reject) => {
+    web3.eth.contract(avtsaleJson.abi).new(start, account, account, account, ethereumOptions,
+      (err, result) => {
+        if (err) {
+          reject(err);
+        } else if (result.address) {
+          // Callback is called twice, wait for the one with a valid address.
+          resolve(eip55.encode(result.avt()));
+        }
+      });
+    });
+}
+
