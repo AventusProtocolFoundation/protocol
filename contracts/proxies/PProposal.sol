@@ -1,11 +1,11 @@
 pragma solidity ^0.4.19;
 
-import "./PDelegate.sol";
+import "./PLibraryDelegate.sol";
 
-contract PProposal is PDelegate {
+contract PProposal is PLibraryDelegate {
 
   function () payable public {
-    initProxy("LProposalInstance");
+    libraryDelegateFwd("LProposalInstance");
   }
 
 }
