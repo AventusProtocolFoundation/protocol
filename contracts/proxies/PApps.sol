@@ -2,10 +2,10 @@ pragma solidity ^0.4.19;
 
 import "./PLibraryDelegate.sol";
 
-contract PLock is PLibraryDelegate {
+contract PApps is PLibraryDelegate {
 
   function () payable public {
-    libraryDelegateFwd("LLockInstance");
+    libraryDelegateFwd("LAppsInstance");
   }
 
 }
