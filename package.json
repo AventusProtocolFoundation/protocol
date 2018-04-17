@@ -1,22 +1,20 @@
 {
-  "name": "voting",
-  "version": "1.0.0",
-  "description": "Aventus Voting Module",
-  "main": "truffle.js",
-  "scripts": {
-    "deploy": "truffle deploy --network rinkeby --reset > logs/deploy_$(date +%s).log &"
-  },
+  "name": "protocol",
+  "version": "2.0.0-alpha",
+  "description": "Aventus Protocol",
+  "author": "Artos Systems Ltd",
+  "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AventusSystems/voting.git"
+    "url": "git+https://github.com/AventusSystems/protocol.git"
   },
-  "author": "Alan Vey",
-  "license": "ISC",
   "bugs": {
-    "url": "https://github.com/AventusSystems/voting/issues"
+    "url": "https://github.com/AventusSystems/protocol/issues"
   },
-  "homepage": "https://github.com/AventusSystems/voting#readme",
+  "homepage": "https://github.com/AventusSystems/protocol#readme",
   "dependencies": {
-    "solc": "^0.4.19"
+    "eip55": "^1.0.3",
+    "web3": "^0.20.4",
+    "web3-utils": "^1.0.0-beta.30"
   }
 }
