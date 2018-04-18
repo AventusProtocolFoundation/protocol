@@ -1,7 +1,7 @@
 {
-  "name": "Aventus Protocol",
-  "version": "0.4",
-  "description": "Aventus Protocol",
+  "name": "protocol",
+  "version": "0.4.0",
+  "description": "The Aventus Protocol",
   "author": "Artos Systems Ltd",
   "license": "ISC",
   "repository": {

@@ -11,7 +11,7 @@ import './Owned.sol';
 // TODO: Move all LLock methods into new AventusLock contract so, eg, making a deposit for
 // events doesn't need to know about the AventusVote contract.
 contract AventusVote is IAVTManager, IProposalsManager, Owned {
-    // TODO: Consistent naming, eg make all event names start with "Log", or something similar.
+  // TODO: Consistent naming, eg make all event names start with "Log", or something similar.
   event WithdrawEvent(address indexed sender, string fund, uint amount);
   event DepositEvent(address indexed sender, string fund, uint amount);
   event ToggleLockFreezeEvent(address indexed sender);
