@@ -2,10 +2,11 @@ const eip55 = require('eip55');
 const fs = require('fs');
 
 const AventusStorage = artifacts.require("AventusStorage");
-const ProposalManager = artifacts.require("AventusVote");
+const ProposalsManager = artifacts.require("AventusVote");
 const AppsManager = artifacts.require("AppsManager");
 const EventsManager = artifacts.require("EventsManager");
 const ParameterRegistry = artifacts.require("ParameterRegistry");
+const abiPartLength = 16;
 
 module.exports = function(deployer, network, accounts) {
   return deployContracts(deployer, network).then(() => {
@@ -34,30 +35,18 @@ function deployContracts(deployer, network) {
         }
     }
 
-    const abiPartLength = 16;
     let numParts;
     return deployer.deploy([
-      [ProposalManager, s.address],
+      [ProposalsManager, s.address],
       [AppsManager, s.address],
       [EventsManager, s.address],
       [ParameterRegistry, s.address]
     ]).then(() => {
-      return s.setAddress(web3.sha3("ProposalsManager_Address"), eip55.encode(ProposalManager.address));
+      return saveContractToStorage(s, "ProposalsManager", ProposalsManager);
     }).then(() => {
-      numParts = Math.ceil(ProposalManager.abi.length / abiPartLength);
-      return s.setUInt(web3.sha3("ProposalsManager_Abi_NumParts"), numParts);
+      return saveContractToStorage(s, "EventsManager", EventsManager);
     }).then(() => {
-      console.log("Splitting ProposalManager ABI into", numParts);
-      let abiPromises = [];
-      for (let i = 0; i < numParts; ++i) {
-        const start = i * abiPartLength;
-        const end = start + abiPartLength;
-        const part = JSON.stringify(ProposalManager.abi.slice(start, end), null, 0);
-        abiPromises.push(s.setString(web3.sha3("ProposalsManager_Abi_Part_" + i), part));
-      }
-      return Promise.all(abiPromises);
-    }).then(() => {
-      return deployer.then(() => s.allowAccess(ProposalManager.address));
+      return deployer.then(() => s.allowAccess(ProposalsManager.address));
     }).then(() => {
       return deployer.then(() => s.allowAccess(AppsManager.address));
     }).then(() => {
@@ -69,6 +58,23 @@ function deployContracts(deployer, network) {
     }).then((parameterRegistry) => {
       return deployer.then(() => parameterRegistry.setupDefaultParameters());
     });
+  });
+}
+
+function saveContractToStorage(s, contractName, contract) {
+  return s.setAddress(web3.sha3(contractName + "_Address"), eip55.encode(contract.address)).then(() => {
+    numParts = Math.ceil(contract.abi.length / abiPartLength);
+    return s.setUInt(web3.sha3(contractName + "_Abi_NumParts"), numParts);
+  }).then(() => {
+    console.log("Splitting " + contractName + " ABI into", numParts);
+    let abiPromises = [];
+    for (let i = 0; i < numParts; ++i) {
+      const start = i * abiPartLength;
+      const end = start + abiPartLength;
+      const part = JSON.stringify(contract.abi.slice(start, end), null, 0);
+      abiPromises.push(s.setString(web3.sha3(contractName + "_Abi_Part_" + i), part));
+    }
+    return Promise.all(abiPromises);
   });
 }
 

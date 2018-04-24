@@ -27,15 +27,6 @@ interface IProposalsManager {
   function createEventChallenge(uint _eventId) external returns (uint _proposalId);
 
   /**
-  * @dev Finish setting up proposal with time intervals & start
-  * @param proposalId Proposal ID
-  * @param lobbyPeriodStart timestamp of the start of the lobbying period, after which voting on proposal starts
-  * @param interval The amount of time the vote and reveal periods last for in seconds
-  * TODO: Consider removing finalise from the interface; use fixed lobbyPeriodStart and interval.
-  */
-  function finaliseProposal(uint proposalId, uint lobbyPeriodStart, uint interval) external;
-
-  /**
    * End the proposal: will unlock the deposit and distribute any winnings.
    *
    * NOTE: Can only be called once vote revealing has finished.

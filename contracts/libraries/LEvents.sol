@@ -71,8 +71,8 @@ library LEvents {
 
   modifier ticketSaleNotInProgress(IAventusStorage _storage, uint _eventId) {
     uint ticketCount = _storage.getUInt(keccak256("Event", _eventId, "TicketCount"));
-    uint ticketCancelled = _storage.getUInt(keccak256("Event", _eventId, "CancelledTicketCount"));
-    require(ticketCount == ticketCancelled);
+    uint refundedTicketCount = _storage.getUInt(keccak256("Event", _eventId, "RefundedTicketCount"));
+    require(ticketCount == refundedTicketCount);
     _;
   }
 
