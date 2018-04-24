@@ -1,6 +1,6 @@
 # The Aventus Protocol v0.4
 
-## Release notes TBD.
+## See ReleaseNotes-0.4.x.txt for latest release notes.
 
 https://blog.aventus.io/
 
