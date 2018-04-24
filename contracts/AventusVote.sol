@@ -17,7 +17,6 @@ contract AventusVote is IAVTManager, IProposalsManager, Owned {
   event ToggleLockFreezeEvent(address indexed sender);
   event ThresholdUpdateEvent(address indexed sender, bool restricted, uint amount, uint balance);
   event CreateProposalEvent(address indexed sender, string desc, uint proposalId);
-  event ProposalFinalisedEvent(uint proposalId, uint start, uint interval);
   event CastVoteEvent(uint proposalId, address indexed sender, bytes32 secret, uint prevTime);
   event RevealVoteEvent(uint proposalId, uint optId);
   event LogEndProposal(uint proposalId, uint votesFor, uint votesAgainst);
@@ -83,11 +82,6 @@ contract AventusVote is IAVTManager, IProposalsManager, Owned {
   function createEventChallenge(uint _eventId) external returns (uint _proposalId) {
     _proposalId = LProposal.createEventChallenge(s, _eventId);
     emit LogCreateEventChallenge(_eventId, _proposalId);
-  }
-
-  function finaliseProposal(uint proposalId, uint start, uint interval) external {
-    LProposal.finaliseProposal(s, proposalId, start, interval);
-    emit ProposalFinalisedEvent(proposalId, start, interval);
   }
 
   function endProposal(uint _proposalId) external {

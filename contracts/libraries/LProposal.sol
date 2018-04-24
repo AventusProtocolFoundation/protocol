@@ -100,6 +100,7 @@ library LProposal {
 
     _s.setUInt(keccak256("ProposalCount"), proposalId);
 
+    setProposalTimes(_s, proposalId);
     return proposalId;
   }
 
@@ -115,10 +116,7 @@ library LProposal {
     return LAventusTime.getCurrentTime(s);
   }
 
-  // TODO: Consider moving this somewhere shared for other contracts (not
-  // LAventusTime as we don't want to have to duplicate it in the mock
-  // version...) or removing if remove the ability to specify a lobbying start
-  // time.
+  // TODO: This is unused now. Use it elsewhere, or delete it.
   function timeIsAlmostNow(IAventusStorage s, uint time) view private returns (bool) {
     // Allow a reasonable window before "now" to handle the blockchain's concept of "now".
     // Without this, a user trying to pass a timestamp that they think is "now" may be thwarted
@@ -130,18 +128,13 @@ library LProposal {
 
   // NOTE: We allow an event challenge to straddle the ticket sales time on purpose: if
   // the event is under challenge at ticket sale time it will NOT block ticket sales.
-  function finaliseProposal(IAventusStorage _s, uint _proposalId, uint _lobbyingStart,
-      uint /*interval: TODO: remove now unused parameter*/)
-    public // TODO: Consider making this private and fixing _lobbyingStart.
+  function setProposalTimes(IAventusStorage _s, uint _proposalId)
+    private
     onlyProposalOwner(_s, _proposalId)
     isStatus(_s, _proposalId, 0)
   {
-    if (timeIsAlmostNow(_s, _lobbyingStart)) {
-      _lobbyingStart = getCurrentTime(_s);
-    } else {
-      require(_lobbyingStart > getCurrentTime(_s));
-    }
-    uint votingStart = _lobbyingStart + (1 days * _s.getUInt(keccak256("Proposal",
+    uint lobbyingStart = getCurrentTime(_s);
+    uint votingStart = lobbyingStart + (1 days * _s.getUInt(keccak256("Proposal",
         proposalIsEventChallenge(_s, _proposalId) ?
             "eventChallengeLobbyingPeriodDays" :
             "governanceProposalLobbyingPeriodDays")));
@@ -154,7 +147,7 @@ library LProposal {
             "eventChallengeRevealingPeriodDays" :
             "governanceProposalRevealingPeriodDays")));
 
-    _s.setUInt(keccak256("Proposal", _proposalId, "lobbyingStart"), _lobbyingStart);
+    _s.setUInt(keccak256("Proposal", _proposalId, "lobbyingStart"), lobbyingStart);
     _s.setUInt(keccak256("Proposal", _proposalId, "votingStart"), votingStart);
     _s.setUInt(keccak256("Proposal", _proposalId, "revealingStart"), revealingStart);
     _s.setUInt(keccak256("Proposal", _proposalId, "revealingEnd"), revealingEnd);
@@ -317,10 +310,8 @@ library LProposal {
   * @dev Gets a given proposal's current status
   * @param _storage Storage contract
   * @param _proposalId Proposal ID
-  * @return Status number: 0 non-existent, or not finalised; 1 finalised; 2 voting; 3 revealing; 4 revealing finished, 5 ended
+  * @return Status number: 0 non-existent, 1 lobbying; 2 voting; 3 revealing; 4 revealing finished, 5 ended
   */
-  // TODO: Consider distinguishing between non-existent and not-finalised. Will
-  // become a moot point if finalise becomes a private method.
   function getProposalStatus(IAventusStorage _storage, uint _proposalId)
     private
     view
@@ -336,11 +327,11 @@ library LProposal {
     if (votingStart == 0)
       return 0;
     else if (currentTime < votingStart)
-      return 1; // Finalised
+      return 1; // Lobbying
     else if (currentTime < revealingStart)
-      return 2; // Voting Active
+      return 2; // Voting
     else if (currentTime < revealingEnd)
-      return 3; // Revealing Active
+      return 3; // Revealing
     else if (deposit != 0)
       return 4; // Revealing Finished, proposal not ended
     else

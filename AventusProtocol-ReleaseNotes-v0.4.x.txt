@@ -11,6 +11,18 @@ Glossary
 * Delegates - Other addresses that the owner has given permissions to sell and refund tickets.
 * Apps - Ethereum addresses that can send messages to the blockchain on behalf of an event owner or delegate via a signed message on the blockchain. Apps need an app deposit to access the network.
 
+== Release 0.4.1 - 2018-04-24 ==
+
+Breaking changes
+* Remove finaliseProposal from event challenges and governance proposals: all proposals now start immediately and use fixed time periods.
+
+Bug Fixes:
+* Use RefundedTicketCount in LEvents.sol: allows cancellation of an event when all tickets have been refunded.
+
+Other
+* Rename AventusVote to ProposalsManager in migration files, for consistency
+* Publish EventsManager ABI and address in storage, in preparation for upcoming API release
+
 == Release 0.4.0 - 2018-04-17 ==
 
 Token Holders
