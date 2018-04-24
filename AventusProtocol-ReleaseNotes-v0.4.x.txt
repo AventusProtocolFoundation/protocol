@@ -20,7 +20,7 @@ Bug Fixes:
 * Use RefundedTicketCount in LEvents.sol: allows cancellation of an event when all tickets have been refunded.
 
 Other
-* Rename AventusVote to ProposalsManager in migration files, for consistency
+* Rename ProposalManager to ProposalsManager in migration files, for consistency
 * Publish EventsManager ABI and address in storage, in preparation for upcoming API release
 
 == Release 0.4.0 - 2018-04-17 ==
