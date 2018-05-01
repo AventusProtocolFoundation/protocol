@@ -26,16 +26,4 @@ interface IAVTManager {
     external
     view
     returns (uint _balance);
-
-
-  // @dev Toggle the ability to lock funds (For security)
-  function toggleLockFreeze() external;
-
-  /**
-  * @dev Set up safety controls for initial release of voting
-  * @param restricted True if we are in restricted mode
-  * @param amount Maximum amount of AVT any account can lock up at a time
-  * @param balance Maximum amount of AVT that can be locked up in total
-  */
-  function setThresholds(bool restricted, uint amount, uint balance) external;
 }
