@@ -2,6 +2,7 @@ pragma solidity ^0.4.19;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LAventusTime.sol";
+import "./LChallengeWinnings.sol";
 import "./LEvents.sol";
 import './LLock.sol';
 
@@ -114,16 +115,6 @@ library LProposal {
 
   function getCurrentTime(IAventusStorage s) view private returns (uint) {
     return LAventusTime.getCurrentTime(s);
-  }
-
-  // TODO: This is unused now. Use it elsewhere, or delete it.
-  function timeIsAlmostNow(IAventusStorage s, uint time) view private returns (bool) {
-    // Allow a reasonable window before "now" to handle the blockchain's concept of "now".
-    // Without this, a user trying to pass a timestamp that they think is "now" may be thwarted
-    // by this transaction taking too long to be mined and having "now" much later
-    // than expected.
-    uint window = s.getUInt(keccak256("TimeIsNowWindow"));
-    return (getCurrentTime(s) >= time) &&  getCurrentTime(s) - time <= window;
   }
 
   // NOTE: We allow an event challenge to straddle the ticket sales time on purpose: if
@@ -385,6 +376,10 @@ library LProposal {
     unlockProposalDeposit(_storage, _proposalId);
   }
 
+  function votersAgreedWithChallenger(uint _winningOption) private pure returns(bool _agreed) {
+    _agreed = (_winningOption == 1);
+  }
+
   function endEventChallenge(IAventusStorage _storage, uint _proposalId)
     onlyEventChallengeProposal(_storage, _proposalId)
     isStatus(_storage, _proposalId, 4)
@@ -395,104 +390,39 @@ library LProposal {
 
     uint totalAgreedStake = _storage.getUInt(keccak256("Proposal", _proposalId, "revealedStake", uint(1)));
     uint totalDisagreedStake = _storage.getUInt(keccak256("Proposal", _proposalId, "revealedStake", uint(2)));
+    doEndEventChallenge(_storage, _proposalId, _eventId, totalAgreedStake, totalDisagreedStake);
+  }
+
+  function doEndEventChallenge(IAventusStorage _storage, uint _proposalId, uint _eventId,
+      uint totalAgreedStake, uint totalDisagreedStake) private {
+    // Note: a "draw" is taken as not agreeing with the challenge.
     uint winningOption = totalAgreedStake > totalDisagreedStake ? 1 : 2;
-    bool votersAgreedWithChallenger = winningOption == 1;
-    if (votersAgreedWithChallenger) {
+
+    uint totalWinningStake;
+    if (votersAgreedWithChallenger(winningOption)) {
       LEvents.setEventStatusFraudulent(_storage, _eventId);
+      totalWinningStake = totalAgreedStake;
     } else {
       LEvents.setEventAsClearFromChallenge(_storage, _eventId);
+      totalWinningStake = totalDisagreedStake;
     }
-    address eventOwner = LEvents.getEventOwner(_storage, _eventId);
-    uint totalWinningStake = votersAgreedWithChallenger ? totalAgreedStake : totalDisagreedStake;
-    distributeChallengeWinnings(_storage, _proposalId, eventOwner, votersAgreedWithChallenger, winningOption, totalWinningStake);
+
+    doEventWinningsDistribution(_storage, _proposalId, _eventId, winningOption, totalWinningStake);
   }
 
-  function distributeChallengeWinnings(
-      IAventusStorage _storage,
-      uint _proposalId,
-      address _eventOwner,
-      bool _votersAgreedWithChallenger,
-      uint _winningOption,
-      uint _totalWinningStake)
-    private
-  {
-    uint winnings = getProposalDeposit(_storage, _proposalId);
-    address proposalOwner = getProposalOwner(_storage, _proposalId);
-
-    address loser = _votersAgreedWithChallenger ? _eventOwner : proposalOwner;
-    takeAllWinningsFromProposalLoser(_storage, winnings, loser);
-
-    address winner = _votersAgreedWithChallenger ? proposalOwner : _eventOwner;
-
-    uint winningsToProposalWinnerAVT = giveFixedWinningsToProposalWinner(_storage, winner, winnings);
-    uint8 winningsToChallengeEnderPercentage = _storage.getUInt8(keccak256("Events", "winningsForChallengeEnderPercentage"));
-    uint winningsToChallengeEnderAVT =  (winnings * winningsToChallengeEnderPercentage) / 100;
-
-    winnings -= winningsToProposalWinnerAVT + winningsToChallengeEnderAVT;
-    winnings -= distributeWinningsAmongVoters(_storage, _proposalId, _winningOption, _totalWinningStake, winnings);
-
-    // Give anything remaining to the address that initiated the challenge end, along with their winnings.
-    giveWinningsToStakeHolder(_storage, winningsToChallengeEnderAVT + winnings, msg.sender);
-  }
-
-  // TODO: Consider keccak256("Lock", address, "deposit") format for all of
-  // these calls and elsewhere: makes it clearer that deposit and stake are
-  // owned by the same address, also means we will not use "LockDeposit" or
-  // "LockStake" combined strings.
-  // TODO: Consider usingLLock for all these get/set calls.
-  function takeAllWinningsFromProposalLoser(
-      IAventusStorage _storage,
-      uint _winnings,
-      address _loser)
-    private
-  {
-    bytes32 depositLockKey = keccak256("Lock", "deposit", _loser);
-    uint depositLock = _storage.getUInt(depositLockKey);
-    assert(depositLock >= _winnings);
-    _storage.setUInt(depositLockKey, depositLock - _winnings);
-  }
-
-  function giveFixedWinningsToProposalWinner(
-    IAventusStorage _storage,
-    address _winner,
-    uint _winnings)
-    private
-    returns (uint _fixedWinnings)
-  {
-    uint8 winningsPercentage = _storage.getUInt8(keccak256("Events", "winningsForChallengeWinnerPercentage"));
-    _fixedWinnings = (_winnings * winningsPercentage) / 100;
-    bytes32 depositLockKey = keccak256("Lock", "deposit", _winner);
-    uint depositLock = _storage.getUInt(depositLockKey);
-    _storage.setUInt(depositLockKey, depositLock + _fixedWinnings);
-  }
-
-  function giveWinningsToStakeHolder(
-      IAventusStorage _storage,
-      uint _winnings,
-      address _stakeHolder)
-    private
-  {
-    bytes32 stakeLockKey = keccak256("Lock", "deposit", _stakeHolder);
-    uint stakeLock = _storage.getUInt(stakeLockKey);
-    _storage.setUInt(stakeLockKey, stakeLock + _winnings);
-  }
-
-  function distributeWinningsAmongVoters(
-      IAventusStorage _storage,
-      uint _proposalId,
-      uint _winningOption,
-      uint _totalWinningStake,
-      uint _winnings)
-    private
-    returns (uint _winningsPaid)
-  {
-    uint numWinningVoters = _storage.getUInt(keccak256("Proposal", _proposalId, "revealedVotersCount", _winningOption));
-    for (uint i = 1; i <= numWinningVoters; ++i) {
-      address voter = _storage.getAddress(keccak256("Proposal", _proposalId, "revealedVoter", _winningOption, i));
-      uint voterStake = _storage.getUInt(keccak256("Proposal", _proposalId, "revealedVoter", _winningOption, voter, "stake"));
-      uint voterReward = (_winnings * voterStake) / _totalWinningStake;
-      giveWinningsToStakeHolder(_storage, voterReward, voter);
-      _winningsPaid += voterReward;
-    }
+  function doEventWinningsDistribution(IAventusStorage _storage, uint _proposalId, uint _eventId,
+      uint _winningOption, uint _totalWinningStake) private {
+    LChallengeWinnings.distributeChallengeWinnings(
+        _storage,
+        _proposalId,
+        getProposalOwner(_storage, _proposalId), // challenger
+        LEvents.getEventOwner(_storage, _eventId), // challengee
+        votersAgreedWithChallenger(_winningOption),
+        _winningOption,
+        _totalWinningStake,
+        getProposalDeposit(_storage, _proposalId), // winnings
+        _storage.getUInt8(keccak256("Events", "winningsForChallengeWinnerPercentage")),
+        _storage.getUInt8(keccak256("Events", "winningsForChallengeEnderPercentage"))
+    );
   }
 }

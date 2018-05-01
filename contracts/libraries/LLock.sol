@@ -6,27 +6,6 @@ import "./LAventusTime.sol";
 
 // Library for adding functionality for locking AVT stake for voting
 library LLock {
-
-  modifier isLocked(IAventusStorage s, uint amount, bool increment) {
-    require(!s.getBoolean(keccak256("LockFreeze")));
-
-    // If we are trying to add money to the user's funds, make sure we do not go over
-    // the global, or per user, balance limits.
-    if (s.getBoolean(keccak256("LockRestricted")) && increment && amount != 0) {
-      uint maxTotalLockedAVT = s.getUInt(keccak256("LockBalanceMax"));
-      require(maxTotalLockedAVT >= amount);
-      uint totalLockedAVT = s.getUInt(keccak256("LockBalance"));
-      require(totalLockedAVT <= maxTotalLockedAVT - amount);
-
-      uint maxTotalAVTPerAddress = s.getUInt(keccak256("LockAmountMax"));
-      require(maxTotalAVTPerAddress >= amount);
-      uint totalStakeForAddress = s.getUInt(keccak256("Lock", "stake", msg.sender));
-      uint totalDepositsForAddress = s.getUInt(keccak256("Lock", "deposit", msg.sender));
-      require(totalStakeForAddress + totalDepositsForAddress <= maxTotalAVTPerAddress - amount);
-    }
-    _;
-  }
-
   /**
   * @dev Withdraw AVT not used in an active vote or deposit.
   * @param s Storage contract
@@ -35,7 +14,6 @@ library LLock {
   */
   function withdraw(IAventusStorage s, string fund, uint amount)
     public
-    isLocked(s, amount, false)
   {
     if (keccak256(fund) == keccak256("stake")) {
       require (!stakeChangeIsBlocked(s));
@@ -67,7 +45,6 @@ library LLock {
   */
   function deposit(IAventusStorage s, string fund, uint amount)
     public
-    isLocked(s, amount, true)
   {
     if (keccak256(fund) == keccak256("stake")) {
         require (!stakeChangeIsBlocked(s));
@@ -100,29 +77,6 @@ library LLock {
   function getAVTDecimals(IAventusStorage _storage, uint _usCents) public view returns (uint avtDecimals) {
     uint oneAvtInUsCents = _storage.getUInt(keccak256("OneAVTInUSCents"));
     avtDecimals = (_usCents * (10**18)) / oneAvtInUsCents;
-  }
-
-  /**
-  * @dev Toggle the ability to lock funds for staking (For security)
-  * @param s Storage contract
-  */
-  function toggleLockFreeze(IAventusStorage s) public {
-    bytes32 key = keccak256("LockFreeze");
-    bool frozen = s.getBoolean(key);
-    s.setBoolean(key, !frozen);
-  }
-
-  /**
-  * @dev Set up safety controls for initial release of voting
-  * @param s Storage contract
-  * @param restricted True if we are in restricted mode
-  * @param amount Maximum amount of AVT any account can lock up at a time
-  * @param balance Maximum amount of AVT that can be locked up in total
-  */
-  function setThresholds(IAventusStorage s, bool restricted, uint amount, uint balance) public {
-    s.setBoolean(keccak256("LockRestricted"), restricted);
-    s.setUInt(keccak256("LockAmountMax"), amount);
-    s.setUInt(keccak256("LockBalanceMax"), balance);
   }
 
   /**

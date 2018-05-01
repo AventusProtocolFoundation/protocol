@@ -5,11 +5,6 @@ import './Owned.sol';
 
 contract ParameterRegistry is Owned {
 
-  // System variables
-  // Window should be 900 seconds according to:
-  // https://github.com/ethereum/wiki/blob/c02254611f218f43cbb07517ca8e5d00fd6d6d75/Block-Protocol-2.0.md
-  uint private constant TIME_IS_NOW_WINDOW = 900;
-
   // Proposal default values.
   uint private constant GOVERNANCE_PROPOSAL_LOBBYING_PERIOD_DAYS = 14;
   uint private constant GOVERNANCE_PROPOSAL_VOTING_PERIOD_DAYS = 7;
@@ -18,10 +13,6 @@ contract ParameterRegistry is Owned {
   uint private constant EVENT_CHALLENGE_LOBBYING_PERIOD_DAYS = 14;
   uint private constant EVENT_CHALLENGE_VOTING_PERIOD_DAYS = 7;
   uint private constant EVENT_CHALLENGE_REVEALING_PERIOD_DAYS = 7;
-
-  // Lock default values.
-  uint private constant LOCK_AMOUNT_MAX_AVT = 1;
-  uint private constant LOCK_BALANCE_MAX_AVT = 1000;
 
   // Events default values.
   uint private constant EVENT_MINIMUM_DEPOSIT_US_CENTS = 1000;
@@ -34,7 +25,7 @@ contract ParameterRegistry is Owned {
   // Apps default values.
   uint private constant APPLICATION_DEPOSIT = 100000; // In US cents
 
-  uint private constant AVT_IN_US_CENTS = 5;
+  uint private constant AVT_IN_US_CENTS = 100;
 
   IAventusStorage public s;
 
@@ -48,13 +39,6 @@ contract ParameterRegistry is Owned {
 
   // TODO: Consider pre-calculating any fixed keccaks - will save gas - here and elsewhere in the code.
   function setupDefaultParameters() public onlyOwner {
-
-    s.setUInt(keccak256("TimeIsNowWindow"), TIME_IS_NOW_WINDOW);
-
-    s.setBoolean(keccak256("LockRestricted"), false);
-    s.setUInt(keccak256("LockAmountMax"), to18SigFig(LOCK_AMOUNT_MAX_AVT));
-    s.setUInt(keccak256("LockBalanceMax"), to18SigFig(LOCK_BALANCE_MAX_AVT));
-
     s.setUInt(keccak256("Proposal", "governanceProposalLobbyingPeriodDays"), GOVERNANCE_PROPOSAL_LOBBYING_PERIOD_DAYS);
     s.setUInt(keccak256("Proposal", "governanceProposalVotingPeriodDays"), GOVERNANCE_PROPOSAL_VOTING_PERIOD_DAYS);
     s.setUInt(keccak256("Proposal", "governanceProposalRevealingPeriodDays"), GOVERNANCE_PROPOSAL_REVEALING_PERIOD_DAYS);

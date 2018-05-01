@@ -14,8 +14,6 @@ contract AventusVote is IAVTManager, IProposalsManager, Owned {
   // TODO: Consistent naming, eg make all event names start with "Log", or something similar.
   event WithdrawEvent(address indexed sender, string fund, uint amount);
   event DepositEvent(address indexed sender, string fund, uint amount);
-  event ToggleLockFreezeEvent(address indexed sender);
-  event ThresholdUpdateEvent(address indexed sender, bool restricted, uint amount, uint balance);
   event CreateProposalEvent(address indexed sender, string desc, uint proposalId);
   event CastVoteEvent(uint proposalId, address indexed sender, bytes32 secret, uint prevTime);
   event RevealVoteEvent(uint proposalId, uint optId);
@@ -48,22 +46,6 @@ contract AventusVote is IAVTManager, IProposalsManager, Owned {
     returns (uint _balance)
   {
     _balance = LLock.getBalance(s, _fund, _avtHolder);
-  }
-
-  function toggleLockFreeze()
-    external
-    onlyOwner
-  {
-    LLock.toggleLockFreeze(s);
-    emit ToggleLockFreezeEvent(msg.sender);
-  }
-
-  function setThresholds(bool restricted, uint amount, uint balance)
-    external
-    onlyOwner
-  {
-    LLock.setThresholds(s, restricted, amount, balance);
-    emit ThresholdUpdateEvent(msg.sender, restricted, amount, balance);
   }
 
   function getGovernanceProposalDeposit() view external returns (uint proposalDeposit) {
