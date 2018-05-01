@@ -9,6 +9,7 @@ const EventsManager = artifacts.require("EventsManager");
 const LApps = artifacts.require("LApps");
 const LAventusTime = artifacts.require("LAventusTime");
 const LAventusTimeMock = artifacts.require("LAventusTimeMock");
+const LChallengeWinnings = artifacts.require("LChallengeWinnings");
 const LEvents = artifacts.require("LEvents");
 const LLock = artifacts.require("LLock");
 const LProposal = artifacts.require("LProposal");
@@ -55,6 +56,10 @@ function deployLibraries(deployer, network) {
     LEvents.address = PEvents.address;
     LApps.address = PApps.address;
     return deployer.link(LEvents, [LProposal, EventsManager, ProposalManager]);
+  }).then(() => {
+    return deployer.deploy(LChallengeWinnings);
+  }).then(() => {
+    return deployer.link(LChallengeWinnings, LProposal);
   }).then(() => {
     return deployer.deploy(LProposal);
   }).then(() => {
