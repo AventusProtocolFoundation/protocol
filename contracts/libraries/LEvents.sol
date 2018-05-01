@@ -131,7 +131,6 @@ library LEvents {
     public
     returns (uint _eventId)
   {
-    // TODO: Local variables stack limit reached: refactor to make this more readable.
     require(getSignerAndCheckNotMsgSender(
         hashEventParameters(
             _eventDesc, _eventTime,_capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime,
@@ -408,6 +407,8 @@ library LEvents {
   * @param _ticketDetails - ticket details
   * @param _buyer - address of the ticket buyer
   * @param _eventOwnerOrDelegate address requesting this sale - must be event owner or delegate
+  *
+  * TODO: Consider adding ticket price so we can stop selling tickets when the total capital has been reached.
   */
   function doSellTicket(IAventusStorage _storage, uint _eventId, string _ticketDetails, address _buyer, address _eventOwnerOrDelegate)
     onlyEventOwnerOrDelegate(_storage, _eventId, _eventOwnerOrDelegate)
@@ -494,6 +495,7 @@ library LEvents {
     _storage.setUInt(keccak256("Event", _eventId, "status"), 2);
     // Event is no longer valid; remove the expected deposit for the event owner.
     doUnlockEventDeposit(_storage, _eventId);
+    // TODO: Add fraudulent counter, will be required for event deposit calculation
   }
 
   function isEventFraudulent(IAventusStorage _storage, uint _eventId) view private returns (bool) {
