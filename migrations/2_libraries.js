@@ -13,6 +13,7 @@ const LChallengeWinnings = artifacts.require("LChallengeWinnings");
 const LEvents = artifacts.require("LEvents");
 const LLock = artifacts.require("LLock");
 const LProposal = artifacts.require("LProposal");
+const LProposalForTesting = artifacts.require("LProposalForTesting");
 
 // Proxies
 const PApps = artifacts.require("PApps");
@@ -45,7 +46,7 @@ function deployLibraries(deployer, network) {
   }).then(() => {
     return deployer.link(LLock, [LProposal, LEvents, LApps]);
   }).then(() => {
-    return deployer.deploy([LEvents, LApps]);
+    return deployer.deploy([LEvents, LApps, LProposalForTesting]);
   }).then(() => {
     return deployer.then(() => s.setAddress(web3.sha3("LLockInstance"), LLock.address));
   }).then(() => {
