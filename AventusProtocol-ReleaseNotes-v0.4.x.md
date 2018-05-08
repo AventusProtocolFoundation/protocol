@@ -14,11 +14,11 @@ The glossary and release notes for version 0.4.x follow, listed by sub-release a
 ## Release 0.4.3 - 2018-05-08
 
 Updates:
-* Test code: alpha release of test code, no test coverage guarantees
+* Test code alpha release
 
 Other:
 * Add .gitattributes to support solidity
-* Convert this (release notes) file from txt to MD.
+* Convert this (release notes) file from txt to MD
 
 ## Release 0.4.2 - 2018-05-01
 
