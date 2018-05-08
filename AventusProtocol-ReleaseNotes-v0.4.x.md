@@ -11,6 +11,15 @@ The glossary and release notes for version 0.4.x follow, listed by sub-release a
 * Delegates - Other addresses that the owner has given permissions to sell and refund tickets.
 * Apps - Ethereum addresses that can send messages to the blockchain on behalf of an event owner or delegate via a signed message on the blockchain. Apps need an app deposit to access the network.
 
+## Release 0.4.3 - 2018-05-08
+
+Updates:
+* Test code: alpha release of test code, no test coverage guarantees
+
+Other:
+* Add .gitattributes to support solidity
+* Convert this (release notes) file from txt to MD.
+
 ## Release 0.4.2 - 2018-05-01
 
 Bug Fixes:
@@ -38,7 +47,7 @@ Other
 * Rename ProposalManager to ProposalsManager in migration files, for consistency
 * Publish EventsManager ABI and address in storage, in preparation for upcoming API release
 
-## Release 0.4.0 - 2018-04-17 
+## Release 0.4.0 - 2018-04-17
 
 Token Holders
 *New*
