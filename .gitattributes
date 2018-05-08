@@ -1,0 +1,3 @@
+# Solidity syntax highlighting (https://github.com/github/linguist/pull/3973)
+# Thanks to https://github.com/wanderingstan for the heads-up.
+*.sol linguist-language=Solidity
