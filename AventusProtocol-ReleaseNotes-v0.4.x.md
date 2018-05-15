@@ -11,6 +11,16 @@ The glossary and release notes for version 0.4.x follow, listed by sub-release a
 * Delegates - Other addresses that the owner has given permissions to sell and refund tickets.
 * Apps - Ethereum addresses that can send messages to the blockchain on behalf of an event owner or delegate via a signed message on the blockchain. Apps need an app deposit to access the network.
 
+## Release 0.4.4 - 2018-05-15
+
+Bug fix:
+* Convert asserts to requires in LLock (user data, not programmatic)
+
+Refactor and code tidy:
+* Refactor challenge winnings to avoid duplication
+* Remove duplicate code in LEvents
+* Remove unnecessary checks in LProposal
+
 ## Release 0.4.3 - 2018-05-08
 
 Updates:
