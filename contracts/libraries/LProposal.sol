@@ -59,9 +59,7 @@ library LProposal {
     _deposit = _storage.getUInt(keccak256("Proposal", _proposalId, "deposit"));
   }
 
-  function unlockProposalDeposit(IAventusStorage _s, uint _proposalId)
-    private
-    isStatus(_s, _proposalId, 4)
+  function unlockProposalDeposit(IAventusStorage _s, uint _proposalId) private
   {
     address proposalOwner = getProposalOwner(_s, _proposalId);
     bytes32 expectedDepositsKey = keccak256("ExpectedDeposits", proposalOwner);
@@ -334,11 +332,6 @@ library LProposal {
     _;
   }
 
-  modifier onlyEventChallengeProposal(IAventusStorage _s, uint _proposalId) {
-    require(proposalIsEventChallenge(_s, _proposalId));
-    _;
-  }
-
   function proposalIsEventChallenge(IAventusStorage _s, uint _proposalId)
     view
     private
@@ -369,6 +362,7 @@ library LProposal {
   }
 
   function endProposal(IAventusStorage _storage, uint _proposalId) public
+    isStatus(_storage, _proposalId, 4)
   {
     if (proposalIsEventChallenge(_storage, _proposalId)) {
       endEventChallenge(_storage, _proposalId);
@@ -381,8 +375,6 @@ library LProposal {
   }
 
   function endEventChallenge(IAventusStorage _storage, uint _proposalId)
-    onlyEventChallengeProposal(_storage, _proposalId)
-    isStatus(_storage, _proposalId, 4)
     private
     returns(uint _eventId)
   {
