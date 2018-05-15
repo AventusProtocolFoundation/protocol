@@ -23,15 +23,16 @@ library LChallengeWinnings {
 
     address winner = _votersAgreedWithChallenger ? _challenger : _challengee;
 
-    uint winningsToProposalWinnerAVT = giveFixedWinningsToProposalWinner(
-        _storage, winner, _winnings, _winningsForChallengeWinnerPercentage);
+    uint winningsToProposalWinnerAVT = (_winnings * _winningsForChallengeWinnerPercentage) / 100;
+    giveWinnings(_storage, winningsToProposalWinnerAVT, winner);
+
     uint winningsToChallengeEnderAVT =  (_winnings * _winningsToChallengeEnderPercentage) / 100;
 
     _winnings -= winningsToProposalWinnerAVT + winningsToChallengeEnderAVT;
     _winnings -= distributeWinningsAmongVoters(_storage, _proposalId, _winningOption, _totalWinningStake, _winnings);
 
     // Give anything remaining to the address that initiated the challenge end, along with their winnings.
-    giveWinningsToStakeHolder(_storage, winningsToChallengeEnderAVT + _winnings, msg.sender);
+    giveWinnings(_storage, winningsToChallengeEnderAVT + _winnings, msg.sender);
   }
 
   // TODO: Consider keccak256("Lock", address, "deposit") format for all of
@@ -51,29 +52,15 @@ library LChallengeWinnings {
     _storage.setUInt(depositLockKey, depositLock - _winnings);
   }
 
-  function giveFixedWinningsToProposalWinner(
-    IAventusStorage _storage,
-    address _winner,
-    uint _winnings,
-    uint8 _winningsForChallengeWinnerPercentage)
-    private
-    returns (uint _fixedWinnings)
-  {
-    _fixedWinnings = (_winnings * _winningsForChallengeWinnerPercentage) / 100;
-    bytes32 depositLockKey = keccak256("Lock", "deposit", _winner);
-    uint depositLock = _storage.getUInt(depositLockKey);
-    _storage.setUInt(depositLockKey, depositLock + _fixedWinnings);
-  }
-
-  function giveWinningsToStakeHolder(
+  function giveWinnings(
       IAventusStorage _storage,
       uint _winnings,
-      address _stakeHolder)
+      address _payee)
     private
   {
-    bytes32 stakeLockKey = keccak256("Lock", "deposit", _stakeHolder);
-    uint stakeLock = _storage.getUInt(stakeLockKey);
-    _storage.setUInt(stakeLockKey, stakeLock + _winnings);
+    bytes32 depositLockKey = keccak256("Lock", "deposit", _payee);
+    uint depositLock = _storage.getUInt(depositLockKey);
+    _storage.setUInt(depositLockKey, depositLock + _winnings);
   }
 
   function distributeWinningsAmongVoters(
@@ -90,7 +77,7 @@ library LChallengeWinnings {
       address voter = _storage.getAddress(keccak256("Proposal", _proposalId, "revealedVoter", _winningOption, i));
       uint voterStake = _storage.getUInt(keccak256("Proposal", _proposalId, "revealedVoter", _winningOption, voter, "stake"));
       uint voterReward = (_winnings * voterStake) / _totalWinningStake;
-      giveWinningsToStakeHolder(_storage, voterReward, voter);
+      giveWinnings(_storage, voterReward, voter);
       _winningsPaid += voterReward;
     }
   }

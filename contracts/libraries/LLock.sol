@@ -17,10 +17,9 @@ library LLock {
   {
     if (keccak256(fund) == keccak256("stake")) {
       require (!stakeChangeIsBlocked(s));
-    } else if (keccak256(fund) == keccak256("deposit")) {
-      require (!depositWithdrawlIsBlocked(s, amount));
     } else {
-      assert(false);
+      require(keccak256(fund) == keccak256("deposit"));
+      require(!depositWithdrawlIsBlocked(s, amount));
     }
 
     bytes32 key = keccak256("Lock", fund, msg.sender);
@@ -47,9 +46,9 @@ library LLock {
     public
   {
     if (keccak256(fund) == keccak256("stake")) {
-        require (!stakeChangeIsBlocked(s));
-    } else if (keccak256(fund) != keccak256("deposit")) {
-      assert(false);
+      require (!stakeChangeIsBlocked(s));
+    } else {
+      require(keccak256(fund) == keccak256("deposit"));
     }
 
     bytes32 key = keccak256("Lock", fund, msg.sender);
