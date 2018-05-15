@@ -27,11 +27,6 @@ library LEvents {
     _;
   }
 
-  modifier eventHasDeposit(IAventusStorage _storage, uint _eventId) {
-    require(getEventDeposit(_storage, _eventId) != 0);
-    _;
-  }
-
   function eventValid(IAventusStorage _storage, uint _eventId)
     view
     public
@@ -362,23 +357,15 @@ library LEvents {
 
   function doUnlockEventDeposit(IAventusStorage _storage, uint _eventId)
     isInactiveEvent(_storage, _eventId)
-    eventHasDeposit(_storage, _eventId)
     private
   {
     address owner = getEventOwner(_storage, _eventId);
     bytes32 key = keccak256("ExpectedDeposits", owner);
-    uint depositInAVT = getEventDeposit(_storage, _eventId);
+    uint depositInAVT = getExistingEventDeposit(_storage, _eventId);
+    require(depositInAVT != 0);
     assert(_storage.getUInt(key) >= depositInAVT);
     _storage.setUInt(key, _storage.getUInt(key) - depositInAVT);
     setEventDeposit(_storage, _eventId, 0);
-  }
-
-  function getEventDeposit(IAventusStorage _storage, uint _eventId)
-    private
-    view
-    returns (uint _deposit)
-  {
-    _deposit = _storage.getUInt(keccak256("Event", _eventId, "deposit"));
   }
 
   function setEventDeposit(IAventusStorage _storage, uint _eventId, uint _deposit) private {
