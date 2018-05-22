@@ -55,7 +55,7 @@ library LLock {
     updateBalance(s, amount, true);
   }
 
-  // See IAVTManager.deposit for details.
+  // See IAVTManager.getBalance for details.
   function getBalance(IAventusStorage _s, string _fund, address _avtHolder)
     public
     view

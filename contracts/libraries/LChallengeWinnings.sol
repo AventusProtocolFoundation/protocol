@@ -5,7 +5,7 @@ import "../interfaces/IAventusStorage.sol";
 /**
  * Library for dealing with the winnings of a challenge.
  *
- * This only used by, and is seprate to, LProposals because of size limitations when deploying.
+ * This only used by, and is separate to, LProposals because of size limitations when deploying.
  * There is no proxy for this library.
  *
  * NOTE: Do NOT put anything in here specific to events as this will also be used for app challenges.
@@ -17,7 +17,7 @@ library LChallengeWinnings {
       address _winner,
       address _loser,
       uint _winnings,
-      bool challengeHasNoRevealedVotes,
+      bool _challengeHasNoRevealedVotes,
       uint8 _winningsForChallengeWinnerPercentage,
       uint8 _winningsToChallengeEnderPercentage)
     public
@@ -33,7 +33,7 @@ library LChallengeWinnings {
 
     _winnings -= winningsToProposalWinnerAVT + winningsToChallengeEnderAVT;
 
-    if (challengeHasNoRevealedVotes) {
+    if (_challengeHasNoRevealedVotes) {
       // If no one voted, the challenge ender gets the rest of the winnings.
       winningsToChallengeEnderAVT += _winnings;
     } else {
@@ -80,8 +80,9 @@ library LChallengeWinnings {
     require(voterStake != 0);
 
     uint totalWinnings = _storage.getUInt(keccak256("Proposal", _proposalId, "totalWinningsToVoters"));
+    require(totalWinnings != 0);
     uint totalWinningStake = _storage.getUInt(keccak256("Proposal", _proposalId, "totalWinningStake"));
-    require(totalWinnings + totalWinningStake != 0);
+    require(totalWinningStake != 0);
 
     uint voterReward = (totalWinnings * voterStake) / totalWinningStake;
     giveWinnings(_storage, voterReward, voter);
