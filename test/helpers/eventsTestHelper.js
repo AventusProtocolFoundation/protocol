@@ -101,8 +101,10 @@ async function endEventAndWithdrawDeposit() {
 
 async function doCreateEvent(_eventIsSigned, _eventTime, _eventTicketSaleStartTime, _eventSupportURL) {
   if (_eventIsSigned) {
-    let keccak256Msg = await web3Utils.soliditySha3(eventDesc, _eventTime, eventCapacity,
-        eventAverageTicketPriceInUSCents, _eventTicketSaleStartTime, _eventSupportURL, eventOwner);
+    // Hash the variable length parameters to create fixed length parameters.
+    // See: http://solidity.readthedocs.io/en/v0.4.21/abi-spec.html#abi-packed-mode
+    let keccak256Msg = await web3Utils.soliditySha3(await web3Utils.soliditySha3(eventDesc), _eventTime, eventCapacity,
+        eventAverageTicketPriceInUSCents, _eventTicketSaleStartTime, await web3Utils.soliditySha3(_eventSupportURL), eventOwner);
     const fields = createECDSAfields(eventOwner, keccak256Msg);
     await eventsManager.signedCreateEvent(fields.v, fields.r, fields.s, eventDesc, _eventTime, eventCapacity, eventAverageTicketPriceInUSCents,
         _eventTicketSaleStartTime, _eventSupportURL, eventOwner, {from: appAddress});

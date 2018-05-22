@@ -209,17 +209,22 @@ contract('AventusVote - Event challenges', async () => {
 
     async function voteToMarkEventAsFraudulentAndWithdrawWinnings() {
       await testHelper.advanceTimeToVotingStart(validChallengeProposalId);
-      const signedMessage = await votingTestHelper.castVote(validChallengeProposalId, 1, voter1);
+      const signedMessage1 = await votingTestHelper.castVote(validChallengeProposalId, 1, voter1);
+      const signedMessage2 = await votingTestHelper.castVote(validChallengeProposalId, 1, voter2);
       await testHelper.advanceTimeToRevealingStart(validChallengeProposalId);
-      await votingTestHelper.revealVote(validChallengeProposalId, 1, signedMessage, voter1);
-      await endChallengeEvent(stake, 0);
+      await votingTestHelper.revealVote(validChallengeProposalId, 1, signedMessage1, voter1);
+      await votingTestHelper.revealVote(validChallengeProposalId, 1, signedMessage2, voter2);
+      await endChallengeEvent(stake * 2, 0);
       // Challenge won, the winner is the challenge owner.
       await withdrawDeposit(fixedAmountToWinner(), challengeOwner);
       // The challenge ender gets their bit.
       await withdrawDeposit(fixedAmountToChallengeEnder(), challengeEnder);
-      // Winning voter gets the rest.
-      await withdrawDeposit(validEventDeposit - fixedAmountToWinner() - fixedAmountToChallengeEnder(), voter1);
-
+      // Winning voters get the rest.
+      await aventusVote.claimVoterWinnings(validChallengeProposalId, {from: voter1});
+      await aventusVote.claimVoterWinnings(validChallengeProposalId, {from: voter2});
+      const voterWinnings = (validEventDeposit - fixedAmountToWinner() - fixedAmountToChallengeEnder()) / 2;
+      await withdrawDeposit(voterWinnings, voter1);
+      await withdrawDeposit(voterWinnings, voter2);
       // Challenge is over, withdraw the deposit.
       await withdrawDeposit(validChallengeDeposit, challengeOwner);
     }
@@ -241,6 +246,7 @@ contract('AventusVote - Event challenges', async () => {
 
       await withdrawDeposit(fixedAmountToChallengeEnder(), challengeEnder);
       // Winning voter gets the rest.
+      await aventusVote.claimVoterWinnings(validChallengeProposalId, {from: voter1});
       await withdrawDeposit(validChallengeDeposit - fixedAmountToWinner() - fixedAmountToChallengeEnder(), voter1);
       await cancelEventAndWithdrawDeposit();
     });
@@ -259,6 +265,7 @@ contract('AventusVote - Event challenges', async () => {
       // The challenge ender gets their bit.
       await withdrawDeposit(fixedAmountToChallengeEnder(), challengeEnder);
       // Winning voter gets the rest.
+      await aventusVote.claimVoterWinnings(validChallengeProposalId, {from: voter2});
       await withdrawDeposit(validChallengeDeposit - fixedAmountToWinner() - fixedAmountToChallengeEnder(), voter2);
 
       await cancelEventAndWithdrawDeposit();

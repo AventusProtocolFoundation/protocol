@@ -46,7 +46,11 @@ function deployLibraries(deployer, network) {
   }).then(() => {
     return deployer.link(LLock, [LProposal, LEvents, LApps]);
   }).then(() => {
-    return deployer.deploy([LEvents, LApps, LProposalForTesting]);
+    return deployer.deploy(LApps);
+  }).then(() => {
+    return deployer.link(LApps, LEvents);
+  }).then(() => {
+    return deployer.deploy([LEvents, LProposalForTesting]);
   }).then(() => {
     return deployer.then(() => s.setAddress(web3.sha3("LLockInstance"), LLock.address));
   }).then(() => {

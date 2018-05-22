@@ -4,36 +4,41 @@ import '../interfaces/IAventusStorage.sol';
 import './LLock.sol';
 
 library LApps {
-    function registerApp(IAventusStorage s, address appAddress) internal {
+    bytes32 constant fixedDepositAmountKey = keccak256("Applications", "fixedDepositAmount");
+
+    function registerApp(IAventusStorage s, address appAddress) public {
       require(!appIsRegistered(s, appAddress));
-      bytes32 key = keccak256("ExpectedDeposits", appAddress);
-      uint expectedDeposits = s.getUInt(key) + getAppDeposit(s);
-      s.setUInt(key, expectedDeposits);
+      bytes32 expectedDepositsKey = keccak256("ExpectedDeposits", appAddress);
+      uint appDeposit = getAppDeposit(s);
+      uint expectedDeposits = s.getUInt(expectedDepositsKey) + appDeposit;
+      s.setUInt(expectedDepositsKey, expectedDeposits);
       uint actualDeposits = s.getUInt(keccak256("Lock", "deposit", appAddress));
       require(actualDeposits >= expectedDeposits);
 
-      s.setBoolean(keccak256("AppRegistry", "Approved", appAddress), true);
+      s.setBoolean(keccak256("AppRegistry", appAddress, "Approved"), true);
+      s.setUInt(keccak256("AppRegistry", appAddress, "Deposit"), appDeposit);
     }
 
-    function deregisterApp(IAventusStorage s, address appAddress) internal {
+    function deregisterApp(IAventusStorage s, address appAddress) public {
       require(appIsRegistered(s, appAddress));
-      bytes32 key = keccak256("ExpectedDeposits", appAddress);
-      assert(s.getUInt(key) >= getAppDeposit(s)); // If this asserts, we messed up the deposit code!
-      s.setUInt(key, s.getUInt(key) - getAppDeposit(s));
-      s.setBoolean(keccak256("AppRegistry", "Approved", appAddress), false);
+      bytes32 expectedDepositsKey = keccak256("ExpectedDeposits", appAddress);
+      uint appDeposit = s.getUInt(keccak256("AppRegistry", appAddress, "Deposit"));
+      assert(s.getUInt(expectedDepositsKey) >= appDeposit); // If this asserts, we messed up the deposit code!
+      s.setUInt(expectedDepositsKey, s.getUInt(expectedDepositsKey) - appDeposit);
+      s.setBoolean(keccak256("AppRegistry", appAddress, "Approved"), false);
     }
 
     // @return AVT value with 18 decimal places of precision.
     function getAppDeposit(IAventusStorage _storage) view public returns (uint _depositinAVT) {
-      uint depositInUSCents = _storage.getUInt(keccak256("Applications", "fixedDepositAmount"));
+      uint depositInUSCents = _storage.getUInt(fixedDepositAmountKey);
       _depositinAVT = LLock.getAVTDecimals(_storage, depositInUSCents);
     }
 
     function appIsRegistered(IAventusStorage s, address appAddress)
-      internal
+      public
       view
       returns (bool)
     {
-      return s.getBoolean(keccak256("AppRegistry", "Approved", appAddress));
+      return s.getBoolean(keccak256("AppRegistry", appAddress, "Approved"));
     }
 }
