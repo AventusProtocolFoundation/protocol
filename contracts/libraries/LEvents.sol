@@ -6,6 +6,11 @@ import './LLock.sol';
 import "./LAventusTime.sol";
 
 library LEvents {
+  bytes32 constant minimumEventReportingPeriodDaysKey = keccak256("Events", "minimumEventReportingPeriodDays");
+  bytes32 constant minimumDepositAmountUsCentsKey = keccak256("Events", "minimumDepositAmountUsCents");
+  bytes32 constant fixedDepositAmountUsCentsKey = keccak256("Events", "fixedDepositAmountUsCents");
+  bytes32 constant eventCountKey = keccak256("EventCount");
+
   modifier onlyEventOwner(IAventusStorage _storage, uint _eventId) {
     require(addressIsOwner(_storage, _eventId, msg.sender));
     _;
@@ -32,7 +37,7 @@ library LEvents {
     public
     returns (bool isValid)
   {
-    isValid = _eventId != 0 && _eventId <= _storage.getUInt(keccak256("EventCount"));
+    isValid = _eventId != 0 && _eventId <= _storage.getUInt(eventCountKey);
   }
 
   function eventActive(IAventusStorage _storage, uint _eventId)
@@ -93,7 +98,7 @@ library LEvents {
     _;
   }
 
-  function eventIsNotUnderChallenge(IAventusStorage _storage, uint _eventId) view internal returns (bool notUnderChallenge) {
+  function eventIsNotUnderChallenge(IAventusStorage _storage, uint _eventId) view public returns (bool notUnderChallenge) {
     require(eventValid(_storage, _eventId)); // This function is called outside the library, so it can't use a modifier.
     notUnderChallenge = 0 == _storage.getUInt(keccak256("Event", _eventId, "challenge"));
   }
@@ -294,7 +299,7 @@ library LEvents {
     validateEventCreation(_storage, _eventDesc, _eventTime, _capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime,
       _eventSupportURL, _owner);
 
-    eventId = _storage.getUInt(keccak256("EventCount")) + 1;
+    eventId = _storage.getUInt(eventCountKey) + 1;
 
     uint depositInUSCents = 0;
     uint depositInAVTDecimals = 0;
@@ -305,7 +310,7 @@ library LEvents {
     _storage.setUInt(key, _storage.getUInt(key) + depositInAVTDecimals);
     require(_storage.getUInt(key) <= _storage.getUInt(keccak256("Lock", "deposit", _owner)));
 
-    _storage.setUInt(keccak256("EventCount"), eventId);
+    _storage.setUInt(eventCountKey, eventId);
     _storage.setAddress(keccak256("Event", eventId, "owner"), _owner);
     _storage.setString(keccak256("Event", eventId, "description"), _eventDesc);
     _storage.setUInt(keccak256("Event", eventId, "capacity"), _capacity);
@@ -318,7 +323,7 @@ library LEvents {
 
   function getEventOwner(IAventusStorage _storage, uint _eventId)
     view
-    internal
+    public
     returns (address _eventOwner)
   {
     _eventOwner = _storage.getAddress(keccak256("Event", _eventId, "owner"));
@@ -332,7 +337,7 @@ library LEvents {
       _ticketSaleStartTime, _eventSupportURL, _owner);
     bytes32 hashMsgKey = keccak256("Event", "hashMessage", hashMsg);
 
-    uint minimumEventReportingPeriod = (1 days) * _storage.getUInt(keccak256("Events", "minimumEventReportingPeriodDays"));
+    uint minimumEventReportingPeriod = (1 days) * _storage.getUInt(minimumEventReportingPeriodDaysKey);
     assert(minimumEventReportingPeriod > 0);
     require(_ticketSaleStartTime >= getCurrentTime(_storage) + minimumEventReportingPeriod);
 
@@ -351,8 +356,10 @@ library LEvents {
     private
     returns (bytes32)
   {
-    return keccak256(_eventDesc, _eventTime, _capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime,
-      _eventSupportURL, _owner);
+    // Hash the variable length parameters to create fixed length parameters.
+    // See: http://solidity.readthedocs.io/en/v0.4.21/abi-spec.html#abi-packed-mode
+    return keccak256(keccak256(_eventDesc), _eventTime, _capacity, _averageTicketPriceInUSCents,
+        _ticketSaleStartTime,  keccak256(_eventSupportURL), _owner);
   }
 
   function doUnlockEventDeposit(IAventusStorage _storage, uint _eventId)
@@ -445,8 +452,8 @@ library LEvents {
     // TODO: Use a more advanced formula, taking into consideration reporting period, fraudulence
     // rates, etc, instead of fixed values.
     depositInUSCents = _averageTicketPriceInUSCents == 0 ?
-      _storage.getUInt(keccak256("Events", "minimumDepositAmountUsCents")) :
-      _storage.getUInt(keccak256("Events", "fixedDepositAmountUsCents"));
+      _storage.getUInt(minimumDepositAmountUsCentsKey):
+      _storage.getUInt(fixedDepositAmountUsCentsKey);
   }
 
   /**
@@ -459,14 +466,12 @@ library LEvents {
   }
 
   function setEventAsChallenged(IAventusStorage _s, uint _eventId, uint _challengeProposalId)
-    internal
-  {
+    public {
     _s.setUInt(keccak256("Event", _eventId, "challenge"), _challengeProposalId);
   }
 
   function setEventAsClearFromChallenge(IAventusStorage _s, uint _eventId)
-    internal
-  {
+    public {
     _s.setUInt(keccak256("Event", _eventId, "challenge"), 0);
   }
 

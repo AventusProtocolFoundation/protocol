@@ -6,65 +6,56 @@ import "./LAventusTime.sol";
 
 // Library for adding functionality for locking AVT stake for voting
 library LLock {
-  /**
-  * @dev Withdraw AVT not used in an active vote or deposit.
-  * @param s Storage contract
-  * @param fund Fund to withdraw from
-  * @param amount Amount to withdraw from lock
-  */
+  bytes32 constant stakeFundHash = keccak256("stake");
+  bytes32 constant depositFundHash = keccak256("deposit");
+  bytes32 constant avtContractAddressKey = keccak256("AVT");
+  bytes32 constant oneAVTInUSCentsKey = keccak256("OneAVTInUSCents");
+  bytes32 constant lockBalanceKey = keccak256("LockBalance");
+
+  // See IAVTManager.withdraw for details.
   function withdraw(IAventusStorage s, string fund, uint amount)
     public
   {
-    if (keccak256(fund) == keccak256("stake")) {
+    if (keccak256(fund) == stakeFundHash) {
       require (!stakeChangeIsBlocked(s));
     } else {
-      require(keccak256(fund) == keccak256("deposit"));
+      require(keccak256(fund) == depositFundHash);
       require(!depositWithdrawlIsBlocked(s, amount));
     }
 
     bytes32 key = keccak256("Lock", fund, msg.sender);
     uint currDeposit = s.getUInt(key);
-    IERC20 avt = IERC20(s.getAddress(keccak256("AVT")));
+    IERC20 avt = IERC20(s.getAddress(avtContractAddressKey));
 
-    // Only withdraw less or equal to amount locked
     require (amount <= currDeposit);
-    // Overwrite user's locked amount
     s.setUInt(key, currDeposit - amount);
-    // Check transfer desired amount
     require (avt.transfer(msg.sender, amount));
 
     updateBalance(s, amount, false);
   }
 
-  /**
-  * @dev Deposit & lock AVT for stake weighted votes
-  * @param s Storage contract
-  * @param fund Fund to deposit into
-  * @param amount Amount to withdraw from lock
-  */
+  // See IAVTManager.deposit for details.
   function deposit(IAventusStorage s, string fund, uint amount)
     public
   {
-    if (keccak256(fund) == keccak256("stake")) {
+    if (keccak256(fund) == stakeFundHash) {
       require (!stakeChangeIsBlocked(s));
     } else {
-      require(keccak256(fund) == keccak256("deposit"));
+      require(keccak256(fund) == depositFundHash);
     }
 
     bytes32 key = keccak256("Lock", fund, msg.sender);
     uint currDeposit = s.getUInt(key);
-    IERC20 avt = IERC20(s.getAddress(keccak256("AVT")));
+    IERC20 avt = IERC20(s.getAddress(avtContractAddressKey));
 
-    // Make sure deposit amount is not zero
     require (amount != 0);
-    // Overwrite locked funds amount
     s.setUInt(key, currDeposit + amount);
-    // Check transfer succeeds
     require (avt.transferFrom(msg.sender, this, amount));
 
     updateBalance(s, amount, true);
   }
 
+  // See IAVTManager.deposit for details.
   function getBalance(IAventusStorage _s, string _fund, address _avtHolder)
     public
     view
@@ -74,30 +65,29 @@ library LLock {
   }
 
   function getAVTDecimals(IAventusStorage _storage, uint _usCents) public view returns (uint avtDecimals) {
-    uint oneAvtInUsCents = _storage.getUInt(keccak256("OneAVTInUSCents"));
+    uint oneAvtInUsCents = _storage.getUInt(oneAVTInUSCentsKey);
     avtDecimals = (_usCents * (10**18)) / oneAvtInUsCents;
   }
 
   /**
-  * @dev Set up safety controls for initial release of voting
+  * Keep track of the total locked in the contract.
   * @param s Storage contract
   * @param amount amount to update the balance by
   * @param increment True if incrementing balance
   */
   function updateBalance(IAventusStorage s, uint amount, bool increment) private {
-    bytes32 key = keccak256("LockBalance");
-    uint balance = s.getUInt(key);
+    uint balance = s.getUInt(lockBalanceKey);
 
     if (increment)
       balance += amount;
     else
       balance -= amount;
 
-    s.setUInt(key, balance);
+    s.setUInt(lockBalanceKey, balance);
   }
 
   /**
-  * @dev Check if the sender can withdraw/deposit AVT stake.
+  * Check if the sender can withdraw/deposit AVT stake.
   * @param s Storage contract
   * @return True if the sender's funds are blocked, False if not.
   */

@@ -3,7 +3,9 @@ pragma solidity ^0.4.19;
 import '../../interfaces/IAventusStorage.sol';
 
 library LAventusTimeMock {
-    function getCurrentTime(IAventusStorage s) view public returns (uint) {
-        return s.getUInt(keccak256("MockCurrentTime"));
-    }
+  bytes32 constant mockCurrentTimeKey = keccak256("MockCurrentTime");
+
+  function getCurrentTime(IAventusStorage _s) view public returns (uint) {
+      return _s.getUInt(mockCurrentTimeKey);
+  }
 }

@@ -8,6 +8,14 @@ import './LLock.sol';
 
 // Library for extending voting protocol functionality
 library LProposal {
+  bytes32 constant governanceProposalFixedDepositInUsCentsKey =
+      keccak256("Proposal", "governanceProposalFixedDepositInUsCents");
+  bytes32 constant winningsForChallengeWinnerPercentageKey =
+      keccak256("Events", "winningsForChallengeWinnerPercentage");
+  bytes32 constant winningsForChallengeEnderPercentageKey =
+      keccak256("Events", "winningsForChallengeEnderPercentage");
+  bytes32 constant proposalCountKey = keccak256("ProposalCount");
+
   modifier onlyProposalOwner(IAventusStorage _s, uint _proposalId) {
     require (msg.sender == getProposalOwner(_s, _proposalId));
     _;
@@ -36,7 +44,7 @@ library LProposal {
 
   // @return AVT value with 18 decimal places of precision.
   function getGovernanceProposalDeposit(IAventusStorage _storage) view public returns (uint _depositInAVT) {
-    uint depositInUSCents = _storage.getUInt(keccak256("Proposal", "governanceProposalFixedDepositInUsCents"));
+    uint depositInUSCents = _storage.getUInt(governanceProposalFixedDepositInUsCentsKey);
     _depositInAVT = LLock.getAVTDecimals(_storage, depositInUSCents);
   }
 
@@ -90,14 +98,14 @@ library LProposal {
     uint actualDeposits = _s.getUInt(keccak256("Lock", "deposit", owner));
     require(actualDeposits >= expectedDeposits);
 
-    uint proposalCount = _s.getUInt(keccak256("ProposalCount"));
+    uint proposalCount = _s.getUInt(proposalCountKey);
     uint proposalId = proposalCount + 1;
 
     _s.setString(keccak256("Proposal", proposalId, "description"), _desc);
     _s.setAddress(keccak256("Proposal", proposalId, "owner"), owner);
     setProposalDeposit(_s, proposalId, _deposit);
 
-    _s.setUInt(keccak256("ProposalCount"), proposalId);
+    _s.setUInt(proposalCountKey, proposalId);
 
     setProposalTimes(_s, proposalId);
     return proposalId;
@@ -221,45 +229,45 @@ library LProposal {
 
   /**
   * @dev Reveal a vote on a proposal
-  * @param s Storage contract
-  * @param proposalId Proposal ID
-  * @param optId ID of option that was voted on
-  * @param v User's ECDSA signature(keccak256(optID)) v value
-  * @param r User's ECDSA signature(keccak256(optID)) r value
-  * @param s_ User's ECDSA signature(keccak256(optID)) s value
+  * @param _storage Storage contract
+  * @param _proposalId Proposal ID
+  * @param _optId ID of option that was voted on
+  * @param _ecdsaV User's ECDSA signature v value
+  * @param _ecdsaR User's ECDSA signature r value
+  * @param _ecdsaS User's ECDSA signature s value
   */
   // TODO: Consider uint8 for optId: uint is for historical reasons only.
-  function revealVote(IAventusStorage s, uint proposalId, uint optId, uint8 v, bytes32 r, bytes32 s_) public {
+  function revealVote(IAventusStorage _storage, uint _proposalId, uint8 _optId, uint8 _ecdsaV, bytes32 _ecdsaR, bytes32 _ecdsaS) public {
     // Make sure proposal status is Reveal or after.
-    uint proposalStatus = getProposalStatus(s, proposalId);
+    uint proposalStatus = getProposalStatus(_storage, _proposalId);
     require (proposalStatus >= 3);
-    require (optId == 1 || optId == 2);
+    require (_optId == 1 || _optId == 2);
 
     // Get voter public key from message and ECDSA components
-    address voter = ecrecover(getPrefixedMessage(keccak256(proposalId * 10 + optId)), v, r, s_);
+    address voter = ecrecover(getPrefixedMessage(keccak256((_proposalId * 10) + _optId)), _ecdsaV, _ecdsaR, _ecdsaS);
     require(voter == msg.sender);
 
     // Make sure the stored vote is the same as the revealed one.
-    require (s.getBytes32(keccak256("Voting", voter, "secrets", proposalId)) ==
-        keccak256(uint(v), r, s_));
+    require(_storage.getBytes32(keccak256("Voting", voter, "secrets", _proposalId)) ==
+        keccak256(uint(_ecdsaV), _ecdsaR, _ecdsaS));
 
     // IFF we are still in the reveal period AND the user has non-zero stake at reveal time...
-    uint stake = s.getUInt(keccak256("Lock", "stake", voter));
+    uint stake = _storage.getUInt(keccak256("Lock", "stake", voter));
     if (proposalStatus == 3 && stake != 0) {
       // ...increment the total stake for this option with the voter's stake...
-      bytes32 totalStakeForOptionKey = keccak256("Proposal", proposalId, "revealedStake", optId);
-      s.setUInt(totalStakeForOptionKey, s.getUInt(totalStakeForOptionKey) + stake);
+      bytes32 totalStakeForOptionKey = keccak256("Proposal", _proposalId, "revealedStake", _optId);
+      _storage.setUInt(totalStakeForOptionKey, _storage.getUInt(totalStakeForOptionKey) + stake);
 
       // ...and store it so we can use it later to calculate winnings.
-      bytes32 revealedVotersCountKey = keccak256("Proposal", proposalId, "revealedVotersCount", optId);
-      uint revealedVotersCount = s.getUInt(revealedVotersCountKey) + 1;
-      s.setUInt(revealedVotersCountKey, revealedVotersCount);
-      s.setAddress(keccak256("Proposal", proposalId, "revealedVoter", optId, revealedVotersCount), voter);
-      s.setUInt(keccak256("Proposal", proposalId, "revealedVoter", optId, voter, "stake"), stake);
+      bytes32 revealedVotersCountKey = keccak256("Proposal", _proposalId, "revealedVotersCount", _optId);
+      uint revealedVotersCount = _storage.getUInt(revealedVotersCountKey) + 1;
+      _storage.setUInt(revealedVotersCountKey, revealedVotersCount);
+      _storage.setAddress(keccak256("Proposal", _proposalId, "revealedVoter", _optId, revealedVotersCount), voter);
+      _storage.setUInt(keccak256("Proposal", _proposalId, "revealedVoter", _optId, voter, "stake"), stake);
     }
 
     // Removing the vote will unlock the user's AVT stake for this proposal.
-    removeSendersVoteFromDLL(s, proposalId);
+    removeSendersVoteFromDLL(_storage, _proposalId);
   }
 
   // web3.eth.sign prefixes messages with this string; we need to take it into consideration.
@@ -355,6 +363,10 @@ library LProposal {
     LEvents.setEventAsChallenged(_storage, _eventId, challengeProposalId);
   }
 
+  function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) public {
+    LChallengeWinnings.claimVoterWinnings(_storage, _proposalId);
+  }
+
   function getEventIdFromChallengeProposalId(IAventusStorage _s, uint _challengeProposalId) view private
     returns(uint eventId)
   {
@@ -370,8 +382,8 @@ library LProposal {
     unlockProposalDeposit(_storage, _proposalId);
   }
 
-  function votersAgreedWithChallenger(uint _winningOption) private pure returns(bool _agreed) {
-    _agreed = (_winningOption == 1);
+  function challengerIsWinner(uint8 _winningOption) private pure returns(bool _challengerIsWinner) {
+    _challengerIsWinner = (_winningOption == 1);
   }
 
   function endEventChallenge(IAventusStorage _storage, uint _proposalId)
@@ -380,18 +392,19 @@ library LProposal {
   {
     _eventId = getEventIdFromChallengeProposalId(_storage, _proposalId);
 
-    uint totalAgreedStake = _storage.getUInt(keccak256("Proposal", _proposalId, "revealedStake", uint(1)));
-    uint totalDisagreedStake = _storage.getUInt(keccak256("Proposal", _proposalId, "revealedStake", uint(2)));
+    uint totalAgreedStake = _storage.getUInt(keccak256("Proposal", _proposalId, "revealedStake", uint8(1)));
+    uint totalDisagreedStake = _storage.getUInt(keccak256("Proposal", _proposalId, "revealedStake", uint8(2)));
     doEndEventChallenge(_storage, _proposalId, _eventId, totalAgreedStake, totalDisagreedStake);
   }
 
   function doEndEventChallenge(IAventusStorage _storage, uint _proposalId, uint _eventId,
       uint totalAgreedStake, uint totalDisagreedStake) private {
     // Note: a "draw" is taken as not agreeing with the challenge.
-    uint winningOption = totalAgreedStake > totalDisagreedStake ? 1 : 2;
+    uint8 winningOption = totalAgreedStake > totalDisagreedStake ? 1 : 2;
 
     uint totalWinningStake;
-    if (votersAgreedWithChallenger(winningOption)) {
+    bool challengeWon = challengerIsWinner(winningOption);
+    if (challengeWon) {
       LEvents.setEventStatusFraudulent(_storage, _eventId);
       totalWinningStake = totalAgreedStake;
     } else {
@@ -399,22 +412,27 @@ library LProposal {
       totalWinningStake = totalDisagreedStake;
     }
 
-    doEventWinningsDistribution(_storage, _proposalId, _eventId, winningOption, totalWinningStake);
+    doEventWinningsDistribution(_storage, _proposalId, _eventId, winningOption);
+
+    // Save the information we need to calculate voter winnings when they make their claim.
+    _storage.setUInt8(keccak256("Proposal", _proposalId, "winningOption"), winningOption);
+    _storage.setUInt(keccak256("Proposal", _proposalId, "totalWinningStake"), totalWinningStake);
   }
 
   function doEventWinningsDistribution(IAventusStorage _storage, uint _proposalId, uint _eventId,
-      uint _winningOption, uint _totalWinningStake) private {
+      uint8 _winningOption) private {
+    address challenger = getProposalOwner(_storage, _proposalId);
+    address eventOwner = LEvents.getEventOwner(_storage, _eventId);
+    bool challengeWon = challengerIsWinner(_winningOption);
     LChallengeWinnings.distributeChallengeWinnings(
         _storage,
         _proposalId,
-        getProposalOwner(_storage, _proposalId), // challenger
-        LEvents.getEventOwner(_storage, _eventId), // challengee
-        votersAgreedWithChallenger(_winningOption),
-        _winningOption,
-        _totalWinningStake,
+        challengeWon ? challenger : eventOwner, // winner
+        challengeWon ? eventOwner : challenger, // loser
         getProposalDeposit(_storage, _proposalId), // winnings
-        _storage.getUInt8(keccak256("Events", "winningsForChallengeWinnerPercentage")),
-        _storage.getUInt8(keccak256("Events", "winningsForChallengeEnderPercentage"))
+        0 ==_storage.getUInt(keccak256("Proposal", _proposalId, "revealedVotersCount", _winningOption)), // challengeHasNoRevealedVotes
+        _storage.getUInt8(winningsForChallengeWinnerPercentageKey),
+        _storage.getUInt8(winningsForChallengeEnderPercentageKey)
     );
   }
 }

@@ -2,37 +2,46 @@ pragma solidity ^0.4.19;
 
 import "../interfaces/IAventusStorage.sol";
 
-// Library for dealing with the winnings of a challenge.
-// This library is seprate to LProposals because of size limitations when deploying.
+/**
+ * Library for dealing with the winnings of a challenge.
+ *
+ * This only used by, and is seprate to, LProposals because of size limitations when deploying.
+ * There is no proxy for this library.
+ *
+ * NOTE: Do NOT put anything in here specific to events as this will also be used for app challenges.
+ */
 library LChallengeWinnings {
   function distributeChallengeWinnings(
       IAventusStorage _storage,
       uint _proposalId,
-      address _challenger,
-      address _challengee,
-      bool _votersAgreedWithChallenger,
-      uint _winningOption,
-      uint _totalWinningStake,
+      address _winner,
+      address _loser,
       uint _winnings,
+      bool challengeHasNoRevealedVotes,
       uint8 _winningsForChallengeWinnerPercentage,
       uint8 _winningsToChallengeEnderPercentage)
     public
   {
-    address loser = _votersAgreedWithChallenger ? _challengee : _challenger;
-    takeAllWinningsFromProposalLoser(_storage, _winnings, loser);
-
-    address winner = _votersAgreedWithChallenger ? _challenger : _challengee;
+    takeAllWinningsFromProposalLoser(_storage, _winnings, _loser);
 
     uint winningsToProposalWinnerAVT = (_winnings * _winningsForChallengeWinnerPercentage) / 100;
-    giveWinnings(_storage, winningsToProposalWinnerAVT, winner);
+    giveWinnings(_storage, winningsToProposalWinnerAVT, _winner);
 
-    uint winningsToChallengeEnderAVT =  (_winnings * _winningsToChallengeEnderPercentage) / 100;
+
+    address challengeEnder = msg.sender;
+    uint winningsToChallengeEnderAVT = (_winnings * _winningsToChallengeEnderPercentage) / 100;
 
     _winnings -= winningsToProposalWinnerAVT + winningsToChallengeEnderAVT;
-    _winnings -= distributeWinningsAmongVoters(_storage, _proposalId, _winningOption, _totalWinningStake, _winnings);
 
-    // Give anything remaining to the address that initiated the challenge end, along with their winnings.
-    giveWinnings(_storage, winningsToChallengeEnderAVT + _winnings, msg.sender);
+    if (challengeHasNoRevealedVotes) {
+      // If no one voted, the challenge ender gets the rest of the winnings.
+      winningsToChallengeEnderAVT += _winnings;
+    } else {
+      // Otherwise, the rest of the winnings is distributed to the voters as they claim it.
+      _storage.setUInt(keccak256("Proposal", _proposalId, "totalWinningsToVoters"), _winnings);
+      _storage.setUInt(keccak256("Proposal", _proposalId, "winningsToVotersRemaining"), _winnings);
+    }
+    giveWinnings(_storage, winningsToChallengeEnderAVT, challengeEnder);
   }
 
   // TODO: Consider keccak256("Lock", address, "deposit") format for all of
@@ -63,22 +72,27 @@ library LChallengeWinnings {
     _storage.setUInt(depositLockKey, depositLock + _winnings);
   }
 
-  function distributeWinningsAmongVoters(
-      IAventusStorage _storage,
-      uint _proposalId,
-      uint _winningOption,
-      uint _totalWinningStake,
-      uint _winnings)
-    private
-    returns (uint _winningsPaid)
-  {
-    uint numWinningVoters = _storage.getUInt(keccak256("Proposal", _proposalId, "revealedVotersCount", _winningOption));
-    for (uint i = 1; i <= numWinningVoters; ++i) {
-      address voter = _storage.getAddress(keccak256("Proposal", _proposalId, "revealedVoter", _winningOption, i));
-      uint voterStake = _storage.getUInt(keccak256("Proposal", _proposalId, "revealedVoter", _winningOption, voter, "stake"));
-      uint voterReward = (_winnings * voterStake) / _totalWinningStake;
-      giveWinnings(_storage, voterReward, voter);
-      _winningsPaid += voterReward;
-    }
+  function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) public {
+    address voter = msg.sender;
+    uint8 winningOption = _storage.getUInt8(keccak256("Proposal", _proposalId, "winningOption"));
+    bytes32 voterStakeKey = keccak256("Proposal", _proposalId, "revealedVoter", winningOption, voter, "stake");
+    uint voterStake = _storage.getUInt(voterStakeKey);
+    require(voterStake != 0);
+
+    uint totalWinnings = _storage.getUInt(keccak256("Proposal", _proposalId, "totalWinningsToVoters"));
+    uint totalWinningStake = _storage.getUInt(keccak256("Proposal", _proposalId, "totalWinningStake"));
+    require(totalWinnings + totalWinningStake != 0);
+
+    uint voterReward = (totalWinnings * voterStake) / totalWinningStake;
+    giveWinnings(_storage, voterReward, voter);
+
+    // Update how much is left in the voters winnings pot.
+    bytes32 winningsToVotersRemainingKey = keccak256("Proposal", _proposalId, "winningsToVotersRemaining");
+    uint winningsToVotersRemaining = _storage.getUInt(winningsToVotersRemainingKey);
+    require(winningsToVotersRemaining >= voterReward);
+    _storage.setUInt(winningsToVotersRemainingKey, winningsToVotersRemaining - voterReward);
+
+    // Stop the voter from claiming again.
+    _storage.setUInt(voterStakeKey, 0);
   }
 }

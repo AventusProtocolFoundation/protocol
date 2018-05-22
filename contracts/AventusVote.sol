@@ -16,7 +16,8 @@ contract AventusVote is IAVTManager, IProposalsManager, Owned {
   event DepositEvent(address indexed sender, string fund, uint amount);
   event CreateProposalEvent(address indexed sender, string desc, uint proposalId);
   event CastVoteEvent(uint proposalId, address indexed sender, bytes32 secret, uint prevTime);
-  event RevealVoteEvent(uint proposalId, uint optId);
+  event RevealVoteEvent(uint proposalId, uint8 optId);
+  event ClaimVoterWinningsEvent(uint proposalId);
   event LogEndProposal(uint proposalId, uint votesFor, uint votesAgainst);
   event LogCreateEventChallenge(uint eventId, uint proposalId);
 
@@ -68,8 +69,8 @@ contract AventusVote is IAVTManager, IProposalsManager, Owned {
 
   function endProposal(uint _proposalId) external {
     LProposal.endProposal(s, _proposalId);
-    uint votesFor = s.getUInt(keccak256("Proposal", _proposalId, "revealedStake", uint(1)));
-    uint votesAgainst = s.getUInt(keccak256("Proposal", _proposalId, "revealedStake", uint(2)));
+    uint votesFor = s.getUInt(keccak256("Proposal", _proposalId, "revealedStake", uint8(1)));
+    uint votesAgainst = s.getUInt(keccak256("Proposal", _proposalId, "revealedStake", uint8(2)));
     emit LogEndProposal(_proposalId, votesFor, votesAgainst);
   }
 
@@ -82,9 +83,14 @@ contract AventusVote is IAVTManager, IProposalsManager, Owned {
     emit CastVoteEvent(proposalId, msg.sender, secret, prevTime);
   }
 
-  function revealVote(uint proposalId, uint optId, uint8 v, bytes32 r, bytes32 s_) external {
+  function revealVote(uint proposalId, uint8 optId, uint8 v, bytes32 r, bytes32 s_) external {
     LProposal.revealVote(s, proposalId, optId, v, r, s_);
     emit RevealVoteEvent(proposalId, optId);
+  }
+
+  function claimVoterWinnings(uint _proposalId) external {
+    LProposal.claimVoterWinnings(s, _proposalId);
+    emit ClaimVoterWinningsEvent(_proposalId);
   }
 
   function updateStorage(IAventusStorage s_)
