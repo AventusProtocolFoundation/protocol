@@ -8,19 +8,12 @@ contract Owned {
     _;
   }
 
-  function setOwner(address owner_) 
-    public
-    onlyOwner 
-  {
-    require (owner_ != 0x0);
-    
-    owner = owner_;
-  }
-
-  function kill(address forward)
+  function setOwner(address owner_)
     public
     onlyOwner
   {
-    selfdestruct(forward);
+    require (owner_ != 0x0);
+
+    owner = owner_;
   }
 }

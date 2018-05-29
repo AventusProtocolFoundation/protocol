@@ -6,6 +6,18 @@ The audit brought to light a number of issues, none of which were critical, that
 
 The release notes for version 0.5.x follow, listed by sub-release and category, filtered by status.
 
+## Release 0.5.1 - 2018-05-29
+
+Breaking changes:
+* AventusVote contract: removed updateStorage and setStorageOwner as per Solidified audit recommendation.
+* Removed kill method from Owned parent contract as per Solidified audit recommendation.
+
+Minor changes:
+* Updated AVT/US cents constant to today's value (will be updated automatically once live)
+
+Bug fixes:
+* Updating AVT/USD price to a non-whole number of dollars showed up rounding errors in test code
+
 ## Release 0.5.0 - 2018-05-22
 
 Breaking changes:
