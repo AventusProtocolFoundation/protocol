@@ -25,7 +25,7 @@ contract ParameterRegistry is Owned {
   // Apps default values.
   uint private constant APPLICATION_DEPOSIT = 100000; // In US cents
 
-  uint private constant AVT_IN_US_CENTS = 100;
+  uint private constant AVT_IN_US_CENTS = 97;
 
   IAventusStorage public s;
 

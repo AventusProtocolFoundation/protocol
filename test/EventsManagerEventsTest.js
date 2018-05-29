@@ -32,35 +32,39 @@ contract('EventsManager - event management', function () {
 
   context("Event deposits", async () => {
     const oneDay = new web3.BigNumber(86400);  // seconds in one day. Solidity uses uint256.
+    const to18SigFig = (new web3.BigNumber(10)).pow(18);
 
-    async function getAndCheckEventDeposit(_eventCapacity, _price, _startTime, _expectedUSCentsDeposit) {
+    // Use BigNumber for the deposits so we don't lose accuracy.
+    async function getAndCheckEventDeposit(_eventCapacity, _price, _startTime, _expectedUSCentsDepositBN) {
       const deposits = await eventsManager.getEventDeposit(_eventCapacity, _price, _startTime);
-      const depositInUsCents = deposits[0].toNumber();
-      assert.equal(_expectedUSCentsDeposit, depositInUsCents);
-      const oneAvtInUsCents = await aventusStorage.getUInt(web3Utils.soliditySha3("OneAVTInUSCents"));
-      const depositInAVT = deposits[1];
-      assert.equal(depositInUsCents, depositInAVT.times(oneAvtInUsCents).dividedToIntegerBy(10 ** 18));
+      const depositInUsCentsBN = deposits[0];
+      assert.equal(_expectedUSCentsDepositBN.toString(), depositInUsCentsBN.toString());
+      const oneAvtInUsCentsBN = await aventusStorage.getUInt(web3Utils.soliditySha3("OneAVTInUSCents"));
+      const depositInAVTBN = deposits[1];
+      assert.equal(
+        depositInAVTBN.toString(),
+        depositInUsCentsBN.mul(to18SigFig).dividedToIntegerBy(oneAvtInUsCentsBN).toString());
     };
 
     it("gets the same deposit regardless of non-zero ticket price, eventCapacity or startTime", async function() {
-      const expectedUSCentsDeposit = (await aventusStorage.getUInt(web3Utils.soliditySha3("Events", "fixedDepositAmountUsCents"))).toNumber();
+      const expectedUSCentsDepositBN = (await aventusStorage.getUInt(web3Utils.soliditySha3("Events", "fixedDepositAmountUsCents")));
       for (i = 1000; i != 10000; i += 1000) {
         // Create some varied values for the deposit paramaters. Shouldn't make a difference.
         const eventCapacity = 1000 + i * 10;
         const price = i;
         const startTime = testHelper.now() + (i * oneDay);
-        await getAndCheckEventDeposit(eventCapacity, price, startTime, expectedUSCentsDeposit);
+        await getAndCheckEventDeposit(eventCapacity, price, startTime, expectedUSCentsDepositBN);
       }
     });
 
     it("gets the same deposit regardless of eventCapacity or startTime if event is free", async function() {
       const price = 0;
-      const expectedUSCentsDeposit = (await aventusStorage.getUInt(web3Utils.soliditySha3("Events", "minimumDepositAmountUsCents"))).toNumber();
+      const expectedUSCentsDepositBN = (await aventusStorage.getUInt(web3Utils.soliditySha3("Events", "minimumDepositAmountUsCents")));
       for (i = 1000; i != 10000; i += 1000) {
         // Create some varied values for the deposit paramaters. Shouldn't make a difference.
         const eventCapacity = 1000 + i * 10;
         const startTime = testHelper.now() + (i * oneDay);
-        await getAndCheckEventDeposit(eventCapacity, price, startTime, expectedUSCentsDeposit);
+        await getAndCheckEventDeposit(eventCapacity, price, startTime, expectedUSCentsDepositBN);
       }
     });
   });

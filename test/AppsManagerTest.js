@@ -42,7 +42,7 @@ contract('AppsManager', function () {
 
   async function withdrawDeposit(account) {
     let deposit = await appsManager.getAppDeposit();
-    await aventusVote.withdraw("deposit", deposit.toNumber(), {from: account});
+    await aventusVote.withdraw("deposit", deposit, {from: account});
   }
 
   it("can register and deregister app addresses", async function() {

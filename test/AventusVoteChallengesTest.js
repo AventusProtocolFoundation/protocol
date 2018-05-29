@@ -32,8 +32,6 @@ contract('AventusVote - Event challenges', async () => {
     avt = IERC20.at(avtAddress);
   });
 
-  after(async () => await testHelper.checkFundsEmpty());
-
   // Create an event: always owned by account 0.
   async function createValidEvent() {
     const eventDesc = "My event " + (validEventId + 1);
@@ -116,7 +114,7 @@ contract('AventusVote - Event challenges', async () => {
   context("Challenge deposit", async () => {
     it("can get the correct event deposit", async function() {
       let deposit = await getExistingEventDeposit(validEventId);
-      assert.equal(deposit.toNumber(), validEventDeposit.toNumber());
+      assert.equal(deposit.toString(), validEventDeposit.toString());
     });
 
     it("cannot get the event deposit for non-existent event", async function() {
@@ -144,11 +142,13 @@ contract('AventusVote - Event challenges', async () => {
       await cancelEventAndWithdrawDeposit();
     });
 
+    after(async () => await testHelper.checkFundsEmpty());
+
     async function withdrawDepositsAfterChallengeEnds() {
       // No one voted. The event owner wins their fixed amount...
       await withdrawDeposit(fixedAmountToWinner(), eventOwner);
       // ...the challenge ender gets the rest.
-      await withdrawDeposit(validChallengeDeposit - fixedAmountToWinner(), challengeEnder);
+      await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()), challengeEnder);
     }
 
     it("can create and end a challenge to a valid event", async function() {
@@ -165,8 +165,7 @@ contract('AventusVote - Event challenges', async () => {
     });
 
     it("cannot create a challenge to an event without sufficient deposit", async function() {
-      // There is 1 fractiion of an AVT in the account for balance checking.
-      const insufficientDeposit = (await getExistingEventDeposit(validEventId)).minus(new web3.BigNumber(2));
+      const insufficientDeposit = (await getExistingEventDeposit(validEventId)).minus(new web3.BigNumber(1));
       await createEventChallengeFails(insufficientDeposit, validEventId);
     });
 
@@ -193,6 +192,7 @@ contract('AventusVote - Event challenges', async () => {
   });
 
   context("End challenge - with votes", async () => {
+    let winningsRemainder = 0;
 
     beforeEach(async function() {
       await createValidEvent();
@@ -205,6 +205,14 @@ contract('AventusVote - Event challenges', async () => {
     afterEach(async function() {
       await withdrawStake(stake, voter1);
       await withdrawStake(stake, voter2);
+    });
+
+    after(async function() {
+      if (winningsRemainder > 0) {
+        console.log("TODO: Deal with remainder of ", winningsRemainder);
+      } else {
+        await testHelper.checkFundsEmpty();
+      }
     });
 
     async function voteToMarkEventAsFraudulentAndWithdrawWinnings() {
@@ -222,11 +230,12 @@ contract('AventusVote - Event challenges', async () => {
       // Winning voters get the rest.
       await aventusVote.claimVoterWinnings(validChallengeProposalId, {from: voter1});
       await aventusVote.claimVoterWinnings(validChallengeProposalId, {from: voter2});
-      const voterWinnings = (validEventDeposit - fixedAmountToWinner() - fixedAmountToChallengeEnder()) / 2;
-      await withdrawDeposit(voterWinnings, voter1);
-      await withdrawDeposit(voterWinnings, voter2);
+      const totalVoterWinnings = validEventDeposit.minus(fixedAmountToWinner()).minus(fixedAmountToChallengeEnder());
+      await withdrawDeposit(totalVoterWinnings.dividedToIntegerBy(2), voter1);
+      await withdrawDeposit(totalVoterWinnings.dividedToIntegerBy(2), voter2);
       // Challenge is over, withdraw the deposit.
       await withdrawDeposit(validChallengeDeposit, challengeOwner);
+      winningsRemainder += totalVoterWinnings.mod(2).toNumber();
     }
 
     it("pays the correct winnings in the case of agreement winning", async function() {
@@ -247,7 +256,7 @@ contract('AventusVote - Event challenges', async () => {
       await withdrawDeposit(fixedAmountToChallengeEnder(), challengeEnder);
       // Winning voter gets the rest.
       await aventusVote.claimVoterWinnings(validChallengeProposalId, {from: voter1});
-      await withdrawDeposit(validChallengeDeposit - fixedAmountToWinner() - fixedAmountToChallengeEnder(), voter1);
+      await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()).minus(fixedAmountToChallengeEnder()), voter1);
       await cancelEventAndWithdrawDeposit();
     });
 
@@ -266,7 +275,7 @@ contract('AventusVote - Event challenges', async () => {
       await withdrawDeposit(fixedAmountToChallengeEnder(), challengeEnder);
       // Winning voter gets the rest.
       await aventusVote.claimVoterWinnings(validChallengeProposalId, {from: voter2});
-      await withdrawDeposit(validChallengeDeposit - fixedAmountToWinner() - fixedAmountToChallengeEnder(), voter2);
+      await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()).minus(fixedAmountToChallengeEnder()), voter2);
 
       await cancelEventAndWithdrawDeposit();
     });
@@ -285,7 +294,7 @@ contract('AventusVote - Event challenges', async () => {
       // Challenge lost, the winner is the event owner.
       await withdrawDeposit(fixedAmountToWinner(), eventOwner);
       // The challenge ender gets the rest.
-      await withdrawDeposit(validChallengeDeposit - fixedAmountToWinner(), challengeEnder);
+      await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()), challengeEnder);
 
       await cancelEventAndWithdrawDeposit();
     });

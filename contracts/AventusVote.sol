@@ -92,18 +92,4 @@ contract AventusVote is IAVTManager, IProposalsManager, Owned {
     LProposal.claimVoterWinnings(s, _proposalId);
     emit ClaimVoterWinningsEvent(_proposalId);
   }
-
-  function updateStorage(IAventusStorage s_)
-    external
-    onlyOwner
-  {
-    s = s_;
-  }
-
-  function setStorageOwner(address owner_)
-    external
-    onlyOwner
-  {
-    Owned(s).setOwner(owner_);
-  }
 }
