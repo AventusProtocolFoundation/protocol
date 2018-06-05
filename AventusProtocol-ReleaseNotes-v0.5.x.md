@@ -6,6 +6,14 @@ The audit brought to light a number of issues, none of which were critical, that
 
 The release notes for version 0.5.x follow, listed by sub-release and category, filtered by status.
 
+## Release 0.5.2 - 2018-06-05
+
+Bug fixes:
+* Fix migration error which was breaking LLock proxying.
+
+Efficiency improvements:
+* Do not deploy LAventusTimeMock or LProposalForTesting on the main net
+
 ## Release 0.5.1 - 2018-05-29
 
 Breaking changes:

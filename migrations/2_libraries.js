@@ -42,7 +42,6 @@ function deployLibraries(deployer, network) {
     return deployer.deploy([PProposal, PLock, PEvents, PApps]);
   }).then(() => {
     return deployer.deploy(LLock);
-    LLock.address = PLock.address;
   }).then(() => {
     return deployer.link(LLock, [LProposal, LEvents, LApps]);
   }).then(() => {
@@ -50,7 +49,9 @@ function deployLibraries(deployer, network) {
   }).then(() => {
     return deployer.link(LApps, LEvents);
   }).then(() => {
-    return deployer.deploy([LEvents, LProposalForTesting]);
+    return deployer.deploy(LEvents);
+  }).then(() => {
+    return network === "live" ? deployer : deployer.deploy(LProposalForTesting);
   }).then(() => {
     return deployer.then(() => s.setAddress(web3.sha3("LLockInstance"), LLock.address));
   }).then(() => {
@@ -58,6 +59,7 @@ function deployLibraries(deployer, network) {
   }).then(() => {
     return deployer.then(() => s.setAddress(web3.sha3("LAppsInstance"), LApps.address));
   }).then(() => {
+    LLock.address = PLock.address;
     LEvents.address = PEvents.address;
     LApps.address = PApps.address;
     return deployer.link(LEvents, [LProposal, EventsManager, ProposalManager]);
@@ -80,8 +82,10 @@ function deployLibraries(deployer, network) {
 }
 
 function deployLAventusTime(_deployer, _network, _storage) {
-  return _deployer.deploy([LAventusTime, LAventusTimeMock, PAventusTime]).then(() => {
-    const timeAddress = _network === "development" ? LAventusTimeMock.address : LAventusTime.address;
+  return _deployer.deploy([LAventusTime, PAventusTime]).then(() => {
+    return _network === "live" ? _deployer : _deployer.deploy(LAventusTimeMock);
+  }).then(() => {
+    const timeAddress = _network === "live" ? LAventusTime.address : LAventusTimeMock.address;
     LAventusTime.address = PAventusTime.address;
     return _deployer.then(() => _storage.setAddress(web3.sha3("LAventusTimeInstance"), timeAddress));
   });
