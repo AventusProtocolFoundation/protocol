@@ -9,12 +9,12 @@ const EventsManager = artifacts.require("EventsManager");
 const LApps = artifacts.require("LApps");
 const LAventusTime = artifacts.require("LAventusTime");
 const LAventusTimeMock = artifacts.require("LAventusTimeMock");
-const LChallengeWinnings = artifacts.require("LChallengeWinnings");
+const LProposalWinnings = artifacts.require("LProposalWinnings");
 const LEventsCommon = artifacts.require("LEventsCommon");
 const LEventsEnact = artifacts.require("LEventsEnact");
 const LEvents = artifacts.require("LEvents");
 const LLock = artifacts.require("LLock");
-const LVoting = artifacts.require("LVoting");
+const LProposalVoting = artifacts.require("LProposalVoting");
 const LProposal = artifacts.require("LProposal");
 const LProposalForTesting = artifacts.require("LProposalForTesting");
 
@@ -75,13 +75,13 @@ function deployLibraries(deployer, network) {
     LEvents.address = PEvents.address;
     return deployer.link(LEvents, [LProposal, EventsManager, ProposalManager]);
   }).then(() => {
-    return deployer.deploy(LChallengeWinnings);
+    return deployer.deploy(LProposalWinnings);
   }).then(() => {
-    return deployer.link(LChallengeWinnings, LProposal);
+    return deployer.link(LProposalWinnings, LProposal);
   }).then(() => {
-    return deployer.deploy(LVoting);
+    return deployer.deploy(LProposalVoting);
   }).then(() => {
-    return deployer.link(LVoting, LProposal);
+    return deployer.link(LProposalVoting, LProposal);
   }).then(() => {
     return deployer.deploy(LProposal);
   }).then(() => {

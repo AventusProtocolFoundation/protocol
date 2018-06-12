@@ -2,10 +2,10 @@ pragma solidity ^0.4.24;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LAventusTime.sol";
-import "./LChallengeWinnings.sol";
+import "./LProposalWinnings.sol";
 import "./LEvents.sol";
 import './LLock.sol';
-import "./LVoting.sol";
+import "./LProposalVoting.sol";
 
 // Library for extending voting protocol functionality
 library LProposal {
@@ -80,13 +80,13 @@ library LProposal {
     public
     isStatus(s, proposalId, 2) // Ensure voting period is currently active
   {
-    LVoting.castVote(s, proposalId, secret, prevTime);
+    LProposalVoting.castVote(s, proposalId, secret, prevTime);
   }
 
   function revealVote(IAventusStorage _storage, uint _proposalId, uint8 _optId, uint8 _ecdsaV, bytes32 _ecdsaR, bytes32 _ecdsaS) public {
     // Make sure proposal status is Reveal or after.
     uint proposalStatus = getProposalStatus(_storage, _proposalId);
-    return LVoting.revealVote(_storage, _proposalId, _optId, _ecdsaV, _ecdsaR, _ecdsaS, proposalStatus);
+    return LProposalVoting.revealVote(_storage, _proposalId, _optId, _ecdsaV, _ecdsaR, _ecdsaS, proposalStatus);
   }
 
   /**
@@ -106,7 +106,7 @@ library LProposal {
   }
 
   function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) public {
-    LChallengeWinnings.claimVoterWinnings(_storage, _proposalId);
+    LProposalWinnings.claimVoterWinnings(_storage, _proposalId);
   }
 
   function endProposal(IAventusStorage _storage, uint _proposalId) public
@@ -119,7 +119,7 @@ library LProposal {
   }
 
   function getPrevTimeParamForCastVote(IAventusStorage s, uint proposalId) public view returns (uint) {
-    return LVoting.getPrevTimeParamForCastVote(s, proposalId);
+    return LProposalVoting.getPrevTimeParamForCastVote(s, proposalId);
   }
 
   function setProposalDeposit(IAventusStorage _storage, uint _proposalId, uint _deposit) private {
@@ -219,7 +219,7 @@ library LProposal {
     uint deposit = getProposalDeposit(_storage, _proposalId);
     address challenger = getProposalOwner(_storage, _proposalId);
     address eventOwner = LEvents.getEventOwner(_storage, _eventId);
-    LChallengeWinnings.doEventWinningsDistribution(_storage, _proposalId, winningOption, challengeWon, deposit, challenger, eventOwner);
+    LProposalWinnings.doEventWinningsDistribution(_storage, _proposalId, winningOption, challengeWon, deposit, challenger, eventOwner);
 
     // Save the information we need to calculate voter winnings when they make their claim.
     _storage.setUInt8(keccak256(abi.encodePacked("Proposal", _proposalId, "winningOption")), winningOption);
