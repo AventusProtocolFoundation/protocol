@@ -10,8 +10,11 @@ const LApps = artifacts.require("LApps");
 const LAventusTime = artifacts.require("LAventusTime");
 const LAventusTimeMock = artifacts.require("LAventusTimeMock");
 const LChallengeWinnings = artifacts.require("LChallengeWinnings");
+const LEventsCommon = artifacts.require("LEventsCommon");
+const LEventsEnact = artifacts.require("LEventsEnact");
 const LEvents = artifacts.require("LEvents");
 const LLock = artifacts.require("LLock");
+const LVoting = artifacts.require("LVoting");
 const LProposal = artifacts.require("LProposal");
 const LProposalForTesting = artifacts.require("LProposalForTesting");
 
@@ -37,36 +40,48 @@ function deployLibraries(deployer, network) {
     s = storageContract;
     return deployLAventusTime(deployer, network, s);
   }).then(() => {
-    return deployer.link(LAventusTime, [LProposal, LLock, LEvents, ProposalManager]);
+    return deployer.link(LAventusTime, [LProposal, LLock, LEvents, LEventsEnact, ProposalManager]);
   }).then(() => {
     return deployer.deploy([PProposal, PLock, PEvents, PApps]);
   }).then(() => {
     return deployer.deploy(LLock);
   }).then(() => {
-    return deployer.link(LLock, [LProposal, LEvents, LApps]);
+    return deployer.then(() => s.setAddress(web3.sha3("LLockInstance"), LLock.address));
+  }).then(() => {
+    LLock.address = PLock.address;
+    return deployer.link(LLock, [LProposal, LEventsCommon, LApps, ProposalManager, AppsManager]);
   }).then(() => {
     return deployer.deploy(LApps);
   }).then(() => {
-    return deployer.link(LApps, LEvents);
+    return deployer.then(() => s.setAddress(web3.sha3("LAppsInstance"), LApps.address));
+  }).then(() => {
+    LApps.address = PApps.address;
+    return deployer.link(LApps, [LEvents, LEventsCommon, LEventsEnact, AppsManager]);
+  }).then(() => {
+    return deployer.deploy(LEventsCommon);
+  }).then(() => {
+    return deployer.link(LEventsCommon, [LEvents, LEventsEnact]);
+  }).then(() => {
+    return deployer.deploy(LEventsEnact);
+  }).then(() => {
+    return deployer.link(LEventsEnact, LEvents);
   }).then(() => {
     return deployer.deploy(LEvents);
   }).then(() => {
     return network === "live" ? deployer : deployer.deploy(LProposalForTesting);
   }).then(() => {
-    return deployer.then(() => s.setAddress(web3.sha3("LLockInstance"), LLock.address));
-  }).then(() => {
     return deployer.then(() => s.setAddress(web3.sha3("LEventsInstance"), LEvents.address));
   }).then(() => {
-    return deployer.then(() => s.setAddress(web3.sha3("LAppsInstance"), LApps.address));
-  }).then(() => {
-    LLock.address = PLock.address;
     LEvents.address = PEvents.address;
-    LApps.address = PApps.address;
     return deployer.link(LEvents, [LProposal, EventsManager, ProposalManager]);
   }).then(() => {
     return deployer.deploy(LChallengeWinnings);
   }).then(() => {
     return deployer.link(LChallengeWinnings, LProposal);
+  }).then(() => {
+    return deployer.deploy(LVoting);
+  }).then(() => {
+    return deployer.link(LVoting, LProposal);
   }).then(() => {
     return deployer.deploy(LProposal);
   }).then(() => {
@@ -74,10 +89,6 @@ function deployLibraries(deployer, network) {
   }).then(() => {
     LProposal.address = PProposal.address;
     return deployer.link(LProposal, ProposalManager);
-  }).then(() => {
-    return deployer.link(LApps, AppsManager);
-  }).then(() => {
-    return deployer.link(LLock, [ProposalManager, AppsManager]);
   });
 }
 

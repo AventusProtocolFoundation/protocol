@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.24;
 
 import './interfaces/IAventusStorage.sol';
 import './interfaces/IEventsManager.sol';
@@ -24,7 +24,7 @@ contract EventsManager is IEventsManager, Owned {
   * @dev Constructor
   * @param s_ Persistent storage contract
   */
-  function EventsManager(IAventusStorage s_) public {
+  constructor(IAventusStorage s_) public {
     s = s_;
   }
 
@@ -84,15 +84,15 @@ contract EventsManager is IEventsManager, Owned {
   }
 
   function resellTicket(uint /* ticketId */, address /* newBuyer */)
-    pure
-    external {
+    external
+    pure {
     // TODO: Support secondary market sales.
   }
 
   function signedResellTicket(uint8 /*_v*/, bytes32 /*_r*/, bytes32 /*_s*/,
       uint /* ticketId */, address /* newBuyer */)
-    pure
-    external {
+    external
+    pure {
     // TODO: Support secondary market sales.
   }
 

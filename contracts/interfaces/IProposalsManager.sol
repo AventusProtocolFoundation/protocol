@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.24;
 
 interface IProposalsManager {
   /**
@@ -15,12 +15,6 @@ interface IProposalsManager {
   function createGovernanceProposal(string desc) external returns (uint proposalId);
 
   /**
-  * Get the pre-calculated deposit for the specified event
-  * @param _eventId - event id for the event in context
-  */
-  function getExistingEventDeposit(uint _eventId) external view returns(uint);
-
-  /**
   * Create a challenge for the specified event to be voted on.
   * @param _eventId - event id for the event in context
   */
@@ -33,13 +27,6 @@ interface IProposalsManager {
    * @param _proposalId of the proposal to be ended.
    */
    function endProposal(uint _proposalId) external;
-
-  /**
-   * Use a (free gas) getter to find the prevTime parameter for castVote.
-   * @param proposalId Proposal ID
-   * @return prevTime The prevTime param.
-   */
-  function getPrevTimeParamForCastVote(uint proposalId) external view returns (uint prevTime);
 
   /**
   * Cast a vote on one of a given proposal's options
@@ -69,4 +56,17 @@ interface IProposalsManager {
    * @param _proposalId Proposal ID
    */
   function claimVoterWinnings(uint _proposalId) external;
+
+  /**
+  * Get the pre-calculated deposit for the specified event
+  * @param _eventId - event id for the event in context
+  */
+  function getExistingEventDeposit(uint _eventId) external view returns(uint);
+
+  /**
+   * Use a (free gas) getter to find the prevTime parameter for castVote.
+   * @param proposalId Proposal ID
+   * @return prevTime The prevTime param.
+   */
+  function getPrevTimeParamForCastVote(uint proposalId) external view returns (uint prevTime);
 }

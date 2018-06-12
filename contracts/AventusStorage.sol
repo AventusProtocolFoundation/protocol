@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.24;
 
 import "./proxies/PDelegate.sol";
 import "./interfaces/IAventusStorage.sol";
@@ -14,6 +14,17 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   }
   // some storage key e.g. keccak("vote", voteId, "end") => stored uint value
   mapping(bytes32 => uint) UInt;
+
+  /**
+   * @dev In case we need to extend functionality - avoids copying state
+   */
+  function () payable external {
+    address target = doGetAddress(keccak256(abi.encodePacked("StorageInstance")));
+
+    require (target > 0);
+
+    delegatedFwd(target, msg.data);
+  }
 
   /**
   * @dev Get a stored uint
@@ -291,14 +302,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
     returns (address)
   {
     return doGetAddress(record);
-  }
-
-  function doGetAddress(bytes32 record)
-    internal
-    constant
-    returns (address)
-  {
-    return Address[record];
   }
 
   /**
@@ -736,14 +739,12 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
     delete Int8[record];
   }
 
-  /**
-   * @dev In case we need to extend functionality - avoids copying state
-   */
-  function () payable external {
-    address target = doGetAddress(keccak256("StorageInstance"));
-
-    require (target > 0);
-
-    delegatedFwd(target, msg.data);
+  function doGetAddress(bytes32 record)
+    internal
+    constant
+    returns (address)
+  {
+    return Address[record];
   }
+
 }

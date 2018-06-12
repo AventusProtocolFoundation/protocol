@@ -1,10 +1,6 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.24;
 
 interface IAppsManager {
-  /**
-   * @return true if the given app address is registered to use the Aventus Protocol.
-   */
-  function appIsRegistered(address appAddress) view external returns (bool);
 
   /**
    * Register the given app address to use the Aventus Protocol.
@@ -19,6 +15,11 @@ interface IAppsManager {
   function deregisterApp(address appAddress) external;
 
   /**
+   * @return true if the given app address is registered to use the Aventus Protocol.
+   */
+  function appIsRegistered(address appAddress) view external returns (bool);
+
+  /**
    * Get the deposit value in AVT - to 18 sig fig - required to register an app.
    * See registerApp().
    */
@@ -27,5 +28,5 @@ interface IAppsManager {
   /**
    * Create a challenge proposal stating that the given app address is fraudulent.
    */
-  function challengeApp(address /*appAddress*/) pure external;
+  function challengeApp(address /*appAddress*/) external pure;
 }

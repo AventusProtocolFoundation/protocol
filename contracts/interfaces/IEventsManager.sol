@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.24;
 
 interface IEventsManager {
   /**
@@ -97,27 +97,6 @@ interface IEventsManager {
   function signedRefundTicket(uint8 _v, bytes32 _r, bytes32 _s, uint _eventId, uint _ticketId) external;
 
   /**
-   * Sell a ticket on the secondary market.
-   * @param ticketId identifier for the ticket: unique to this event.
-   * @param newBuyer address of the new buyer of the ticket.
-   */
-  function resellTicket(uint ticketId, address newBuyer)
-    pure
-    external;
-
-  /**
-   * Sell a ticket on the secondary market on behalf of a signer.
-   * @param _v User's ECDSA signature v value
-   * @param _r User's ECDSA signature r value
-   * @param _s User's ECDSA signature s value
-   * @param ticketId identifier for the ticket: unique to this event.
-   * @param newBuyer address of the new buyer of the ticket.
-   */
-  function signedResellTicket(uint8 _v, bytes32 _r, bytes32 _s, uint ticketId, address newBuyer)
-    pure
-    external;
-
-  /**
   * @dev Register a delegate for an event
   * @param _eventId - ID of the event
   * @param _delegate - delegate address
@@ -130,6 +109,27 @@ interface IEventsManager {
   * @param _delegate - delegate of the event
   */
   function deregisterDelegate(uint _eventId, address _delegate) external;
+
+  /**
+   * Sell a ticket on the secondary market.
+   * @param ticketId identifier for the ticket: unique to this event.
+   * @param newBuyer address of the new buyer of the ticket.
+   */
+  function resellTicket(uint ticketId, address newBuyer)
+    external
+    pure;
+
+  /**
+   * Sell a ticket on the secondary market on behalf of a signer.
+   * @param _v User's ECDSA signature v value
+   * @param _r User's ECDSA signature r value
+   * @param _s User's ECDSA signature s value
+   * @param ticketId identifier for the ticket: unique to this event.
+   * @param newBuyer address of the new buyer of the ticket.
+   */
+  function signedResellTicket(uint8 _v, bytes32 _r, bytes32 _s, uint ticketId, address newBuyer)
+    external
+    pure;
 
   /**
   * @dev Check if a delegate is registered for an event
