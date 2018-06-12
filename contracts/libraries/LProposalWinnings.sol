@@ -10,7 +10,7 @@ import "../interfaces/IAventusStorage.sol";
  *
  * NOTE: Do NOT put anything in here specific to events as this will also be used for app challenges.
  */
-library LChallengeWinnings {
+library LProposalWinnings {
   bytes32 constant winningsForChallengeWinnerPercentageKey =
       keccak256(abi.encodePacked("Events", "winningsForChallengeWinnerPercentage"));
   bytes32 constant winningsForChallengeEnderPercentageKey =

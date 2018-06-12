@@ -42,21 +42,7 @@ library LEvents {
     _;
   }
 
-  function eventIsNotUnderChallenge(IAventusStorage _storage, uint _eventId) view public returns (bool notUnderChallenge) {
-    return LEventsCommon.eventIsNotUnderChallenge(_storage, _eventId);
-  }
 
-  function getSignerAndCheckNotMsgSender(bytes32 hash,  uint8 _v, bytes32 _r, bytes32 _s)
-    private
-    view
-    returns (address _signer) {
-    _signer = ecrecover(keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)), _v, _r, _s);
-    require(
-      msg.sender != _signer,
-      "Sender must not be the message signer"
-    );
-
-  }
 
   function createEvent(IAventusStorage _storage, string _eventDesc, uint _eventTime, uint _capacity,
     uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime, string _eventSupportURL)
@@ -70,8 +56,8 @@ library LEvents {
   function signedCreateEvent(IAventusStorage _storage, uint8 _v, bytes32 _r, bytes32 _s, string _eventDesc,
     uint _eventTime, uint _capacity, uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime,
     string _eventSupportURL, address _owner)
-    addressIsWhitelisted(_storage, msg.sender)
     public
+    addressIsWhitelisted(_storage, msg.sender)
     returns (uint _eventId)
   {
     require(
@@ -89,15 +75,15 @@ library LEvents {
   }
 
   function cancelEvent(IAventusStorage _storage, uint _eventId)
-    onlyEventOwner(_storage, _eventId)
     public
+    onlyEventOwner(_storage, _eventId)
   {
     LEventsEnact.doCancelEvent(_storage, _eventId);
   }
 
   function signedCancelEvent(IAventusStorage _storage, uint8 _v, bytes32 _r, bytes32 _s, uint _eventId)
-    addressIsWhitelisted(_storage, msg.sender)
     public
+    addressIsWhitelisted(_storage, msg.sender)
   {
     bytes32 hash = keccak256(abi.encodePacked(_eventId));
     address signer = getSignerAndCheckNotMsgSender(hash, _v, _r, _s);
@@ -154,9 +140,9 @@ library LEvents {
   * @param _delegate - delegate address
   */
   function registerDelegate(IAventusStorage _storage, uint _eventId, address _delegate)
+    public
     onlyEventOwner(_storage, _eventId)
     addressIsWhitelisted(_storage, _delegate)
-    public
   {
     _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "delegate", _delegate)), true);
   }
@@ -168,11 +154,37 @@ library LEvents {
   * @param _delegate - delegate of the event
   */
   function deregisterDelegate(IAventusStorage _storage, uint _eventId, address _delegate)
-    onlyEventOwner(_storage, _eventId)
     public
+    onlyEventOwner(_storage, _eventId)
   {
     if (addressIsDelegate(_storage, _eventId, _delegate))
       _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "delegate", _delegate)), false);
+  }
+
+
+
+
+
+
+  function setEventAsChallenged(IAventusStorage _s, uint _eventId, uint _challengeProposalId)
+    public {
+    _s.setUInt(keccak256(abi.encodePacked("Event", _eventId, "challenge")), _challengeProposalId);
+  }
+
+  function setEventAsClearFromChallenge(IAventusStorage _s, uint _eventId)
+    public {
+    _s.setUInt(keccak256(abi.encodePacked("Event", _eventId, "challenge")), 0);
+  }
+
+  function setEventStatusFraudulent(IAventusStorage _storage, uint _eventId) public {
+    _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "status")), 2);
+    // Event is no longer valid; remove the expected deposit for the event owner.
+    LEventsEnact.doUnlockEventDeposit(_storage, _eventId);
+    // TODO: Add fraudulent counter, will be required for event deposit calculation
+  }
+
+  function eventIsNotUnderChallenge(IAventusStorage _storage, uint _eventId) public view returns (bool notUnderChallenge) {
+    return LEventsCommon.eventIsNotUnderChallenge(_storage, _eventId);
   }
 
   /**
@@ -199,15 +211,11 @@ library LEvents {
   }
 
   function getEventOwner(IAventusStorage _storage, uint _eventId)
-    view
     public
+    view
     returns (address _eventOwner)
   {
     return LEventsCommon.getEventOwner(_storage, _eventId);
-  }
-
-  function getTicketSaleStartTime(IAventusStorage _storage, uint _eventId) view private returns (uint) {
-    return _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "ticketSaleStartTime")));
   }
 
   /**
@@ -219,24 +227,23 @@ library LEvents {
     return LEventsCommon.getExistingEventDeposit(_storage, _eventId);
   }
 
-  function setEventAsChallenged(IAventusStorage _s, uint _eventId, uint _challengeProposalId)
-    public {
-    _s.setUInt(keccak256(abi.encodePacked("Event", _eventId, "challenge")), _challengeProposalId);
+  function getSignerAndCheckNotMsgSender(bytes32 hash,  uint8 _v, bytes32 _r, bytes32 _s)
+    private
+    view
+    returns (address _signer) {
+    _signer = ecrecover(keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)), _v, _r, _s);
+    require(
+      msg.sender != _signer,
+      "Sender must not be the message signer"
+    );
+
   }
 
-  function setEventAsClearFromChallenge(IAventusStorage _s, uint _eventId)
-    public {
-    _s.setUInt(keccak256(abi.encodePacked("Event", _eventId, "challenge")), 0);
+  function getTicketSaleStartTime(IAventusStorage _storage, uint _eventId) private view returns (uint) {
+    return _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "ticketSaleStartTime")));
   }
 
-  function setEventStatusFraudulent(IAventusStorage _storage, uint _eventId) public {
-    _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "status")), 2);
-    // Event is no longer valid; remove the expected deposit for the event owner.
-    LEventsEnact.doUnlockEventDeposit(_storage, _eventId);
-    // TODO: Add fraudulent counter, will be required for event deposit calculation
-  }
-
-  function getTicketHashFromDetails(uint _eventId, string _ticketDetails) pure private returns (bytes32 hash) {
+  function getTicketHashFromDetails(uint _eventId, string _ticketDetails) private pure returns (bytes32 hash) {
     hash = keccak256(abi.encodePacked("Event", _eventId, "Ticket", _ticketDetails));
   }
 
