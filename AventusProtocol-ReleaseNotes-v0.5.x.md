@@ -6,6 +6,25 @@ The audit brought to light a number of issues, none of which were critical, that
 
 The release notes for version 0.5.x follow, listed by sub-release and category, filtered by status.
 
+## Release 0.5.3 - 2018-06-12
+
+Major changes:
+* Updated all code to Solidity v0.4.24: enforced use of abi.encodePacked for all keccak256 calls.
+* Split libraries into smaller, sub-libraries due to going over size limits when deploying
+
+Minor changes:
+* Fixed more notes from Solidified audit:
+  * 14. Using constructors without the constructor keyword is deprecated
+  * 15. Consider using latest version of solidity
+  * 16. Replace wrongly made asserts and add error strings to require statements
+  * 24. User correct ordering for modifiers and functions
+
+Bug fixes:
+* Fixed incorrect address usage in migrations file for library proxying
+
+Efficiency improvements:
+* Better calculation of storage address in proxying
+
 ## Release 0.5.2 - 2018-06-05
 
 Bug fixes:

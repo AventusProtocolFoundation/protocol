@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.24;
 
 import './interfaces/IAventusStorage.sol';
 import './Owned.sol';
@@ -33,32 +33,32 @@ contract ParameterRegistry is Owned {
   * @dev Constructor
   * @param _s Persistent storage contract
   */
-  function ParameterRegistry(IAventusStorage _s) public {
+  constructor(IAventusStorage _s) public {
     s = _s;
   }
 
   // TODO: Consider pre-calculating any fixed keccaks - will save gas - here and elsewhere in the code.
   function setupDefaultParameters() public onlyOwner {
-    s.setUInt(keccak256("Proposal", "governanceProposalLobbyingPeriodDays"), GOVERNANCE_PROPOSAL_LOBBYING_PERIOD_DAYS);
-    s.setUInt(keccak256("Proposal", "governanceProposalVotingPeriodDays"), GOVERNANCE_PROPOSAL_VOTING_PERIOD_DAYS);
-    s.setUInt(keccak256("Proposal", "governanceProposalRevealingPeriodDays"), GOVERNANCE_PROPOSAL_REVEALING_PERIOD_DAYS);
-    s.setUInt(keccak256("Proposal", "governanceProposalFixedDepositInUsCents"), GOVERNANCE_PROPOSAL_DEPOSIT_US_CENTS);
+    s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalLobbyingPeriodDays")), GOVERNANCE_PROPOSAL_LOBBYING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalVotingPeriodDays")), GOVERNANCE_PROPOSAL_VOTING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalRevealingPeriodDays")), GOVERNANCE_PROPOSAL_REVEALING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalFixedDepositInUsCents")), GOVERNANCE_PROPOSAL_DEPOSIT_US_CENTS);
 
-    s.setUInt(keccak256("Proposal", "eventChallengeLobbyingPeriodDays"), EVENT_CHALLENGE_LOBBYING_PERIOD_DAYS);
-    s.setUInt(keccak256("Proposal", "eventChallengeVotingPeriodDays"), EVENT_CHALLENGE_VOTING_PERIOD_DAYS);
-    s.setUInt(keccak256("Proposal", "eventChallengeRevealingPeriodDays"), EVENT_CHALLENGE_REVEALING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked("Proposal", "eventChallengeLobbyingPeriodDays")), EVENT_CHALLENGE_LOBBYING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked("Proposal", "eventChallengeVotingPeriodDays")), EVENT_CHALLENGE_VOTING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked("Proposal", "eventChallengeRevealingPeriodDays")), EVENT_CHALLENGE_REVEALING_PERIOD_DAYS);
 
-    s.setUInt(keccak256("Events", "minimumDepositAmountUsCents"), EVENT_MINIMUM_DEPOSIT_US_CENTS);
-    s.setUInt(keccak256("Events", "fixedDepositAmountUsCents"), EVENT_FIXED_DEPOSIT_US_CENTS);
-    s.setUInt(keccak256("Events", "maximumDepositAmountUsCents"), EVENT_MAXIMUM_DEPOSIT_US_CENTS);
-    s.setUInt(keccak256("Events", "minimumEventReportingPeriodDays"), EVENT_MINIMUM_REPORTING_PERIOD_DAYS);
-    s.setUInt8(keccak256("Events", "winningsForChallengeEnderPercentage"), EVENT_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE);
-    s.setUInt8(keccak256("Events", "winningsForChallengeWinnerPercentage"), EVENT_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE);
+    s.setUInt(keccak256(abi.encodePacked("Events", "minimumDepositAmountUsCents")), EVENT_MINIMUM_DEPOSIT_US_CENTS);
+    s.setUInt(keccak256(abi.encodePacked("Events", "fixedDepositAmountUsCents")), EVENT_FIXED_DEPOSIT_US_CENTS);
+    s.setUInt(keccak256(abi.encodePacked("Events", "maximumDepositAmountUsCents")), EVENT_MAXIMUM_DEPOSIT_US_CENTS);
+    s.setUInt(keccak256(abi.encodePacked("Events", "minimumEventReportingPeriodDays")), EVENT_MINIMUM_REPORTING_PERIOD_DAYS);
+    s.setUInt8(keccak256(abi.encodePacked("Events", "winningsForChallengeEnderPercentage")), EVENT_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE);
+    s.setUInt8(keccak256(abi.encodePacked("Events", "winningsForChallengeWinnerPercentage")), EVENT_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE);
 
 
-    s.setUInt(keccak256("Applications", "fixedDepositAmount"), APPLICATION_DEPOSIT);
+    s.setUInt(keccak256(abi.encodePacked("Applications", "fixedDepositAmount")), APPLICATION_DEPOSIT);
 
-    s.setUInt(keccak256("OneAVTInUSCents"), AVT_IN_US_CENTS);
+    s.setUInt(keccak256(abi.encodePacked("OneAVTInUSCents")), AVT_IN_US_CENTS);
   }
 
   function to18SigFig(uint _avtValue) internal pure returns (uint) {

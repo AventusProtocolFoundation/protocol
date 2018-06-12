@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.24;
 
 // https://github.com/ethereum/EIPs/issues/20
 interface IERC20 {

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.24;
 
 interface IAventusStorage {
   function getUInt(bytes32 record) external constant returns (uint);

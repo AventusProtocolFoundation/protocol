@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.24;
 
 import './interfaces/IAventusStorage.sol';
 import './interfaces/IAVTManager.sol';
@@ -27,7 +27,7 @@ contract AventusVote is IAVTManager, IProposalsManager, Owned {
   * @dev Constructor
   * @param s_ Persistent storage contract
   */
-  function AventusVote(IAventusStorage s_) public {
+  constructor(IAventusStorage s_) public {
     s = s_;
   }
 
@@ -41,25 +41,9 @@ contract AventusVote is IAVTManager, IProposalsManager, Owned {
     emit DepositEvent(msg.sender, fund, amount);
   }
 
-  function getBalance(string _fund, address _avtHolder)
-    external
-    view
-    returns (uint _balance)
-  {
-    _balance = LLock.getBalance(s, _fund, _avtHolder);
-  }
-
-  function getGovernanceProposalDeposit() view external returns (uint proposalDeposit) {
-    proposalDeposit = LProposal.getGovernanceProposalDeposit(s);
-  }
-
   function createGovernanceProposal(string desc) external returns (uint proposalId) {
     proposalId = LProposal.createGovernanceProposal(s, desc);
     emit CreateProposalEvent(msg.sender, desc, proposalId);
-  }
-
-  function getExistingEventDeposit(uint _eventId) external view returns(uint) {
-    return LEvents.getExistingEventDeposit(s, _eventId);
   }
 
   function createEventChallenge(uint _eventId) external returns (uint _proposalId) {
@@ -69,13 +53,9 @@ contract AventusVote is IAVTManager, IProposalsManager, Owned {
 
   function endProposal(uint _proposalId) external {
     LProposal.endProposal(s, _proposalId);
-    uint votesFor = s.getUInt(keccak256("Proposal", _proposalId, "revealedStake", uint8(1)));
-    uint votesAgainst = s.getUInt(keccak256("Proposal", _proposalId, "revealedStake", uint8(2)));
+    uint votesFor = s.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedStake", uint8(1))));
+    uint votesAgainst = s.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedStake", uint8(2))));
     emit LogEndProposal(_proposalId, votesFor, votesAgainst);
-  }
-
-  function getPrevTimeParamForCastVote(uint proposalId) external view returns (uint prevTime) {
-    prevTime = LProposal.getPrevTimeParamForCastVote(s, proposalId);
   }
 
   function castVote(uint proposalId, bytes32 secret, uint prevTime) external {
@@ -92,4 +72,25 @@ contract AventusVote is IAVTManager, IProposalsManager, Owned {
     LProposal.claimVoterWinnings(s, _proposalId);
     emit ClaimVoterWinningsEvent(_proposalId);
   }
+
+  function getBalance(string _fund, address _avtHolder)
+    external
+    view
+    returns (uint _balance)
+  {
+    _balance = LLock.getBalance(s, _fund, _avtHolder);
+  }
+
+  function getGovernanceProposalDeposit() external view returns (uint proposalDeposit) {
+    proposalDeposit = LProposal.getGovernanceProposalDeposit(s);
+  }
+
+  function getExistingEventDeposit(uint _eventId) external view returns(uint) {
+    return LEvents.getExistingEventDeposit(s, _eventId);
+  }
+
+  function getPrevTimeParamForCastVote(uint proposalId) external view returns (uint prevTime) {
+    prevTime = LProposal.getPrevTimeParamForCastVote(s, proposalId);
+  }
+  
 }
