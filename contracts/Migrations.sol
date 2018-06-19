@@ -5,18 +5,18 @@ import './Owned.sol';
 contract Migrations is Owned {
   uint public last_completed_migration;
 
-  function setCompleted(uint completed) 
-    public 
+  function setCompleted(uint _completed)
+    public
     onlyOwner
   {
-    last_completed_migration = completed;
+    last_completed_migration = _completed;
   }
 
-  function upgrade(address newAddress)
-    public 
+  function upgrade(address _newAddress)
+    public
     onlyOwner
   {
-    Migrations upgraded = Migrations(newAddress);
+    Migrations upgraded = Migrations(_newAddress);
     upgraded.setCompleted(last_completed_migration);
   }
 }

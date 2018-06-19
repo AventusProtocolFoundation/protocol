@@ -6,48 +6,48 @@ import './LLock.sol';
 library LApps {
     bytes32 constant fixedDepositAmountKey = keccak256(abi.encodePacked("Applications", "fixedDepositAmount"));
 
-    function registerApp(IAventusStorage s, address appAddress) public {
+    function registerApp(IAventusStorage _storage, address _appAddress) external {
       require(
-        !appIsRegistered(s, appAddress),
-        "It's not possible to register an App that is already registered"
+        !appIsRegistered(_storage, _appAddress),
+        "It is not possible to register an App that is already registered"
       );
-      bytes32 expectedDepositsKey = keccak256(abi.encodePacked("ExpectedDeposits", appAddress));
-      uint appDeposit = getAppDeposit(s);
-      uint expectedDeposits = s.getUInt(expectedDepositsKey) + appDeposit;
-      s.setUInt(expectedDepositsKey, expectedDeposits);
-      uint actualDeposits = s.getUInt(keccak256(abi.encodePacked("Lock", "deposit", appAddress)));
+      bytes32 expectedDepositsKey = keccak256(abi.encodePacked("ExpectedDeposits", _appAddress));
+      uint appDeposit = getAppDeposit(_storage);
+      uint expectedDeposits = _storage.getUInt(expectedDepositsKey) + appDeposit;
+      _storage.setUInt(expectedDepositsKey, expectedDeposits);
+      uint actualDeposits = _storage.getUInt(keccak256(abi.encodePacked("Lock", "deposit", _appAddress)));
       require(
         actualDeposits >= expectedDeposits,
-        "Insufficient deposits to register this address"
+        'Insufficient deposits to register this address'
       );
 
-      s.setBoolean(keccak256(abi.encodePacked("AppRegistry", appAddress, "Approved")), true);
-      s.setUInt(keccak256(abi.encodePacked("AppRegistry", appAddress, "Deposit")), appDeposit);
+      _storage.setBoolean(keccak256(abi.encodePacked("AppRegistry", _appAddress, "Approved")), true);
+      _storage.setUInt(keccak256(abi.encodePacked("AppRegistry", _appAddress, "Deposit")), appDeposit);
     }
 
-    function deregisterApp(IAventusStorage s, address appAddress) public {
+    function deregisterApp(IAventusStorage _storage, address _appAddress) external {
       require(
-        appIsRegistered(s, appAddress),
+        appIsRegistered(_storage, _appAddress),
         "Only registered Apps can be deregistered"
       );
-      bytes32 expectedDepositsKey = keccak256(abi.encodePacked("ExpectedDeposits", appAddress));
-      uint appDeposit = s.getUInt(keccak256(abi.encodePacked("AppRegistry", appAddress, "Deposit")));
-      assert(s.getUInt(expectedDepositsKey) >= appDeposit); // If this asserts, we messed up the deposit code!
-      s.setUInt(expectedDepositsKey, s.getUInt(expectedDepositsKey) - appDeposit);
-      s.setBoolean(keccak256(abi.encodePacked("AppRegistry", appAddress, "Approved")), false);
+      bytes32 expectedDepositsKey = keccak256(abi.encodePacked("ExpectedDeposits", _appAddress));
+      uint appDeposit = _storage.getUInt(keccak256(abi.encodePacked("AppRegistry", _appAddress, "Deposit")));
+      assert(_storage.getUInt(expectedDepositsKey) >= appDeposit); // If this asserts, we messed up the deposit code!
+      _storage.setUInt(expectedDepositsKey, _storage.getUInt(expectedDepositsKey) - appDeposit);
+      _storage.setBoolean(keccak256(abi.encodePacked("AppRegistry", _appAddress, "Approved")), false);
     }
 
     // @return AVT value with 18 decimal places of precision.
-    function getAppDeposit(IAventusStorage _storage) view public returns (uint _depositinAVT) {
+    function getAppDeposit(IAventusStorage _storage) view public returns (uint depositinAVT_) {
       uint depositInUSCents = _storage.getUInt(fixedDepositAmountKey);
-      _depositinAVT = LLock.getAVTDecimals(_storage, depositInUSCents);
+      depositinAVT_ = LLock.getAVTDecimals(_storage, depositInUSCents);
     }
 
-    function appIsRegistered(IAventusStorage s, address appAddress)
+    function appIsRegistered(IAventusStorage _storage, address _appAddress)
       public
       view
-      returns (bool)
+      returns (bool isRegistered_)
     {
-      return s.getBoolean(keccak256(abi.encodePacked("AppRegistry", appAddress, "Approved")));
+      isRegistered_ = _storage.getBoolean(keccak256(abi.encodePacked("AppRegistry", _appAddress, "Approved")));
     }
 }

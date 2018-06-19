@@ -13,15 +13,14 @@ console.log("*** Version of web3: ", web3.version.api);
  * @return Promise wrapping the address of the AVT contract.
  */
 function getAVTContract(_deployer, _network, _storage) {
-  if (_network === "development") {
-    // Always recreate the AVT in development.
-    return createAVTContract();
-  }
-
   // Create the AVT only if it doesn't exist.
   let avtPromise = _storage.getAddress(web3.sha3("AVT"));
   return avtPromise.then((avtAddress) => {
-    if (avtAddress) return avtPromise;
+    if (avtAddress != 0) {
+      console.log("AVT address exists:", avtAddress);
+      return avtPromise;
+    }
+    console.log("AVT address does not exist. Creating now");
     return createAVTContract();
   });
 }
@@ -40,7 +39,7 @@ function initialDeploy(_deployer, _network) {
 
 // Deploy a new (or use the old) storage contract.
 function getStorageContract(deployer, network) {
-  if (network === "development") {
+  if (network === "development" || network === "rinkeby") {
     // Always deploy a new one for dev.
     console.log("Deploying storage contract");
     return deployAndSaveStorageContract(deployer);

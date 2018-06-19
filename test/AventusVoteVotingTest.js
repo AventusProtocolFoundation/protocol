@@ -117,7 +117,7 @@ contract('AventusVote - Voting:', function () {
         await testHelper.advanceTimeToEndOfProposal(proposalId);
         await aventusVote.endProposal(proposalId)
         // Must reveal any cast votes so that the stake can be withdran before the next test.
-        await votingTestHelper.revealVote(proposalId, 2, signedMessage);
+        await votingTestHelper.revealVote(signedMessage, proposalId, 2);
     });
 
     it("cannot vote on a governance proposal at the revealing stage", async function() {
@@ -137,10 +137,10 @@ contract('AventusVote - Voting:', function () {
         let optionId = 2;
         const signedMessage = await votingTestHelper.castVote(proposalId, optionId);
 
-        await testHelper.expectRevert(() => votingTestHelper.revealVote(proposalId, optionId, signedMessage));
+        await testHelper.expectRevert(() => votingTestHelper.revealVote(signedMessage, proposalId, optionId));
 
         await testHelper.advanceTimeToRevealingStart(proposalId);
-        await votingTestHelper.revealVote(proposalId, optionId, signedMessage);
+        await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
 
         await testHelper.advanceTimeToEndOfProposal(proposalId);
         await aventusVote.endProposal(proposalId);
@@ -154,7 +154,7 @@ contract('AventusVote - Voting:', function () {
         const signedMessage = await votingTestHelper.castVote(proposalId, optionId);
 
         await testHelper.advanceTimeToRevealingStart(proposalId);
-        await votingTestHelper.revealVote(proposalId, optionId, signedMessage);
+        await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
         await testHelper.advanceTimeToEndOfProposal(proposalId);
         await aventusVote.endProposal(proposalId);
     });
@@ -167,12 +167,12 @@ contract('AventusVote - Voting:', function () {
 
         await testHelper.advanceTimeToRevealingStart(proposalId);
         // Wrong optionId, right signedMessage.
-        await testHelper.expectRevert(() => votingTestHelper.revealVote(proposalId, 2, signedMessage));
+        await testHelper.expectRevert(() => votingTestHelper.revealVote(signedMessage, proposalId, 2));
         // Wrong signedMessage, right optionId.
         const wrongSignedMessage = await votingTestHelper.getSignedMessage(proposalId, 2);
-        await testHelper.expectRevert(() => votingTestHelper.revealVote(proposalId, 1, wrongSignedMessage));
+        await testHelper.expectRevert(() => votingTestHelper.revealVote(wrongSignedMessage, proposalId, 1));
 
-        await votingTestHelper.revealVote(proposalId, 1, signedMessage);
+        await votingTestHelper.revealVote(signedMessage, proposalId, 1);
 
         await testHelper.advanceTimeToEndOfProposal(proposalId);
         await aventusVote.endProposal(proposalId);
@@ -186,7 +186,7 @@ contract('AventusVote - Voting:', function () {
         const signedMessage = await votingTestHelper.castVote(proposalId, optionId);
 
         await testHelper.advanceTimeToRevealingStart(proposalId);
-        await votingTestHelper.revealVote(proposalId, optionId, signedMessage);
+        await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
 
         await testHelper.advanceTimeToEndOfProposal(proposalId);
         await aventusVote.endProposal(proposalId);
@@ -221,7 +221,7 @@ contract('AventusVote - Voting:', function () {
         await withdrawStake(5);
 
         await testHelper.advanceTimeToRevealingStart(proposalId);
-        await votingTestHelper.revealVote(proposalId, optionId, signedMessage);
+        await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
 
         await testHelper.advanceTimeToEndOfProposal(proposalId);
         await aventusVote.endProposal(proposalId);
@@ -242,7 +242,7 @@ contract('AventusVote - Voting:', function () {
         await testHelper.expectRevert(() => depositStake(2));
         await testHelper.expectRevert(() => withdrawStake(1));
 
-        await votingTestHelper.revealVote(proposalId, optionId, signedMessage);
+        await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
         await depositStake(2);
         await withdrawStake(1);
 
@@ -264,8 +264,8 @@ contract('AventusVote - Voting:', function () {
 
         // Fast forward to the reveal period of the first two proposals.
         await testHelper.advanceTimeToRevealingStart(firstProposal);
-        await votingTestHelper.revealVote(firstProposal, 1, signedMessage1);
-        await votingTestHelper.revealVote(secondProposal, 2, signedMessage2);
+        await votingTestHelper.revealVote(signedMessage1, firstProposal, 1);
+        await votingTestHelper.revealVote(signedMessage2, secondProposal, 2);
 
         // Can deposit/withdraw with another vote not in its reveal period.
         await depositStake(10);
@@ -275,7 +275,7 @@ contract('AventusVote - Voting:', function () {
         // Cannot deposit/withdraw with the third vote in its reveal period.
         await testHelper.expectRevert(() => depositStake(2));
         await testHelper.expectRevert(() => withdrawStake(1));
-        await votingTestHelper.revealVote(thirdProposal, 2, signedMessage3);
+        await votingTestHelper.revealVote(signedMessage3, thirdProposal, 2);
 
         // Can now deposit/withdraw.
         await depositStake(10);
@@ -313,7 +313,7 @@ contract('AventusVote - Voting:', function () {
         // We are now in the voting period of the first proposal so we can vote on it...
         signedMessages.push(await votingTestHelper.castVote(proposalIds[0], 2));
         // ...but not yet reveal the vote...
-        await testHelper.expectRevert(() => votingTestHelper.revealVote(proposalIds[0], 2, signedMessages[0]));
+        await testHelper.expectRevert(() => votingTestHelper.revealVote(signedMessages[0], proposalIds[0], 2));
         // ...nor vote on the others yet.
         await testHelper.expectRevert(() => votingTestHelper.castVote(proposalIds[1], 1));
         await testHelper.expectRevert(() => votingTestHelper.castVote(proposalIds[2], 2));
@@ -331,7 +331,7 @@ contract('AventusVote - Voting:', function () {
         await testHelper.expectRevert(() => withdrawStake(5));
 
         // Now,reveal the first proposal, and vote on the second...
-        await votingTestHelper.revealVote(proposalIds[0], 2, signedMessages[0]);
+        await votingTestHelper.revealVote(signedMessages[0], proposalIds[0], 2);
         signedMessages.push(await votingTestHelper.castVote(proposalIds[1], 1));
         // ...but we can't yet vote on the others!
         await testHelper.expectRevert(() => votingTestHelper.castVote(proposalIds[2], 2));
@@ -347,7 +347,7 @@ contract('AventusVote - Voting:', function () {
         await testHelper.expectRevert(() => depositStake(10));
         await testHelper.expectRevert(() => withdrawStake(5));
 
-        await votingTestHelper.revealVote(proposalIds[1], 1, signedMessages[1]);
+        await votingTestHelper.revealVote(signedMessages[1], proposalIds[1], 1);
         signedMessages.push(await votingTestHelper.castVote(proposalIds[2], 2));
         await testHelper.expectRevert(() => votingTestHelper.castVote(proposalIds[3], 1));
 
@@ -361,7 +361,7 @@ contract('AventusVote - Voting:', function () {
         await testHelper.expectRevert(() => depositStake(10));
         await testHelper.expectRevert(() => withdrawStake(5));
 
-        await votingTestHelper.revealVote(proposalIds[2], 2, signedMessages[2]);
+        await votingTestHelper.revealVote(signedMessages[2], proposalIds[2], 2);
         signedMessages.push(await votingTestHelper.castVote(proposalIds[3], 1));
         // We are in a reveal period, but we have revealed our vote, so we CAN now change stake.
         await depositStake(10);
@@ -373,7 +373,7 @@ contract('AventusVote - Voting:', function () {
         await testHelper.expectRevert(() => depositStake(10));
         await testHelper.expectRevert(() => withdrawStake(5));
         // ... until we reveal our last outstanding vote.
-        await votingTestHelper.revealVote(proposalIds[3], 1, signedMessages[3]);
+        await votingTestHelper.revealVote(signedMessages[3], proposalIds[3], 1);
         await depositStake(10);
         await withdrawStake(5);
 
@@ -407,25 +407,25 @@ contract('AventusVote - Voting:', function () {
       await testHelper.advanceTimeToVotingStart(proposalId3);
       // Vote on the first two.
       const prevTime1 = await aventusVote.getPrevTimeParamForCastVote(proposalId1);
-      await aventusVote.castVote(proposalId1, votingTestHelper.getECDSAsecret(signedMessage1), prevTime1);
+      await aventusVote.castVote(proposalId1, votingTestHelper.getSignatureSecret(signedMessage1), prevTime1);
       const prevTime2 = await aventusVote.getPrevTimeParamForCastVote(proposalId2);
-      await aventusVote.castVote(proposalId2, votingTestHelper.getECDSAsecret(signedMessage2), prevTime2);
+      await aventusVote.castVote(proposalId2, votingTestHelper.getSignatureSecret(signedMessage2), prevTime2);
 
       // Wrong prevTime.
-      await testHelper.expectRevert(() => aventusVote.castVote(proposalId3, votingTestHelper.getECDSAsecret(signedMessage3), 0));
-      await testHelper.expectRevert(() => aventusVote.castVote(proposalId3, votingTestHelper.getECDSAsecret(signedMessage3), prevTime1));
-      await testHelper.expectRevert(() => aventusVote.castVote(proposalId3, votingTestHelper.getECDSAsecret(signedMessage3), 12345));
+      await testHelper.expectRevert(() => aventusVote.castVote(proposalId3, votingTestHelper.getSignatureSecret(signedMessage3), 0));
+      await testHelper.expectRevert(() => aventusVote.castVote(proposalId3, votingTestHelper.getSignatureSecret(signedMessage3), prevTime1));
+      await testHelper.expectRevert(() => aventusVote.castVote(proposalId3, votingTestHelper.getSignatureSecret(signedMessage3), 12345));
 
       // Invalid proposal.
-      await testHelper.expectRevert(() => aventusVote.castVote(99, votingTestHelper.getECDSAsecret(signedMessage2), prevTime2));
+      await testHelper.expectRevert(() => aventusVote.castVote(99, votingTestHelper.getSignatureSecret(signedMessage2), prevTime2));
       // Correct values work.
       const prevTime3 = await aventusVote.getPrevTimeParamForCastVote(proposalId3);
-      await aventusVote.castVote(proposalId3, votingTestHelper.getECDSAsecret(signedMessage3), prevTime3);
+      await aventusVote.castVote(proposalId3, votingTestHelper.getSignatureSecret(signedMessage3), prevTime3);
 
       await testHelper.advanceTimeToRevealingStart(proposalId3);
-      await votingTestHelper.revealVote(proposalId1, 1, signedMessage1);
-      await votingTestHelper.revealVote(proposalId2, 1, signedMessage2);
-      await votingTestHelper.revealVote(proposalId3, 1, signedMessage3);
+      await votingTestHelper.revealVote(signedMessage1, proposalId1, 1);
+      await votingTestHelper.revealVote(signedMessage2, proposalId2, 1);
+      await votingTestHelper.revealVote(signedMessage3, proposalId3, 1);
 
       await testHelper.advanceTimeToEndOfProposal(proposalId3);
       await aventusVote.endProposal(proposalId1);
@@ -440,7 +440,7 @@ contract('AventusVote - Voting:', function () {
       await testHelper.expectRevert(() => votingTestHelper.castVote(proposalId, 1));
       await testHelper.expectRevert(() => votingTestHelper.castVote(proposalId, 2));
       await testHelper.advanceTimeToRevealingStart(proposalId);
-      await votingTestHelper.revealVote(proposalId, 1, signedMessage);
+      await votingTestHelper.revealVote(signedMessage, proposalId, 1);
 
       await testHelper.advanceTimeToEndOfProposal(proposalId);
       await aventusVote.endProposal(proposalId);

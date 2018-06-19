@@ -5,10 +5,10 @@ import "./PDelegate.sol";
 
 contract PLibraryDelegate is PDelegate {
 
-  function libraryDelegateFwd(string libraryInstanceKey) internal  {
+  function libraryDelegateFwd(string _libraryInstanceKey) internal  {
     // NOTE: The first parameter from msg.data MUST be the AventusStorage contract
     // address or this will not work!
-    address target = IAventusStorage(addressFromMsgData(msg.data)).getAddress(keccak256(abi.encodePacked(libraryInstanceKey)));
+    address target = IAventusStorage(addressFromMsgData(msg.data)).getAddress(keccak256(abi.encodePacked(_libraryInstanceKey)));
     delegatedFwd(target, msg.data);
   }
 
@@ -20,13 +20,13 @@ contract PLibraryDelegate is PDelegate {
   // Every time we add a new byte, we "push" all the existing bytes one place
   // to the left, multiplying the result by 256 and adding the new one.
   // This avoids explicit exponentiations and unnecessary multiplications
-  function addressFromMsgData(bytes data) private pure returns (address) {
+  function addressFromMsgData(bytes _data) private pure returns (address result_) {
     uint result = 0;
     for (uint i = 16; i < 36; ++i) {
       result *= 256;
-      result += uint(data[i]);
+      result += uint(_data[i]);
     }
-    return address(result);
+    result_ = address(result);
   }
 
 }

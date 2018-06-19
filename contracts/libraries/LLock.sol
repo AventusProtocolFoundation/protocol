@@ -13,76 +13,76 @@ library LLock {
   bytes32 constant lockBalanceKey = keccak256(abi.encodePacked("LockBalance"));
 
   // See IAVTManager.withdraw for details.
-  function withdraw(IAventusStorage s, string fund, uint amount)
-    public
+  function withdraw(IAventusStorage _storage, string _fund, uint _amount)
+    external
   {
-    if (keccak256(abi.encodePacked(fund)) == stakeFundHash) {
+    if (keccak256(abi.encodePacked(_fund)) == stakeFundHash) {
       require (
-        !stakeChangeIsBlocked(s, msg.sender),
+        !stakeChangeIsBlocked(_storage, msg.sender),
         "A blocked stake cannot be withdrawn"
       );
     } else {
       require(
-        keccak256(abi.encodePacked(fund)) == depositFundHash,
+        keccak256(abi.encodePacked(_fund)) == depositFundHash,
         "withdraw must be called for 'stake' or 'deposit' only"
       );
       require(
-        !depositWithdrawlIsBlocked(s, amount, msg.sender),
+        !depositWithdrawlIsBlocked(_storage, _amount, msg.sender),
         "A blocked deposit cannot be withdrawn"
       );
     }
 
-    bytes32 key = keccak256(abi.encodePacked("Lock", fund, msg.sender));
-    uint currDeposit = s.getUInt(key);
-    IERC20 avt = IERC20(s.getAddress(avtContractAddressKey));
+    bytes32 key = keccak256(abi.encodePacked("Lock", _fund, msg.sender));
+    uint currDeposit = _storage.getUInt(key);
+    IERC20 avt = IERC20(_storage.getAddress(avtContractAddressKey));
 
     require (
-      amount <= currDeposit,
+      _amount <= currDeposit,
       "Withdrawn amount must be less than current deposit"
     );
-    s.setUInt(key, currDeposit - amount);
+    _storage.setUInt(key, currDeposit - _amount);
     require (
-      avt.transfer(msg.sender, amount),
-      "Transfer of funds in 'withdraw' must succeed before continuing"
+      avt.transfer(msg.sender, _amount),
+      "Transfer of funds in withdraw must succeed before continuing"
     );
 
-    updateBalance(s, amount, false);
+    updateBalance(_storage, _amount, false);
   }
 
   // See IAVTManager.deposit for details.
-  function deposit(IAventusStorage s, string fund, uint amount)
-    public
+  function deposit(IAventusStorage _storage, string _fund, uint _amount)
+    external
   {
-    if (keccak256(abi.encodePacked(fund)) == stakeFundHash) {
+    if (keccak256(abi.encodePacked(_fund)) == stakeFundHash) {
       require (
-        !stakeChangeIsBlocked(s, msg.sender),
-        "It's not possible to deposit into a blocked stake"
+        !stakeChangeIsBlocked(_storage, msg.sender),
+        "It is not possible to deposit into a blocked stake"
       );
     } else {
       require(
-        keccak256(abi.encodePacked(fund)) == depositFundHash,
-        "'deposit' must be called for 'stake' or 'deposit' only"
+        keccak256(abi.encodePacked(_fund)) == depositFundHash,
+        "deposit must be called for 'stake' or 'deposit' only"
       );
     }
 
-    bytes32 key = keccak256(abi.encodePacked("Lock", fund, msg.sender));
-    uint currDeposit = s.getUInt(key);
-    IERC20 avt = IERC20(s.getAddress(avtContractAddressKey));
+    bytes32 key = keccak256(abi.encodePacked("Lock", _fund, msg.sender));
+    uint currDeposit = _storage.getUInt(key);
+    IERC20 avt = IERC20(_storage.getAddress(avtContractAddressKey));
 
     require (
-      amount != 0,
+      _amount != 0,
       "A deposit must be greater than zero"
     );
-    s.setUInt(key, currDeposit + amount);
+    _storage.setUInt(key, currDeposit + _amount);
     require (
-      avt.transferFrom(msg.sender, this, amount),
+      avt.transferFrom(msg.sender, this, _amount),
       "Transfer of funds in 'deposit' must succeed before continuing"
     );
 
-    updateBalance(s, amount, true);
+    updateBalance(_storage, _amount, true);
   }
 
-  function checkedTransfer(IAventusStorage _storage, uint _amount, address _fromAddress, string _fromFund, address _toAddress, string _toFund) public {
+  function checkedTransfer(IAventusStorage _storage, uint _amount, address _fromAddress, string _fromFund, address _toAddress, string _toFund) external {
     if (keccak256(abi.encodePacked(_fromFund)) == stakeFundHash) {
       require (
         !stakeChangeIsBlocked(_storage, _fromAddress),
@@ -91,7 +91,7 @@ library LLock {
     } else {
       require(
         keccak256(abi.encodePacked(_fromFund)) == depositFundHash,
-        "'checkedTransfer' must be called for 'stake' or 'deposit' only"
+        "checkedTransfer must be called for 'stake' or 'deposit' only"
       );
       require(
         !depositWithdrawlIsBlocked(_storage, _amount, _fromAddress),
@@ -109,6 +109,20 @@ library LLock {
     transfer(_storage, _amount, _fromAddress, _fromFund, _toAddress, _toFund);
   }
 
+  // See IAVTManager.getBalance for details.
+  function getBalance(IAventusStorage _storage, string _fund, address _avtHolder)
+    external
+    view
+    returns (uint balance_)
+  {
+    balance_ = _storage.getUInt(keccak256(abi.encodePacked("Lock", _fund, _avtHolder)));
+  }
+
+  function getAVTDecimals(IAventusStorage _storage, uint _usCents) external view returns (uint avtDecimals_) {
+    uint oneAvtInUsCents = _storage.getUInt(oneAVTInUSCentsKey);
+    avtDecimals_ = (_usCents * (10**18)) / oneAvtInUsCents;
+  }
+
   // NOTE: This version has NO CHECKS on whether the transfer should blocked so should only be
   // used internally. Consider checkedTransfer() instead.
   function transfer(IAventusStorage _storage, uint _amount, address _fromAddress, string _fromFund, address _toAddress, string _toFund) public {
@@ -122,82 +136,65 @@ library LLock {
     uint currentFromBalance = _storage.getUInt(fromKey);
     require(
       currentFromBalance >= _amount,
-      "The transfer amount must not exceed the source fund's balance"
+      "The transfer amount must not exceed the source fund balance"
     );
     _storage.setUInt(fromKey, currentFromBalance - _amount);
 
-    // ...and give it to the "to" fund.
+    // ...and give it to the "to" _fund.
     bytes32 toKey = keccak256(abi.encodePacked("Lock", _toFund, _toAddress));
     _storage.setUInt(toKey, _storage.getUInt(toKey) + _amount);
   }
 
-  // See IAVTManager.getBalance for details.
-  function getBalance(IAventusStorage _s, string _fund, address _avtHolder)
-    public
-    view
-    returns (uint _balance)
-  {
-    _balance = _s.getUInt(keccak256(abi.encodePacked("Lock", _fund, _avtHolder)));
-  }
-
-  function getAVTDecimals(IAventusStorage _storage, uint _usCents) public view returns (uint avtDecimals) {
-    uint oneAvtInUsCents = _storage.getUInt(oneAVTInUSCentsKey);
-    avtDecimals = (_usCents * (10**18)) / oneAvtInUsCents;
-  }
-
   /**
   * Keep track of the total locked in the contract.
-  * @param s Storage contract
-  * @param amount amount to update the balance by
-  * @param increment True if incrementing balance
+  * @param _storage Storage contract
+  * @param _amount amount to update the balance by
+  * @param _increment True if incrementing balance
   */
-  function updateBalance(IAventusStorage s, uint amount, bool increment) private {
-    uint balance = s.getUInt(lockBalanceKey);
+  function updateBalance(IAventusStorage _storage, uint _amount, bool _increment) private {
+    uint balance = _storage.getUInt(lockBalanceKey);
 
-    if (increment)
-      balance += amount;
+    if (_increment)
+      balance += _amount;
     else
-      balance -= amount;
+      balance -= _amount;
 
-    s.setUInt(lockBalanceKey, balance);
+    _storage.setUInt(lockBalanceKey, balance);
   }
 
   /**
   * Check if the sender can withdraw/deposit AVT stake.
-  * @param s Storage contract
+  * @param _storage Storage contract
   * @return True if the sender's funds are blocked, False if not.
   */
-  function stakeChangeIsBlocked(IAventusStorage s, address stakeHolder)
+  function stakeChangeIsBlocked(IAventusStorage _storage, address _stakeHolder)
     private
     view
-    returns (bool)
+    returns (bool blocked_)
   {
-    uint blockedUntil = s.getUInt(keccak256(abi.encodePacked("Voting", stakeHolder, uint(0), "nextTime")));
+    uint blockedUntil = _storage.getUInt(keccak256(abi.encodePacked("Voting", _stakeHolder, uint(0), "nextTime")));
 
     if (blockedUntil == 0)
-      return false; // No unrevealed votes
-    else if (LAventusTime.getCurrentTime(s) < blockedUntil)
-      return false; // Voting still ongoing
+      blocked_ = false; // No unrevealed votes
+    else if (LAventusTime.getCurrentTime(_storage) < blockedUntil)
+      blocked_ = false; // Voting still ongoing
     else
-      return true; // Reveal period active (even if reveal is over tokens are blocked until reveal)
+      blocked_ = true; // Reveal period active (even if reveal is over tokens are blocked until reveal)
   }
 
-  function depositWithdrawlIsBlocked(IAventusStorage s, uint amount, address depositHolder)
+  function depositWithdrawlIsBlocked(IAventusStorage _storage, uint _amount, address _depositHolder)
     private
     view
-    returns (bool)
+    returns (bool blocked_)
   {
-      uint expectedDeposits = s.getUInt(keccak256(abi.encodePacked("ExpectedDeposits", depositHolder)));
-      uint actualDeposits = s.getUInt(keccak256(abi.encodePacked("Lock", "deposit", depositHolder)));
+      uint expectedDeposits = _storage.getUInt(keccak256(abi.encodePacked("ExpectedDeposits", _depositHolder)));
+      uint actualDeposits = _storage.getUInt(keccak256(abi.encodePacked("Lock", "deposit", _depositHolder)));
       require(
-        actualDeposits >= amount,
+        actualDeposits >= _amount,
         "Withdrawn amount must not exceed the deposit"
       );
       // If taking this amount of AVT out will mean we don't have enough deposits
       // then block the withdrawl.
-      if (actualDeposits - amount < expectedDeposits) {
-          return true;
-      }
-      return false;
+      blocked_ = actualDeposits - _amount < expectedDeposits;
   }
 }

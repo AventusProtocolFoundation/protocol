@@ -8,12 +8,12 @@ contract Owned {
     _;
   }
 
-  function setOwner(address owner_)
+  function setOwner(address _owner)
     public
     onlyOwner
   {
-    require (owner_ != 0x0);
+    require (_owner != 0x0);
 
-    owner = owner_;
+    owner = _owner;
   }
 }

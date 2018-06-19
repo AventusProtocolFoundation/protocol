@@ -6,14 +6,53 @@ import "./MultiAccess.sol";
 
 // Persistent storage on the blockchain
 // TODO: Move javadoc to IAventusStorage for consistency.
+// TODO: Use leading and trailing underscores on parameters and return values.
+
 contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
 
   modifier hasUpdateAccess() {
     isAllowedAccess();
     _;
   }
+
   // some storage key e.g. keccak("vote", voteId, "end") => stored uint value
   mapping(bytes32 => uint) UInt;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored uint128 value
+  mapping(bytes32 => uint128) UInt128;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored uint64 value
+  mapping(bytes32 => uint64) UInt64;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored uint32 value
+  mapping(bytes32 => uint32) UInt32;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored uint16 value
+  mapping(bytes32 => uint16) UInt16;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored uint8 value
+  mapping(bytes32 => uint8) UInt8;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored string value
+  mapping(bytes32 => string) String;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored address value
+  mapping(bytes32 => address) Address;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored bytes value
+  mapping(bytes32 => bytes) Bytes;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored bytes32 value
+  mapping(bytes32 => bytes32) Bytes32;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored bytes16 value
+  mapping(bytes32 => bytes16) Bytes16;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored bytes8 value
+  mapping(bytes32 => bytes8) Bytes8;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored bool value
+  mapping(bytes32 => bool) Boolean;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored int value
+  mapping(bytes32 => int) Int;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored int128 value
+  mapping(bytes32 => int128) Int128;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored int64 value
+  mapping(bytes32 => int64) Int64;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored int32 value
+  mapping(bytes32 => int32) Int32;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored int16 value
+  mapping(bytes32 => int16) Int16;
+  // some storage key e.g. keccak("vote", voteId, "end") => stored int8 value
+  mapping(bytes32 => int8) Int8;
 
   /**
    * @dev In case we need to extend functionality - avoids copying state
@@ -51,20 +90,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   }
 
   /**
-  * @dev Delete a uint record
-  * @param record The record whose value you want to delete
-  */
-  function deleteUInt(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete UInt[record];
-  }
-
-  // some storage key e.g. keccak("vote", voteId, "end") => stored uint128 value
-  mapping(bytes32 => uint128) UInt128;
-
-  /**
    * @dev Get a stored uint128
    * @param record The key for finding a given record value
    */
@@ -87,20 +112,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   {
     UInt128[record] = value;
   }
-
-  /**
-  * @dev Delete a uint128 record
-  * @param record The record whose value you want to delete
-  */
-  function deleteUInt128(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete UInt128[record];
-  }
-
-  // some storage key e.g. keccak("vote", voteId, "end") => stored uint64 value
-  mapping(bytes32 => uint64) UInt64;
 
   /**
   * @dev Get a stored uint64
@@ -127,20 +138,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   }
 
   /**
-  * @dev Delete a uint64 record
-  * @param record The record whose value you want to delete
-  */
-  function deleteUInt64(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete UInt64[record];
-  }
-
-  // some storage key e.g. keccak("vote", voteId, "end") => stored uint32 value
-  mapping(bytes32 => uint32) UInt32;
-
-  /**
   * @dev Get a stored uint32
   * @param record The key for finding a given record value
   */
@@ -163,20 +160,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   {
     UInt32[record] = value;
   }
-
-  /**
-  * @dev Delete a uint32 record
-  * @param record The record whose value you want to delete
-  */
-  function deleteUInt32(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete UInt32[record];
-  }
-
-  // some storage key e.g. keccak("vote", voteId, "end") => stored uint16 value
-  mapping(bytes32 => uint16) UInt16;
 
   /**
   * @dev Get a stored uint16
@@ -203,20 +186,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   }
 
   /**
-  * @dev Delete a uint16 record
-  * @param record The record whose value you want to delete
-  */
-  function deleteUInt16(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete UInt16[record];
-  }
-
-  // some storage key e.g. keccak("vote", voteId, "end") => stored uint8 value
-  mapping(bytes32 => uint8) UInt8;
-
-  /**
   * @dev Get a stored uint8
   * @param record The key for finding a given record value
   */
@@ -239,20 +208,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   {
     UInt8[record] = value;
   }
-
-  /**
-  * @dev Delete a uint8 record
-  * @param record The record whose value you want to delete
-  */
-  function deleteUInt8(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete UInt8[record];
-  }
-
-  // some storage key e.g. keccak("vote", voteId, "end") => stored string value
-  mapping(bytes32 => string) String;
 
   /**
   * @dev Get a stored string value
@@ -279,20 +234,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   }
 
   /**
-  * @dev Delete a string record
-  * @param record The record whose value you want to delete
-  */
-  function deleteString(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete String[record];
-  }
-
-  // some storage key e.g. keccak("vote", voteId, "end") => stored address value
-  mapping(bytes32 => address) Address;
-
-  /**
   * @dev Get a stored address value
   * @param record The key for finding a given record value
   */
@@ -315,20 +256,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   {
     Address[record] = value;
   }
-
-  /**
-  * @dev Delete an address record
-  * @param record The record whose value you want to delete
-  */
-  function deleteAddress(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete Address[record];
-  }
-
-  // some storage key e.g. keccak("vote", voteId, "end") => stored bytes value
-  mapping(bytes32 => bytes) Bytes;
 
   /**
   * @dev Get a stored bytes value
@@ -355,20 +282,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   }
 
   /**
-  * @dev Delete a bytes record
-  * @param record The record whose value you want to delete
-  */
-  function deleteBytes(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete Bytes[record];
-  }
-
-  // some storage key e.g. keccak("vote", voteId, "end") => stored bytes32 value
-  mapping(bytes32 => bytes32) Bytes32;
-
-  /**
   * @dev Get a stored bytes32 value
   * @param record The key for finding a given record value
   */
@@ -391,9 +304,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   {
     Bytes32[record] = value;
   }
-
-  // some storage key e.g. keccak("vote", voteId, "end") => stored bytes16 value
-  mapping(bytes32 => bytes16) Bytes16;
 
   /**
   * @dev Get a stored bytes16 value
@@ -420,20 +330,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   }
 
   /**
-  * @dev Delete a bytes16 record
-  * @param record The record whose value you want to delete
-  */
-  function deleteBytes16(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete Bytes16[record];
-  }
-
-  // some storage key e.g. keccak("vote", voteId, "end") => stored bytes8 value
-  mapping(bytes32 => bytes8) Bytes8;
-
-  /**
   * @dev Get a stored bytes8 value
   * @param record The key for finding a given record value
   */
@@ -456,31 +352,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   {
     Bytes8[record] = value;
   }
-
-  /**
-  * @dev Delete a bytes8 record
-  * @param record The record whose value you want to delete
-  */
-  function deleteBytes8(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete Bytes8[record];
-  }
-
-  /**
-  * @dev Delete a bytes32 record
-  * @param record The record whose value you want to delete
-  */
-  function deleteBytes32(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete Bytes32[record];
-  }
-
-  // some storage key e.g. keccak("vote", voteId, "end") => stored bool value
-  mapping(bytes32 => bool) Boolean;
 
   /**
   * @dev Get a stored bool value
@@ -507,19 +378,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   }
 
   /**
-  * @dev Delete a bool record
-  * @param record The record whose value you want to delete
-  */
-  function deleteBoolean(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete Boolean[record];
-  }
-
-  mapping(bytes32 => int) Int;
-
-  /**
   * @dev Get a stored int value
   * @param record The key for finding a given record value
   */
@@ -542,19 +400,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   {
     Int[record] = value;
   }
-
-  /**
-  * @dev Delete an int record
-  * @param record The record whose value you want to delete
-  */
-  function deleteInt(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete Int[record];
-  }
-
-  mapping(bytes32 => int128) Int128;
 
   /**
   * @dev Get a stored int128 value
@@ -581,19 +426,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   }
 
   /**
-  * @dev Delete an int128 record
-  * @param record The record whose value you want to delete
-  */
-  function deleteInt128(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete Int128[record];
-  }
-
-  mapping(bytes32 => int64) Int64;
-
-  /**
   * @dev Get a stored int64 value
   * @param record The key for finding a given record value
   */
@@ -616,19 +448,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   {
     Int64[record] = value;
   }
-
-  /**
-  * @dev Delete an int64 record
-  * @param record The record whose value you want to delete
-  */
-  function deleteInt64(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete Int64[record];
-  }
-
-  mapping(bytes32 => int32) Int32;
 
   /**
   * @dev Get a stored int32 value
@@ -655,19 +474,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   }
 
   /**
-  * @dev Delete an int32 record
-  * @param record The record whose value you want to delete
-  */
-  function deleteInt32(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete Int32[record];
-  }
-
-  mapping(bytes32 => int16) Int16;
-
-  /**
   * @dev Get a stored int16 value
   * @param record The key for finding a given record value
   */
@@ -692,19 +498,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   }
 
   /**
-  * @dev Delete an int16 record
-  * @param record The record whose value you want to delete
-  */
-  function deleteInt16(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete Int16[record];
-  }
-
-  mapping(bytes32 => int8) Int8;
-
-  /**
   * @dev Get a stored int8 value
   * @param record The key for finding a given record value
   */
@@ -726,17 +519,6 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
     hasUpdateAccess
   {
     Int8[record] = value;
-  }
-
-  /**
-  * @dev Delete an int8 record
-  * @param record The record whose value you want to delete
-  */
-  function deleteInt8(bytes32 record)
-    external
-    hasUpdateAccess
-  {
-    delete Int8[record];
   }
 
   function doGetAddress(bytes32 record)

@@ -95,6 +95,12 @@ function getEventArgs(eventListenerFunction) {
   });
 }
 
+function createSignedMessage(_signer, _keccak256Msg) {
+  const signedMessage = web3.eth.sign(_signer, _keccak256Msg);
+  assert.equal(signedMessage.length, 132);
+  return signedMessage;
+}
+
 const ganacheRevert = 'Error: VM Exception while processing transaction: revert';
 const gethRevert = 'exited with an error (status 0)';
 
@@ -124,6 +130,7 @@ module.exports = {
     advanceTimeToEndOfProposal,
     advanceTimeToEventTicketSaleStart,
     advanceTimeToEventEnd,
+    createSignedMessage,
 
     getAVTAddress: () => avtAddress
 }

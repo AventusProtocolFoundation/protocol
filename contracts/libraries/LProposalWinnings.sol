@@ -16,7 +16,7 @@ library LProposalWinnings {
   bytes32 constant winningsForChallengeEnderPercentageKey =
       keccak256(abi.encodePacked("Events", "winningsForChallengeEnderPercentage"));
 
-    function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) public {
+    function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) external {
       address voter = msg.sender;
       uint8 winningOption = _storage.getUInt8(keccak256(abi.encodePacked("Proposal", _proposalId, "winningOption")));
       bytes32 voterStakeKey = keccak256(abi.encodePacked("Proposal", _proposalId, "revealedVoter", winningOption, voter, "stake"));
@@ -52,7 +52,7 @@ library LProposalWinnings {
         uint _deposit,
         address _challenger,
         address _eventOwner)
-      public
+      external
     {
       distributeChallengeWinnings(
           _storage,

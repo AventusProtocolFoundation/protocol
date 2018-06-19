@@ -82,8 +82,8 @@ contract('EventsManager - transactions', function () {
 
           async function doSignedCancelEvent(_eventId, _canceller, _sender) {
             let keccak256Msg = await web3Utils.soliditySha3(_eventId);
-            const fields = eventsTestHelper.createECDSAfields(_canceller, keccak256Msg);
-            await eventsManager.signedCancelEvent(fields.v, fields.r, fields.s, _eventId, {from: _sender});
+            let signedMessage = testHelper.createSignedMessage(_canceller, keccak256Msg);
+            await eventsManager.signedCancelEvent(signedMessage, _eventId, {from: _sender});
           }
 
           async function cancelEventSucceeds() {
@@ -105,8 +105,8 @@ contract('EventsManager - transactions', function () {
 
           async function doSignedSellTicket(_eventId, _ticketDetails, _buyer, _seller, _sender) {
             let keccak256Msg = await web3Utils.soliditySha3(_eventId, _ticketDetails, _buyer);
-            const fields = eventsTestHelper.createECDSAfields(_seller, keccak256Msg);
-            await eventsManager.signedSellTicket(fields.v, fields.r, fields.s, _eventId, _ticketDetails, _buyer, {from: _sender});
+            let signedMessage = testHelper.createSignedMessage(_seller, keccak256Msg);
+            await eventsManager.signedSellTicket(signedMessage, _eventId, _ticketDetails, _buyer, {from: _sender});
           }
 
           async function sellTicketSucceeds(_eventId, _buyer) {
@@ -130,8 +130,8 @@ contract('EventsManager - transactions', function () {
 
           async function doSignedRefundTicket(_eventId, _ticketId, _refunder, _sender) {
             let keccak256Msg = await web3Utils.soliditySha3(_eventId, _ticketId);
-            const fields = eventsTestHelper.createECDSAfields(_refunder, keccak256Msg);
-            await eventsManager.signedRefundTicket(fields.v, fields.r, fields.s, _eventId, _ticketId, {from: _sender});
+            let signedMessage = testHelper.createSignedMessage(_refunder, keccak256Msg);
+            await eventsManager.signedRefundTicket(signedMessage, _eventId, _ticketId, {from: _sender});
           }
 
           context(transactionPreTitle + "cancel event", async () => {

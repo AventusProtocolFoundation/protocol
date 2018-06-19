@@ -17,6 +17,7 @@ const LLock = artifacts.require("LLock");
 const LProposalVoting = artifacts.require("LProposalVoting");
 const LProposal = artifacts.require("LProposal");
 const LProposalForTesting = artifacts.require("LProposalForTesting");
+const LECRecovery = artifacts.require("LECRecovery");
 
 // Proxies
 const PApps = artifacts.require("PApps");
@@ -24,6 +25,7 @@ const PAventusTime = artifacts.require("PAventusTime");
 const PEvents = artifacts.require("PEvents");
 const PLock = artifacts.require("PLock");
 const PProposal = artifacts.require("PProposal");
+const PECRecovery = artifacts.require("PECRecovery");
 
 module.exports = function(deployer, network, accounts) {
     console.log("*** Deploying Libraries...");
@@ -42,7 +44,7 @@ function deployLibraries(deployer, network) {
   }).then(() => {
     return deployer.link(LAventusTime, [LProposal, LLock, LEvents, LEventsEnact, ProposalManager]);
   }).then(() => {
-    return deployer.deploy([PProposal, PLock, PEvents, PApps]);
+    return deployer.deploy([PProposal, PLock, PEvents, PApps, PECRecovery]);
   }).then(() => {
     return deployer.deploy(LLock);
   }).then(() => {
@@ -57,6 +59,13 @@ function deployLibraries(deployer, network) {
   }).then(() => {
     LApps.address = PApps.address;
     return deployer.link(LApps, [LEvents, LEventsCommon, LEventsEnact, AppsManager]);
+  }).then(() => {
+    return deployer.deploy(LECRecovery);
+  }).then(() => {
+    return deployer.then(() => s.setAddress(web3.sha3("LECRecoveryInstance"), LECRecovery.address));
+  }).then(() => {
+    LECRecovery.address = PECRecovery.address;
+    return deployer.link(LECRecovery, LEvents);
   }).then(() => {
     return deployer.deploy(LEventsCommon);
   }).then(() => {

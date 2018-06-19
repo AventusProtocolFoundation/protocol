@@ -25,30 +25,30 @@ contract AventusVote is IAVTManager, IProposalsManager, Owned {
 
   /**
   * @dev Constructor
-  * @param s_ Persistent storage contract
+  * @param _s Persistent storage contract
   */
-  constructor(IAventusStorage s_) public {
-    s = s_;
+  constructor(IAventusStorage _s) public {
+    s = _s;
   }
 
-  function withdraw(string fund, uint amount) external {
-    LLock.withdraw(s, fund, amount);
-    emit WithdrawEvent(msg.sender, fund, amount);
+  function withdraw(string _fund, uint _amount) external {
+    LLock.withdraw(s, _fund, _amount);
+    emit WithdrawEvent(msg.sender, _fund, _amount);
   }
 
-  function deposit(string fund, uint amount) external {
-    LLock.deposit(s, fund, amount);
-    emit DepositEvent(msg.sender, fund, amount);
+  function deposit(string _fund, uint _amount) external {
+    LLock.deposit(s, _fund, _amount);
+    emit DepositEvent(msg.sender, _fund, _amount);
   }
 
-  function createGovernanceProposal(string desc) external returns (uint proposalId) {
-    proposalId = LProposal.createGovernanceProposal(s, desc);
-    emit CreateProposalEvent(msg.sender, desc, proposalId);
+  function createGovernanceProposal(string _desc) external returns (uint proposalId_) {
+    proposalId_ = LProposal.createGovernanceProposal(s, _desc);
+    emit CreateProposalEvent(msg.sender, _desc, proposalId_);
   }
 
-  function createEventChallenge(uint _eventId) external returns (uint _proposalId) {
-    _proposalId = LProposal.createEventChallenge(s, _eventId);
-    emit LogCreateEventChallenge(_eventId, _proposalId);
+  function createEventChallenge(uint _eventId) external returns (uint proposalId_) {
+    proposalId_ = LProposal.createEventChallenge(s, _eventId);
+    emit LogCreateEventChallenge(_eventId, proposalId_);
   }
 
   function endProposal(uint _proposalId) external {
@@ -58,14 +58,14 @@ contract AventusVote is IAVTManager, IProposalsManager, Owned {
     emit LogEndProposal(_proposalId, votesFor, votesAgainst);
   }
 
-  function castVote(uint proposalId, bytes32 secret, uint prevTime) external {
-    LProposal.castVote(s, proposalId, secret, prevTime);
-    emit CastVoteEvent(proposalId, msg.sender, secret, prevTime);
+  function castVote(uint _proposalId, bytes32 _secret, uint _prevTime) external {
+    LProposal.castVote(s, _proposalId, _secret, _prevTime);
+    emit CastVoteEvent(_proposalId, msg.sender, _secret, _prevTime);
   }
 
-  function revealVote(uint proposalId, uint8 optId, uint8 v, bytes32 r, bytes32 s_) external {
-    LProposal.revealVote(s, proposalId, optId, v, r, s_);
-    emit RevealVoteEvent(proposalId, optId);
+  function revealVote(bytes _signedMessage, uint _proposalId, uint8 _optId) external {
+    LProposal.revealVote(s, _signedMessage, _proposalId, _optId);
+    emit RevealVoteEvent(_proposalId, _optId);
   }
 
   function claimVoterWinnings(uint _proposalId) external {
@@ -76,21 +76,21 @@ contract AventusVote is IAVTManager, IProposalsManager, Owned {
   function getBalance(string _fund, address _avtHolder)
     external
     view
-    returns (uint _balance)
+    returns (uint balance_)
   {
-    _balance = LLock.getBalance(s, _fund, _avtHolder);
+    balance_ = LLock.getBalance(s, _fund, _avtHolder);
   }
 
-  function getGovernanceProposalDeposit() external view returns (uint proposalDeposit) {
-    proposalDeposit = LProposal.getGovernanceProposalDeposit(s);
+  function getGovernanceProposalDeposit() external view returns (uint proposalDeposit_) {
+    proposalDeposit_ = LProposal.getGovernanceProposalDeposit(s);
   }
 
-  function getExistingEventDeposit(uint _eventId) external view returns(uint) {
-    return LEvents.getExistingEventDeposit(s, _eventId);
+  function getExistingEventDeposit(uint _eventId) external view returns(uint eventDeposit_) {
+    eventDeposit_ = LEvents.getExistingEventDeposit(s, _eventId);
   }
 
-  function getPrevTimeParamForCastVote(uint proposalId) external view returns (uint prevTime) {
-    prevTime = LProposal.getPrevTimeParamForCastVote(s, proposalId);
+  function getPrevTimeParamForCastVote(uint _proposalId) external view returns (uint prevTime_) {
+    prevTime_ = LProposal.getPrevTimeParamForCastVote(s, _proposalId);
   }
-  
+
 }

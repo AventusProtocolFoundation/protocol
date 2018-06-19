@@ -62,15 +62,6 @@ function setupUniqueEventParameters() {
   eventTime = eventTicketSaleStartTime.plus(oneWeek);
 }
 
-function createECDSAfields(_signer, _keccak256Msg) {
-  const signedMessage = web3.eth.sign(_signer, _keccak256Msg);
-  assert.equal(signedMessage.length, 132);
-  const r = signedMessage.substring(0, 66);
-  const s = '0x' + signedMessage.substring(66, 130);
-  const v = parseInt(signedMessage.substring(130, 132)) + 27;
-  return { v, r, s };
-}
-
 async function depositAndWhitelistApp(_appAddress) {
   let amount = await appsManager.getAppDeposit();
   await makeDeposit(amount, _appAddress);
@@ -99,14 +90,15 @@ async function endEventAndWithdrawDeposit() {
   await withdrawEventDeposit();
 }
 
+
 async function doCreateEvent(_eventIsSigned, _eventTime, _eventTicketSaleStartTime, _eventSupportURL) {
   if (_eventIsSigned) {
     // Hash the variable length parameters to create fixed length parameters.
     // See: http://solidity.readthedocs.io/en/v0.4.21/abi-spec.html#abi-packed-mode
     let keccak256Msg = await web3Utils.soliditySha3(await web3Utils.soliditySha3(eventDesc), _eventTime, eventCapacity,
         eventAverageTicketPriceInUSCents, _eventTicketSaleStartTime, await web3Utils.soliditySha3(_eventSupportURL), eventOwner);
-    const fields = createECDSAfields(eventOwner, keccak256Msg);
-    await eventsManager.signedCreateEvent(fields.v, fields.r, fields.s, eventDesc, _eventTime, eventCapacity, eventAverageTicketPriceInUSCents,
+    let signedMessage = testHelper.createSignedMessage(eventOwner, keccak256Msg);
+    await eventsManager.signedCreateEvent(signedMessage, eventDesc, _eventTime, eventCapacity, eventAverageTicketPriceInUSCents,
         _eventTicketSaleStartTime, _eventSupportURL, eventOwner, {from: appAddress});
   } else {
     await eventsManager.createEvent( eventDesc, _eventTime, eventCapacity, eventAverageTicketPriceInUSCents,
@@ -125,6 +117,7 @@ async function createValidEvent(_eventIsSigned) {
   assert.equal(eventArgs.eventDesc, eventDesc);
   validEventId = eventArgs.eventId.toNumber();
 }
+
 
 async function makeEventDepositAndCreateValidEvent(_eventIsSigned) {
   setupUniqueEventParameters();
@@ -145,7 +138,6 @@ module.exports = {
   withdrawDeposit,
   withdrawEventDeposit,
   setupUniqueEventParameters,
-  createECDSAfields,
   depositAndWhitelistApp,
   dewhitelistAppAndWithdrawDeposit,
   doCreateEvent,

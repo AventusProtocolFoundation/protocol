@@ -18,7 +18,7 @@ contract('AventusStorage', function() {
       let uint = await avtStorage.getUInt(key);
       assert.equal(uint, 567);
 
-      await avtStorage.deleteUInt(key);
+      await avtStorage.setUInt(key, 0);
       uint = await avtStorage.getUInt(key);
       assert.equal(uint, 0);
     });
@@ -28,7 +28,7 @@ contract('AventusStorage', function() {
       let uint128 = await avtStorage.getUInt128(key);
       assert.equal(uint128, 567);
 
-      await avtStorage.deleteUInt128(key);
+      await avtStorage.setUInt128(key, 0);
       uint128 = await avtStorage.getUInt128(key);
       assert.equal(uint128, 0);
     });
@@ -38,7 +38,7 @@ contract('AventusStorage', function() {
       let uint64 = await avtStorage.getUInt64(key);
       assert.equal(uint64, 567);
 
-      await avtStorage.deleteUInt64(key);
+      await avtStorage.setUInt64(key, 0);
       uint64 = await avtStorage.getUInt64(key);
       assert.equal(uint64, 0);
     });
@@ -48,7 +48,7 @@ contract('AventusStorage', function() {
       let uint32 = await avtStorage.getUInt32(key);
       assert.equal(uint32, 567);
 
-      await avtStorage.deleteUInt32(key);
+      await avtStorage.setUInt32(key, 0);
       uint32 = await avtStorage.getUInt32(key);
       assert.equal(uint32, 0);
     });
@@ -58,7 +58,7 @@ contract('AventusStorage', function() {
       let uint16 = await avtStorage.getUInt16(key);
       assert.equal(uint16, 567);
 
-      await avtStorage.deleteUInt16(key);
+      await avtStorage.setUInt16(key, 0);
       uint16 = await avtStorage.getUInt16(key);
       assert.equal(uint16, 0);
     });
@@ -68,7 +68,7 @@ contract('AventusStorage', function() {
       let uint8 = await avtStorage.getUInt8(key);
       assert.equal(uint8, 5);
 
-      await avtStorage.deleteUInt8(key);
+      await avtStorage.setUInt8(key, 0);
       uint8 = await avtStorage.getUInt8(key);
       assert.equal(uint8, 0);
     });
@@ -81,8 +81,8 @@ contract('AventusStorage', function() {
       let uint8 = await avtStorage.getUInt8(key);
       assert.equal(uint8, 5);
 
-      await testHelper.expectRevert(() => avtStorage.deleteUInt8(key, {from: account1}));
-      await avtStorage.deleteUInt8(key);
+      await testHelper.expectRevert(() => avtStorage.setUInt8(key, 0, {from: account1}));
+      await avtStorage.setUInt8(key, 0);
       uint8 = await avtStorage.getUInt8(key);
       assert.equal(uint8, 0);
 
@@ -93,7 +93,7 @@ contract('AventusStorage', function() {
       uint8 = await avtStorage.getUInt8(key);
       assert.equal(uint8, 5);
 
-      await avtStorage.deleteUInt8(key, {from: account1});
+      await avtStorage.setUInt8(key, 0, {from: account1});
       uint8 = await avtStorage.getUInt8(key);
       assert.equal(uint8, 0);
     });
@@ -104,7 +104,7 @@ contract('AventusStorage', function() {
     let addr = await avtStorage.getAddress(key);
     assert.equal(addr, avtStorage.address);
 
-    await avtStorage.deleteAddress(key);
+    await avtStorage.setAddress(key, 0);
     addr = await avtStorage.getAddress(key);
     assert.equal(addr, 0);
   });
@@ -114,7 +114,7 @@ contract('AventusStorage', function() {
     let str = await avtStorage.getString(key);
     assert.equal(str, 'A Value String');
 
-    await avtStorage.deleteString(key);
+    await avtStorage.setString(key, "");
     str = await avtStorage.getString(key);
     assert.equal(str, '');
   });
@@ -125,7 +125,7 @@ contract('AventusStorage', function() {
       let byteValue = await avtStorage.getBytes(key);
       assert.equal(byteValue, '0x123456');
 
-      await avtStorage.deleteBytes(key);
+      await avtStorage.setBytes(key, 0);
       byteValue = await avtStorage.getBytes(key);
       assert.equal(byteValue, '0x');
     });
@@ -136,7 +136,7 @@ contract('AventusStorage', function() {
       let byte32Value = await avtStorage.getBytes32(key);
       assert.equal(byte32Value, value);
 
-      await avtStorage.deleteBytes32(key);
+      await avtStorage.setBytes32(key, 0);
       byte32Value = await avtStorage.getBytes32(key);
       assert.equal(byte32Value, 0);
     });
@@ -147,7 +147,7 @@ contract('AventusStorage', function() {
       let actualValue = await avtStorage.getBytes16(key);
       assert.equal(actualValue, value);
 
-      await avtStorage.deleteBytes16(key);
+      await avtStorage.setBytes16(key, 0);
       actualValue = await avtStorage.getBytes16(key);
       assert.equal(actualValue, '0x00000000000000000000000000000000');
     });
@@ -157,7 +157,7 @@ contract('AventusStorage', function() {
       let byte8Value = await avtStorage.getBytes8(key);
       assert.equal(byte8Value, '0x1234560000000000');
 
-      await avtStorage.deleteBytes8(key);
+      await avtStorage.setBytes8(key, 0);
       byte8Value = await avtStorage.getBytes8(key);
       assert.equal(byte8Value, 0);
     });
@@ -169,7 +169,7 @@ contract('AventusStorage', function() {
       let value = await avtStorage.getInt(key);
       assert.equal(value, 1234);
 
-      await avtStorage.deleteInt(key);
+      await avtStorage.setInt(key, 0);
       value = await avtStorage.getInt(key);
       assert.equal(value, 0);
     });
@@ -179,7 +179,7 @@ contract('AventusStorage', function() {
       let int128 = await avtStorage.getInt128(key);
       assert.equal(int128, 567);
 
-      await avtStorage.deleteInt128(key);
+      await avtStorage.setInt128(key, 0);
       int128 = await avtStorage.getInt128(key);
       assert.equal(int128, 0);
     });
@@ -189,7 +189,7 @@ contract('AventusStorage', function() {
       let int64 = await avtStorage.getInt64(key);
       assert.equal(int64, 567);
 
-      await avtStorage.deleteInt64(key);
+      await avtStorage.setInt64(key, 0);
       int64 = await avtStorage.getInt64(key);
       assert.equal(int64, 0);
     });
@@ -199,7 +199,7 @@ contract('AventusStorage', function() {
       let int32 = await avtStorage.getInt32(key);
       assert.equal(int32, 567);
 
-      await avtStorage.deleteInt32(key);
+      await avtStorage.setInt32(key, 0);
       int32 = await avtStorage.getInt32(key);
       assert.equal(int32, 0);
     });
@@ -209,7 +209,7 @@ contract('AventusStorage', function() {
       let int16 = await avtStorage.getInt16(key);
       assert.equal(int16, 567);
 
-      await avtStorage.deleteInt16(key);
+      await avtStorage.setInt16(key, 0);
       int16 = await avtStorage.getInt16(key);
       assert.equal(int16, 0);
     });
@@ -219,7 +219,7 @@ contract('AventusStorage', function() {
       let int8 = await avtStorage.getInt8(key);
       assert.equal(int8, -7);
 
-      await avtStorage.deleteInt8(key);
+      await avtStorage.setInt8(key, 0);
       int8 = await avtStorage.getInt8(key);
       assert.equal(int8, 0);
     });
@@ -234,7 +234,7 @@ contract('AventusStorage', function() {
     await avtStorage.setBoolean(key, testValue);
     assert.equal(await avtStorage.getBoolean(key), testValue);
 
-    await avtStorage.deleteBoolean(key);
+    await avtStorage.setBoolean(key, false);
     assert.equal(await avtStorage.getBoolean(key), defaultValue);
   });
 });
