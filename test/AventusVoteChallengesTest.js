@@ -220,8 +220,8 @@ contract('AventusVote - Event challenges', async () => {
       const signedMessage1 = await votingTestHelper.castVote(validChallengeProposalId, 1, voter1);
       const signedMessage2 = await votingTestHelper.castVote(validChallengeProposalId, 1, voter2);
       await testHelper.advanceTimeToRevealingStart(validChallengeProposalId);
-      await votingTestHelper.revealVote(validChallengeProposalId, 1, signedMessage1, voter1);
-      await votingTestHelper.revealVote(validChallengeProposalId, 1, signedMessage2, voter2);
+      await votingTestHelper.revealVote(signedMessage1, validChallengeProposalId, 1, voter1);
+      await votingTestHelper.revealVote(signedMessage2, validChallengeProposalId, 1, voter2);
       await endChallengeEvent(stake * 2, 0);
       // Challenge won, the winner is the challenge owner.
       await withdrawDeposit(fixedAmountToWinner(), challengeOwner);
@@ -246,7 +246,7 @@ contract('AventusVote - Event challenges', async () => {
       await testHelper.advanceTimeToVotingStart(validChallengeProposalId);
       const signedMessage = await votingTestHelper.castVote(validChallengeProposalId, 2, voter1);
       await testHelper.advanceTimeToRevealingStart(validChallengeProposalId);
-      await votingTestHelper.revealVote(validChallengeProposalId, 2, signedMessage, voter1);
+      await votingTestHelper.revealVote(signedMessage, validChallengeProposalId, 2, voter1);
 
       await endChallengeEvent(0, stake);
       // Challenge lost, the winner is the event owner.
@@ -265,8 +265,8 @@ contract('AventusVote - Event challenges', async () => {
       const signedMessage1 = await votingTestHelper.castVote(validChallengeProposalId, 1, voter1);
       const signedMessage2 = await votingTestHelper.castVote(validChallengeProposalId, 2, voter2);
       await testHelper.advanceTimeToRevealingStart(validChallengeProposalId);
-      await votingTestHelper.revealVote(validChallengeProposalId, 1, signedMessage1, voter1);
-      await votingTestHelper.revealVote(validChallengeProposalId, 2, signedMessage2, voter2);
+      await votingTestHelper.revealVote(signedMessage1, validChallengeProposalId, 1, voter1);
+      await votingTestHelper.revealVote(signedMessage2, validChallengeProposalId, 2, voter2);
 
       await endChallengeEvent(stake, stake);
       // Challenge lost, the winner is the event owner.
@@ -288,8 +288,8 @@ contract('AventusVote - Event challenges', async () => {
 
       await endChallengeEvent(0, 0);
 
-      await votingTestHelper.revealVote(validChallengeProposalId, 1, signedMessage1, voter1);
-      await votingTestHelper.revealVote(validChallengeProposalId, 2, signedMessage2, voter2);
+      await votingTestHelper.revealVote(signedMessage1, validChallengeProposalId, 1, voter1);
+      await votingTestHelper.revealVote(signedMessage2, validChallengeProposalId, 2, voter2);
 
       // Challenge lost, the winner is the event owner.
       await withdrawDeposit(fixedAmountToWinner(), eventOwner);

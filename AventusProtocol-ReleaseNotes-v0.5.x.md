@@ -2,9 +2,22 @@
 
 This second public major point release (see v0.4.x for the first) represents the state of the protocol after the Solidified Audit.
 
-The audit brought to light a number of issues, none of which were critical, that will be fixed over the next few releases.
+The audit brought to light a number of issues, none of which were critical, which are fixed in these releases.
 
 The release notes for version 0.5.x follow, listed by sub-release and category, filtered by status.
+
+## Release 0.5.4 - 2018-06-19
+
+Breaking changes:
+* All signed methods now use Zeppelin elliptic curve, ECRecovery, library, as suggested by Solidified.
+* Storage no longer has any "delete" methods - use set to 0 instead - this saves on deployment gas and ABI.
+
+Minor changes:
+* Completed Solidified audit - all remaining tasks have now been dealt with:
+  *  9 - Use more consistent variable naming
+  * 13 - Make setting and getting values from storage more consistent
+  * 18 - Refactor signature checking mechanism
+  * 19 - Consider using external.
 
 ## Release 0.5.3 - 2018-06-12
 
@@ -14,10 +27,10 @@ Major changes:
 
 Minor changes:
 * Fixed more notes from Solidified audit:
-  * 14. Using constructors without the constructor keyword is deprecated
-  * 15. Consider using latest version of solidity
-  * 16. Replace wrongly made asserts and add error strings to require statements
-  * 24. User correct ordering for modifiers and functions
+  * 14 - Using constructors without the constructor keyword is deprecated
+  * 15 - Consider using latest version of solidity
+  * 16 - Replace wrongly made asserts and add error strings to require statements
+  * 24 - User correct ordering for modifiers and functions
 
 Bug fixes:
 * Fixed incorrect address usage in migrations file for library proxying

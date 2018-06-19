@@ -24,48 +24,28 @@ function convertToBytes32HexString(num) {
     return new Array(64 - n.length + 1).join('0') + n;
 }
 
-function assertValidECDSA(signedMessage) {
-  assert.equal(signedMessage.length, 132, 'signedMessage is wrong length: ' + signedMessage.length);
+function getSignatureSecret(_signedMessage) {
+  return web3Utils.soliditySha3(_signedMessage);
 }
 
-function getECDSAfieldV(signedMessage) {
-  return parseInt(signedMessage.substring(130, 132)) + 27;
-}
-
-function getECDSAfields(signedMessage) {
-  assertValidECDSA(signedMessage);
-  const r = signedMessage.substring(0, 66);
-  const s = '0x' + signedMessage.substring(66, 130);
-  const v = getECDSAfieldV(signedMessage);
-  return { v, r, s };
-}
-
-function getECDSAsecret(signedMessage) {
-  assertValidECDSA(signedMessage);
-  let v = getECDSAfieldV(signedMessage);
-  v = convertToBytes32HexString(v);
-
-  return web3Utils.soliditySha3("0x" + v + signedMessage.substring(2, 130));
-}
 
 async function castVote(_proposalId, _optionId, _address) {
   let address = _address || testHelper.getAccount(0);
   const signedMessage = await getSignedMessage(_proposalId, _optionId, _address);
   let prevTime = await aventusVote.getPrevTimeParamForCastVote(_proposalId, {from: address});
-  await aventusVote.castVote(_proposalId, getECDSAsecret(signedMessage), prevTime, {from: address});
+  await aventusVote.castVote(_proposalId, getSignatureSecret(signedMessage), prevTime, {from: address});
   return signedMessage;
 }
 
-async function revealVote(_proposalId, _optionId, _signedMessage, _address) {
+async function revealVote(_signedMessage, _proposalId, _optionId, _address) {
   let address = _address || testHelper.getAccount(0);
-  const ecdsaFields = getECDSAfields(_signedMessage);
-  await aventusVote.revealVote(_proposalId, _optionId, ecdsaFields.v, ecdsaFields.r, ecdsaFields.s, {from: address});
+  await aventusVote.revealVote(_signedMessage, _proposalId, _optionId, {from: address});
 }
 
 module.exports = {
   before,
   castVote,
-  getECDSAsecret,
+  getSignatureSecret,
   getSignedMessage,
   revealVote,
 }

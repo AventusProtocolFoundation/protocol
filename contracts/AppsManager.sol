@@ -14,43 +14,43 @@ contract AppsManager is IAppsManager, Owned {
 
     /**
     * @dev Constructor
-    * @param s_ Persistent storage contract
+    * @param _s Persistent storage contract
     */
-    constructor(IAventusStorage s_) public {
-      s = s_;
+    constructor(IAventusStorage _s) public {
+      s = _s;
     }
 
-    function registerApp(address appAddress)
+    function registerApp(address _appAddress)
       external
       onlyOwner
     {
-      LApps.registerApp(s, appAddress);
+      LApps.registerApp(s, _appAddress);
     }
 
-    function deregisterApp(address appAddress)
+    function deregisterApp(address _appAddress)
       external
       onlyOwner
     {
-      LApps.deregisterApp(s, appAddress);
+      LApps.deregisterApp(s, _appAddress);
     }
 
-    function challengeApp(address /*appAddress*/)
+    function challengeApp(address /*_appAddress*/)
       external
       pure
     {
       // TODO: Create a proposal stating that app address is fraudulent. cf challengeEvent.
     }
 
-    function appIsRegistered(address appAddress)
+    function appIsRegistered(address _appAddress)
       external
       view
-      returns (bool)
+      returns (bool isRegistered_)
     {
-      return appAddress == owner || LApps.appIsRegistered(s, appAddress);
+      isRegistered_ = _appAddress == owner || LApps.appIsRegistered(s, _appAddress);
     }
 
-    function getAppDeposit() external view returns (uint) {
-      return LApps.getAppDeposit(s);
+    function getAppDeposit() external view returns (uint depositinAVT_) {
+      depositinAVT_ = LApps.getAppDeposit(s);
     }
 
 }

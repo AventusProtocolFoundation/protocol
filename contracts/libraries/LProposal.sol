@@ -13,10 +13,10 @@ library LProposal {
       keccak256(abi.encodePacked("Proposal", "governanceProposalFixedDepositInUsCents"));
   bytes32 constant proposalCountKey = keccak256(abi.encodePacked("ProposalCount"));
 
-  modifier onlyProposalOwner(IAventusStorage _s, uint _proposalId) {
+  modifier onlyProposalOwner(IAventusStorage _storage, uint _proposalId) {
     require(
-      msg.sender == getProposalOwner(_s, _proposalId),
-      "Method must be called by proposal's owner"
+      msg.sender == getProposalOwner(_storage, _proposalId),
+      "Method must be called by proposal owner"
     );
     _;
   }
@@ -26,8 +26,8 @@ library LProposal {
   // that can be answered with true or false.
   // TODO: Consider returning true also if all votes have been revealed before
   // the end of the revealing period
-  modifier onlyWhenProposalRevealIsComplete(IAventusStorage _s, uint _proposalId) {
-    require(getCurrentTime(_s) >= _s.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "end"))),
+  modifier onlyWhenProposalRevealIsComplete(IAventusStorage _storage, uint _proposalId) {
+    require(LAventusTime.getCurrentTime(_storage) >= _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "end"))),
       "Proposal reveal is not complete yet"
     );
     _;
@@ -42,51 +42,45 @@ library LProposal {
   }
 
   // Verify a proposal's status (see getProposalStatus for values)
-  modifier isStatus(IAventusStorage _s, uint _proposalId, uint _status) {
+  modifier isStatus(IAventusStorage _storage, uint _proposalId, uint _status) {
     require(
-      _status == getProposalStatus(_s, _proposalId),
+      _status == getProposalStatus(_storage, _proposalId),
       "Proposal has the wrong status"
     );
     _;
   }
 
-  modifier eventIsNotUnderChallenge(IAventusStorage _s, uint _eventId) {
+  modifier eventIsNotUnderChallenge(IAventusStorage _storage, uint _eventId) {
     require(
-      LEvents.eventIsNotUnderChallenge(_s, _eventId),
+      LEvents.eventIsNotUnderChallenge(_storage, _eventId),
       "Event is being challenged"
     );
     _;
   }
 
-  // @return AVT value with 18 decimal places of precision.
-  function getGovernanceProposalDeposit(IAventusStorage _storage) view public returns (uint _depositInAVT) {
-    uint depositInUSCents = _storage.getUInt(governanceProposalFixedDepositInUsCentsKey);
-    _depositInAVT = LLock.getAVTDecimals(_storage, depositInUSCents);
-  }
-
-  function createGovernanceProposal(IAventusStorage s, string desc)
-    public
-    returns (uint)
+  function createGovernanceProposal(IAventusStorage _storage, string _desc)
+    external
+    returns (uint proposalId_)
   {
-    return createProposal(s, desc, getGovernanceProposalDeposit(s));
+    proposalId_ = createProposal(_storage, _desc, getGovernanceProposalDeposit(_storage));
   }
 
   function castVote(
-    IAventusStorage s,
-    uint proposalId,
-    bytes32 secret,
-    uint prevTime
+    IAventusStorage _storage,
+    uint _proposalId,
+    bytes32 _secret,
+    uint _prevTime
   )
-    public
-    isStatus(s, proposalId, 2) // Ensure voting period is currently active
+    external
+    isStatus(_storage, _proposalId, 2) // Ensure voting period is currently active
   {
-    LProposalVoting.castVote(s, proposalId, secret, prevTime);
+    LProposalVoting.castVote(_storage, _proposalId, _secret, _prevTime);
   }
 
-  function revealVote(IAventusStorage _storage, uint _proposalId, uint8 _optId, uint8 _ecdsaV, bytes32 _ecdsaR, bytes32 _ecdsaS) public {
+  function revealVote(IAventusStorage _storage, bytes _signedMessage, uint _proposalId, uint8 _optId) external {
     // Make sure proposal status is Reveal or after.
     uint proposalStatus = getProposalStatus(_storage, _proposalId);
-    return LProposalVoting.revealVote(_storage, _proposalId, _optId, _ecdsaV, _ecdsaR, _ecdsaS, proposalStatus);
+    LProposalVoting.revealVote(_storage, _signedMessage, _proposalId, _optId, proposalStatus);
   }
 
   /**
@@ -95,21 +89,21 @@ library LProposal {
   * @param _eventId - event id for the event in context
   */
   function createEventChallenge(IAventusStorage _storage, uint _eventId)
-    public
+    external
     eventIsNotUnderChallenge(_storage, _eventId)
-    returns (uint challengeProposalId)
+    returns (uint challengeProposalId_)
   {
     uint deposit = LEvents.getExistingEventDeposit(_storage, _eventId);
-    challengeProposalId = createProposal(_storage, "", deposit);
-    _storage.setUInt(keccak256(abi.encodePacked("Proposal", challengeProposalId, "ChallengeEvent")), _eventId);
-    LEvents.setEventAsChallenged(_storage, _eventId, challengeProposalId);
+    challengeProposalId_ = createProposal(_storage, "", deposit);
+    _storage.setUInt(keccak256(abi.encodePacked("Proposal", challengeProposalId_, "ChallengeEvent")), _eventId);
+    LEvents.setEventAsChallenged(_storage, _eventId, challengeProposalId_);
   }
 
-  function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) public {
+  function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) external {
     LProposalWinnings.claimVoterWinnings(_storage, _proposalId);
   }
 
-  function endProposal(IAventusStorage _storage, uint _proposalId) public
+  function endProposal(IAventusStorage _storage, uint _proposalId) external
     isStatus(_storage, _proposalId, 4)
   {
     if (proposalIsEventChallenge(_storage, _proposalId)) {
@@ -118,102 +112,100 @@ library LProposal {
     unlockProposalDeposit(_storage, _proposalId);
   }
 
-  function getPrevTimeParamForCastVote(IAventusStorage s, uint proposalId) public view returns (uint) {
-    return LProposalVoting.getPrevTimeParamForCastVote(s, proposalId);
+  function getPrevTimeParamForCastVote(IAventusStorage _storage, uint _proposalId) external view returns (uint prevTime_) {
+    prevTime_ = LProposalVoting.getPrevTimeParamForCastVote(_storage, _proposalId);
   }
 
-  function setProposalDeposit(IAventusStorage _storage, uint _proposalId, uint _deposit) private {
-    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "deposit")), _deposit);
+  // @return AVT value with 18 decimal places of precision.
+  function getGovernanceProposalDeposit(IAventusStorage _storage) view public returns (uint depositInAVT_) {
+    uint depositInUSCents = _storage.getUInt(governanceProposalFixedDepositInUsCentsKey);
+    depositInAVT_ = LLock.getAVTDecimals(_storage, depositInUSCents);
   }
 
-  function unlockProposalDeposit(IAventusStorage _s, uint _proposalId) private
+  function unlockProposalDeposit(IAventusStorage _storage, uint _proposalId) private
   {
-    address proposalOwner = getProposalOwner(_s, _proposalId);
+    address proposalOwner = getProposalOwner(_storage, _proposalId);
     bytes32 expectedDepositsKey = keccak256(abi.encodePacked("ExpectedDeposits", proposalOwner));
-    uint expectedDeposits = _s.getUInt(expectedDepositsKey);
-    uint proposalDeposit = getProposalDeposit(_s, _proposalId);
+    uint expectedDeposits = _storage.getUInt(expectedDepositsKey);
+    uint proposalDeposit = getProposalDeposit(_storage, _proposalId);
     assert(expectedDeposits >= proposalDeposit);
-    _s.setUInt(expectedDepositsKey, expectedDeposits - proposalDeposit);
-    setProposalDeposit(_s, _proposalId, 0);
+    _storage.setUInt(expectedDepositsKey, expectedDeposits - proposalDeposit);
+    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "deposit")), 0);
   }
 
   /**
   * @dev Create a proposal to be voted on
-  * @param _s Storage contract
+  * @param _storage Storage contract
   * @param _desc Either just a title or a pointer to IPFS details
   * @param _deposit Deposit that has to have been paid for this proposal
-  * @return uint proposalId of newly created proposal
+  * @return uint proposalId_ of newly created proposal
   */
-  function createProposal(IAventusStorage _s, string _desc, uint _deposit)
+  function createProposal(IAventusStorage _storage, string _desc, uint _deposit)
     private
-    returns (uint)
+    returns (uint proposalId_)
   {
     address owner = msg.sender;
 
     bytes32 expectedDepositsKey = keccak256(abi.encodePacked("ExpectedDeposits", owner));
-    _s.setUInt(expectedDepositsKey, _s.getUInt(expectedDepositsKey) + _deposit);
+    _storage.setUInt(expectedDepositsKey, _storage.getUInt(expectedDepositsKey) + _deposit);
 
-    uint expectedDeposits = _s.getUInt(expectedDepositsKey);
-    uint actualDeposits = _s.getUInt(keccak256(abi.encodePacked("Lock", "deposit", owner)));
+    uint expectedDeposits = _storage.getUInt(expectedDepositsKey);
+    uint actualDeposits = _storage.getUInt(keccak256(abi.encodePacked("Lock", "deposit", owner)));
     require(
       actualDeposits >= expectedDeposits,
       "Owner has insufficient deposit funds to create a proposal"
     );
 
-    uint proposalCount = _s.getUInt(proposalCountKey);
-    uint proposalId = proposalCount + 1;
+    uint proposalCount = _storage.getUInt(proposalCountKey);
+    proposalId_ = proposalCount + 1;
 
-    _s.setString(keccak256(abi.encodePacked("Proposal", proposalId, "description")), _desc);
-    _s.setAddress(keccak256(abi.encodePacked("Proposal", proposalId, "owner")), owner);
-    setProposalDeposit(_s, proposalId, _deposit);
-
-    _s.setUInt(proposalCountKey, proposalId);
-
-    setProposalTimes(_s, proposalId);
-    return proposalId;
+    _storage.setString(keccak256(abi.encodePacked("Proposal", proposalId_, "description")), _desc);
+    _storage.setAddress(keccak256(abi.encodePacked("Proposal", proposalId_, "owner")), owner);
+    _storage.setUInt(keccak256(abi.encodePacked("Proposal", proposalId_, "deposit")), _deposit);
+    _storage.setUInt(proposalCountKey, proposalId_);
+    setProposalTimes(_storage, proposalId_);
   }
-
 
   // NOTE: We allow an event challenge to straddle the ticket sales time on purpose: if
   // the event is under challenge at ticket sale time it will NOT block ticket sales.
-  function setProposalTimes(IAventusStorage _s, uint _proposalId)
+  function setProposalTimes(IAventusStorage _storage, uint _proposalId)
     private
-    onlyProposalOwner(_s, _proposalId)
-    isStatus(_s, _proposalId, 0)
+    onlyProposalOwner(_storage, _proposalId)
+    isStatus(_storage, _proposalId, 0)
   {
-    uint lobbyingStart = getCurrentTime(_s);
-    uint votingStart = lobbyingStart + (1 days * _s.getUInt(keccak256(abi.encodePacked("Proposal",
-        proposalIsEventChallenge(_s, _proposalId) ?
+    uint lobbyingStart = LAventusTime.getCurrentTime(_storage);
+    uint votingStart = lobbyingStart + (1 days * _storage.getUInt(keccak256(abi.encodePacked("Proposal",
+        proposalIsEventChallenge(_storage, _proposalId) ?
             "eventChallengeLobbyingPeriodDays" :
             "governanceProposalLobbyingPeriodDays"))));
-    uint revealingStart = votingStart + (1 days * _s.getUInt(keccak256(abi.encodePacked("Proposal",
-        proposalIsEventChallenge(_s, _proposalId) ?
+    uint revealingStart = votingStart + (1 days * _storage.getUInt(keccak256(abi.encodePacked("Proposal",
+        proposalIsEventChallenge(_storage, _proposalId) ?
             "eventChallengeVotingPeriodDays" :
             "governanceProposalVotingPeriodDays"))));
-    uint revealingEnd = revealingStart + (1 days * _s.getUInt(keccak256(abi.encodePacked("Proposal",
-        proposalIsEventChallenge(_s, _proposalId) ?
+    uint revealingEnd = revealingStart + (1 days * _storage.getUInt(keccak256(abi.encodePacked("Proposal",
+        proposalIsEventChallenge(_storage, _proposalId) ?
             "eventChallengeRevealingPeriodDays" :
             "governanceProposalRevealingPeriodDays"))));
 
-    _s.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "lobbyingStart")), lobbyingStart);
-    _s.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "votingStart")), votingStart);
-    _s.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingStart")), revealingStart);
-    _s.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingEnd")), revealingEnd);
+    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "lobbyingStart")), lobbyingStart);
+    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "votingStart")), votingStart);
+    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingStart")), revealingStart);
+    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingEnd")), revealingEnd);
   }
 
   function doEndEventChallenge(IAventusStorage _storage, uint _proposalId, uint _eventId,
-      uint totalAgreedStake, uint totalDisagreedStake) private {
+      uint _totalAgreedStake, uint _totalDisagreedStake) private {
     // Note: a "draw" is taken as not agreeing with the challenge.
-    uint8 winningOption = totalAgreedStake > totalDisagreedStake ? 1 : 2;
+    uint8 winningOption = _totalAgreedStake > _totalDisagreedStake ? 1 : 2;
 
     uint totalWinningStake;
     bool challengeWon = challengerIsWinner(winningOption);
     if (challengeWon) {
       LEvents.setEventStatusFraudulent(_storage, _eventId);
-      totalWinningStake = totalAgreedStake;
+      totalWinningStake = _totalAgreedStake;
     } else {
       LEvents.setEventAsClearFromChallenge(_storage, _eventId);
-      totalWinningStake = totalDisagreedStake;
+      totalWinningStake = _totalDisagreedStake;
     }
 
     uint deposit = getProposalDeposit(_storage, _proposalId);
@@ -228,33 +220,29 @@ library LProposal {
 
   function endEventChallenge(IAventusStorage _storage, uint _proposalId)
     private
-    returns(uint _eventId)
+    returns (uint eventId_)
   {
-    _eventId = getEventIdFromChallengeProposalId(_storage, _proposalId);
+    eventId_ = getEventIdFromChallengeProposalId(_storage, _proposalId);
 
     uint totalAgreedStake = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedStake", uint8(1))));
     uint totalDisagreedStake = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedStake", uint8(2))));
-    doEndEventChallenge(_storage, _proposalId, _eventId, totalAgreedStake, totalDisagreedStake);
-  }
-
-  function getCurrentTime(IAventusStorage s) private view returns (uint) {
-    return LAventusTime.getCurrentTime(s);
+    doEndEventChallenge(_storage, _proposalId, eventId_, totalAgreedStake, totalDisagreedStake);
   }
 
   function getProposalDeposit(IAventusStorage _storage, uint _proposalId)
     private
     view
-    returns (uint _deposit)
+    returns (uint deposit_)
   {
-    _deposit = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "deposit")));
+    deposit_ = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "deposit")));
   }
 
-  function getProposalOwner(IAventusStorage _s, uint _proposalId)
+  function getProposalOwner(IAventusStorage _storage, uint _proposalId)
     private
     view
-    returns (address _owner)
+    returns (address owner_)
   {
-    _owner = _s.getAddress(keccak256(abi.encodePacked("Proposal", _proposalId, "owner")));
+    owner_ = _storage.getAddress(keccak256(abi.encodePacked("Proposal", _proposalId, "owner")));
   }
 
   /**
@@ -266,43 +254,43 @@ library LProposal {
   function getProposalStatus(IAventusStorage _storage, uint _proposalId)
     private
     view
-    returns (uint8)
+    returns (uint8 statusNum_)
   {
     uint votingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "votingStart")));
     uint revealingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingStart")));
     uint revealingEnd = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingEnd")));
     uint deposit = getProposalDeposit(_storage, _proposalId);
 
-    uint currentTime = getCurrentTime(_storage);
+    uint currentTime = LAventusTime.getCurrentTime(_storage);
 
     if (votingStart == 0)
-      return 0;
+      statusNum_ = 0;
     else if (currentTime < votingStart)
-      return 1; // Lobbying
+      statusNum_ = 1; // Lobbying
     else if (currentTime < revealingStart)
-      return 2; // Voting
+      statusNum_ = 2; // Voting
     else if (currentTime < revealingEnd)
-      return 3; // Revealing
+      statusNum_ = 3; // Revealing
     else if (deposit != 0)
-      return 4; // Revealing Finished, proposal not ended
+      statusNum_ = 4; // Revealing Finished, proposal not ended
     else
-      return 5; // Proposal ended
+      statusNum_ = 5; // Proposal ended
   }
 
-  function proposalIsEventChallenge(IAventusStorage _s, uint _proposalId)
+  function proposalIsEventChallenge(IAventusStorage _storage, uint _proposalId)
     private
     view
-    returns (bool _proposalIsAnEventChallenge) {
-    _proposalIsAnEventChallenge = getEventIdFromChallengeProposalId(_s, _proposalId) != 0;
+    returns (bool proposalIsAnEventChallenge_) {
+    proposalIsAnEventChallenge_ = getEventIdFromChallengeProposalId(_storage, _proposalId) != 0;
   }
 
-  function getEventIdFromChallengeProposalId(IAventusStorage _s, uint _challengeProposalId) private view
-    returns(uint eventId)
+  function getEventIdFromChallengeProposalId(IAventusStorage _storage, uint _challengeProposalId) private view
+    returns (uint eventId_)
   {
-    eventId = _s.getUInt(keccak256(abi.encodePacked("Proposal", _challengeProposalId, "ChallengeEvent")));
+    eventId_ = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _challengeProposalId, "ChallengeEvent")));
   }
 
-  function challengerIsWinner(uint8 _winningOption) private pure returns(bool _challengerIsWinner) {
-    _challengerIsWinner = (_winningOption == 1);
+  function challengerIsWinner(uint8 _winningOption) private pure returns (bool challengerIsWinner_) {
+    challengerIsWinner_ = (_winningOption == 1);
   }
 }

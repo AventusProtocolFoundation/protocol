@@ -29,7 +29,6 @@ library LEventsEnact {
       _ticketId != 0 && _ticketId <= _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "TicketCount"))),
       "Ticket's Id must be valid"
     );
-
     _;
   }
 
@@ -38,7 +37,6 @@ library LEventsEnact {
       eventActive(_storage, _eventId),
       "Event must be active"
     );
-
     _;
   }
 
@@ -81,7 +79,7 @@ library LEventsEnact {
     _;
   }
 
-  modifier isNotUnderChallenge(IAventusStorage  _storage, uint _eventId) {
+  modifier isNotUnderChallenge(IAventusStorage _storage, uint _eventId) {
     require(
       LEventsCommon.eventIsNotUnderChallenge(_storage, _eventId),
       "Event must not be under challenge"
@@ -97,7 +95,7 @@ library LEventsEnact {
   * @param _eventOwnerOrDelegate address requesting this refund - must be event owner or delegate
   */
   function doRefundTicket(IAventusStorage _storage, uint _eventId, uint _ticketId, address _eventOwnerOrDelegate)
-    public
+    external
     onlyEventOwnerOrDelegate(_storage, _eventId, _eventOwnerOrDelegate)
     isTicketRefundable(_storage, _eventId, _ticketId)
   {
@@ -105,7 +103,23 @@ library LEventsEnact {
     uint refundedTicketCount = _storage.getUInt(refundTicketKey);
     _storage.setUInt(refundTicketKey, refundedTicketCount + 1);
     setTicketStatusRefunded(_storage, _eventId, _ticketId);
-    setTicketHashNotOwned(_storage, getTicketHashFromTicketId(_storage, _eventId, _ticketId));
+    bytes32 ticketHash = _storage.getBytes32(keccak256(abi.encodePacked("Event", _eventId, "Ticket", _ticketId, "ticketHash")));
+    setTicketHashNotOwned(_storage, ticketHash);
+  }
+
+  /**
+  * @dev Executes Cancellation of an existing event.
+  * @param _storage Storage contract
+  * @param _eventId - id of the event to cancel
+  */
+  function doCancelEvent(IAventusStorage _storage, uint _eventId)
+    external
+    isActiveEvent(_storage, _eventId)
+    isNotUnderChallenge(_storage, _eventId)
+    ticketSaleNotInProgress(_storage, _eventId)
+  {
+    setEventStatusCancelled(_storage, _eventId);
+    doUnlockEventDeposit(_storage, _eventId);
   }
 
   /**
@@ -118,16 +132,18 @@ library LEventsEnact {
   * @param _ticketSaleStartTime - expected ticket sale start time
   * @param _eventSupportURL - verifiable official supporting url for the event
   * @param _owner - address of the event owner
-  * @return uint eventId of newly created event
+  * @return uint eventId_ of newly created event
+  *
+  * TODO: Could be external but too many variables for stack unless public
   */
   function doCreateEvent(IAventusStorage _storage, string _eventDesc, uint _eventTime, uint _capacity,
     uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime, string _eventSupportURL, address _owner)
     public
-    returns (uint eventId)
+    returns (uint eventId_)
   {
     validateEventCreation(_storage, _eventDesc, _eventTime, _capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime, _eventSupportURL, _owner);
 
-    eventId = _storage.getUInt(LEventsCommon.getEventCountKey()) + 1;
+    eventId_ = _storage.getUInt(LEventsCommon.getEventCountKey()) + 1;
 
     uint depositInUSCents = 0;
     uint depositInAVTDecimals = 0;
@@ -142,15 +158,15 @@ library LEventsEnact {
     );
 
 
-    _storage.setUInt(LEventsCommon.getEventCountKey(), eventId);
-    _storage.setAddress(keccak256(abi.encodePacked("Event", eventId, "owner")), _owner);
-    _storage.setString(keccak256(abi.encodePacked("Event", eventId, "description")), _eventDesc);
-    _storage.setUInt(keccak256(abi.encodePacked("Event", eventId, "capacity")), _capacity);
-    _storage.setUInt(keccak256(abi.encodePacked("Event", eventId, "averageTicketPriceInUSCents")), _averageTicketPriceInUSCents);
-    _storage.setUInt(keccak256(abi.encodePacked("Event", eventId, "ticketSaleStartTime")), _ticketSaleStartTime);
-    _storage.setString(keccak256(abi.encodePacked("Event", eventId, "eventSupportURL")), _eventSupportURL);
-    _storage.setUInt(keccak256(abi.encodePacked("Event", eventId, "deposit")), depositInAVTDecimals);
-    _storage.setUInt(keccak256(abi.encodePacked("Event", eventId, "eventTime")), _eventTime);
+    _storage.setUInt(LEventsCommon.getEventCountKey(), eventId_);
+    _storage.setAddress(keccak256(abi.encodePacked("Event", eventId_, "owner")), _owner);
+    _storage.setString(keccak256(abi.encodePacked("Event", eventId_, "description")), _eventDesc);
+    _storage.setUInt(keccak256(abi.encodePacked("Event", eventId_, "capacity")), _capacity);
+    _storage.setUInt(keccak256(abi.encodePacked("Event", eventId_, "averageTicketPriceInUSCents")), _averageTicketPriceInUSCents);
+    _storage.setUInt(keccak256(abi.encodePacked("Event", eventId_, "ticketSaleStartTime")), _ticketSaleStartTime);
+    _storage.setString(keccak256(abi.encodePacked("Event", eventId_, "eventSupportURL")), _eventSupportURL);
+    _storage.setUInt(keccak256(abi.encodePacked("Event", eventId_, "deposit")), depositInAVTDecimals);
+    _storage.setUInt(keccak256(abi.encodePacked("Event", eventId_, "eventTime")), _eventTime);
   }
 
   function doUnlockEventDeposit(IAventusStorage _storage, uint _eventId)
@@ -166,22 +182,7 @@ library LEventsEnact {
     );
     assert(_storage.getUInt(key) >= depositInAVT);
     _storage.setUInt(key, _storage.getUInt(key) - depositInAVT);
-    setEventDeposit(_storage, _eventId, 0);
-  }
-
-  /**
-  * @dev Executes Cancellation of an existing event.
-  * @param _storage Storage contract
-  * @param _eventId - id of the event to cancel
-  */
-  function doCancelEvent(IAventusStorage _storage, uint _eventId)
-    public
-    isActiveEvent(_storage, _eventId)
-    isNotUnderChallenge(_storage, _eventId)
-    ticketSaleNotInProgress(_storage, _eventId)
-  {
-    setEventStatusCancelled(_storage, _eventId);
-    doUnlockEventDeposit(_storage, _eventId);
+    _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "deposit")), 0);
   }
 
   /**
@@ -193,26 +194,26 @@ library LEventsEnact {
   * @param _eventOwnerOrDelegate address requesting this sale - must be event owner or delegate
   *
   * TODO: Consider adding ticket price so we can stop selling tickets when the total capital has been reached.
+  * TODO: Could be external but too many variables for stack unless public
   */
   function doSellTicket(IAventusStorage _storage, uint _eventId, string _ticketDetails, address _buyer, address _eventOwnerOrDelegate)
     public
     onlyEventOwnerOrDelegate(_storage, _eventId, _eventOwnerOrDelegate)
     inTicketSalePeriod(_storage, _eventId)
     isActiveEvent(_storage, _eventId)
-    returns (uint ticketId)
+    returns (uint ticketId_)
   {
     // TODO: Convert to a modifier when variable stack depth allows.
-    ticketId = checkEventOverCapacity(_storage, _eventId);
+    ticketId_ = checkEventOverCapacity(_storage, _eventId);
 
-    bytes32 ticketHash = getTicketHashFromDetails(_eventId, _ticketDetails);
+    bytes32 ticketHash = keccak256(abi.encodePacked("Event", _eventId, "Ticket", _ticketDetails));
     setTicketHashOwned(_storage, ticketHash);
 
-    _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "TicketCount")), ticketId);
-    _storage.setString(keccak256(abi.encodePacked("Event", _eventId, "Ticket", ticketId, "ticketDetails")), _ticketDetails);
-    _storage.setBytes32(keccak256(abi.encodePacked("Event", _eventId, "Ticket", ticketId, "ticketHash")), ticketHash);
-    _storage.setAddress(keccak256(abi.encodePacked("Event", _eventId, "Ticket", ticketId, "buyer")), _buyer);
+    _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "TicketCount")), ticketId_);
+    _storage.setString(keccak256(abi.encodePacked("Event", _eventId, "Ticket", ticketId_, "ticketDetails")), _ticketDetails);
+    _storage.setBytes32(keccak256(abi.encodePacked("Event", _eventId, "Ticket", ticketId_, "ticketHash")), ticketHash);
+    _storage.setAddress(keccak256(abi.encodePacked("Event", _eventId, "Ticket", ticketId_, "buyer")), _buyer);
   }
-
 
   function setTicketStatusRefunded(IAventusStorage _storage, uint _eventId, uint _ticketId) private {
     _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "Ticket", _ticketId, "status")), 1);
@@ -249,7 +250,6 @@ library LEventsEnact {
       "Event cannot be created because there is not enough of a reporting period before its date"
     );
 
-
     // TODO: Consider a minimum ticket sale period from ParameterRegistry.
     require(
       _ticketSaleStartTime < _eventTime,
@@ -267,59 +267,40 @@ library LEventsEnact {
     _storage.setBoolean(hashMsgKey, true);
   }
 
-  function setEventDeposit(IAventusStorage _storage, uint _eventId, uint _deposit) private {
-    _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "deposit")), _deposit);
-  }
-
   function setEventStatusCancelled(IAventusStorage _storage, uint _eventId) private {
     _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "status")), 1);
-  }
-
-  function isEventCancelled(IAventusStorage _storage, uint _eventId) private view returns (bool) {
-    return _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "status"))) == 1;
-  }
-
-  function isEventFraudulent(IAventusStorage _storage, uint _eventId) private view returns (bool) {
-    return _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "status"))) == 2;
   }
 
   function eventActive(IAventusStorage _storage, uint _eventId)
     private
     view
     isValidEvent(_storage, _eventId)
-    returns (bool)
+    returns (bool active_)
   {
-    return(LAventusTime.getCurrentTime(_storage) < LEventsCommon.getEventTime(_storage, _eventId) &&
-           !isEventCancelled(_storage, _eventId) &&
-           !isEventFraudulent(_storage, _eventId));
+    bool eventHasHappened = LAventusTime.getCurrentTime(_storage) >=  _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "eventTime")));
+    bool eventIsCancelled = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "status"))) == 1;
+    bool eventIsFraudulent = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "status"))) == 2;
+    active_ = !eventHasHappened && !eventIsCancelled && !eventIsFraudulent;
   }
 
-  function isTicketRefunded(IAventusStorage _storage, uint _eventId, uint _ticketId) private view returns (bool) {
-    return _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "Ticket", _ticketId, "status"))) == 1;
+  function isTicketRefunded(IAventusStorage _storage, uint _eventId, uint _ticketId) private view returns (bool refunded_) {
+    refunded_ = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "Ticket", _ticketId, "status"))) == 1;
   }
 
-  function ticketHashIsOwned(IAventusStorage _storage, bytes32 _hash) private view returns (bool) {
-    return _storage.getBoolean(_hash);
+  function ticketHashIsOwned(IAventusStorage _storage, bytes32 _hash) private view returns (bool hashOwned_) {
+    hashOwned_ = _storage.getBoolean(_hash);
   }
 
-  function checkEventOverCapacity(IAventusStorage _storage, uint _eventId) private view  returns (uint ticketCount) {
+  function checkEventOverCapacity(IAventusStorage _storage, uint _eventId) private view  returns (uint ticketCount_) {
     uint capacity = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "capacity")));
-    ticketCount = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "TicketCount")));
+    ticketCount_ = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "TicketCount")));
     uint refundedTicketCount = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "RefundedTicketCount")));
-    ticketCount += 1;
+    ticketCount_ += 1;
 
     require(
-      ticketCount - refundedTicketCount <= capacity,
-      "Number of currently issued tickets must be below event's capacity"
+      ticketCount_ - refundedTicketCount <= capacity,
+      "Number of currently issued tickets must be below event capacity"
     );
-  }
-
-  function getTicketHashFromTicketId(IAventusStorage _storage, uint _eventId, uint _ticketId) private view returns (bytes32 hash) {
-    hash = _storage.getBytes32(keccak256(abi.encodePacked("Event", _eventId, "Ticket", _ticketId, "ticketHash")));
-  }
-
-  function getTicketHashFromDetails(uint _eventId, string _ticketDetails) private pure returns (bytes32 hash) {
-    hash = keccak256(abi.encodePacked("Event", _eventId, "Ticket", _ticketDetails));
   }
 
 }

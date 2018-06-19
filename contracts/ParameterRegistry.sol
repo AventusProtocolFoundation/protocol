@@ -38,7 +38,7 @@ contract ParameterRegistry is Owned {
   }
 
   // TODO: Consider pre-calculating any fixed keccaks - will save gas - here and elsewhere in the code.
-  function setupDefaultParameters() public onlyOwner {
+  function setupDefaultParameters() external onlyOwner {
     s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalLobbyingPeriodDays")), GOVERNANCE_PROPOSAL_LOBBYING_PERIOD_DAYS);
     s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalVotingPeriodDays")), GOVERNANCE_PROPOSAL_VOTING_PERIOD_DAYS);
     s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalRevealingPeriodDays")), GOVERNANCE_PROPOSAL_REVEALING_PERIOD_DAYS);
@@ -55,13 +55,11 @@ contract ParameterRegistry is Owned {
     s.setUInt8(keccak256(abi.encodePacked("Events", "winningsForChallengeEnderPercentage")), EVENT_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE);
     s.setUInt8(keccak256(abi.encodePacked("Events", "winningsForChallengeWinnerPercentage")), EVENT_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE);
 
-
     s.setUInt(keccak256(abi.encodePacked("Applications", "fixedDepositAmount")), APPLICATION_DEPOSIT);
-
     s.setUInt(keccak256(abi.encodePacked("OneAVTInUSCents")), AVT_IN_US_CENTS);
   }
 
-  function to18SigFig(uint _avtValue) internal pure returns (uint) {
-    return  _avtValue * 10**18;
+  function to18SigFig(uint _avtValue) internal pure returns (uint value_) {
+    value_ = _avtValue * 10**18;
   }
 }

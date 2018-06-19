@@ -4,14 +4,14 @@ contract PDelegate {
 
   /**
   * @dev Performs a delegatecall and returns whatever the delegatecall returned (entire context execution will return!)
-  * @param dst Destination address to perform the delegatecall
-  * @param calldata Calldata for the delegatecall
+  * @param _dst Destination address to perform the delegatecall
+  * @param _calldata Calldata for the delegatecall
   */
-  function delegatedFwd(address dst, bytes calldata) internal {
-    require (isContract(dst));
+  function delegatedFwd(address _dst, bytes _calldata) internal {
+    require (isContract(_dst));
 
     assembly {
-      let result := delegatecall(sub(gas, 10000), dst, add(calldata, 0x20), mload(calldata), 0, 0)
+      let result := delegatecall(sub(gas, 10000), _dst, add(_calldata, 0x20), mload(_calldata), 0, 0)
       let size := returndatasize
 
       let ptr := mload(0x40)
@@ -24,17 +24,17 @@ contract PDelegate {
     }
   }
 
-  function isContract(address target)
+  function isContract(address _target)
     view
     internal
-    returns (bool)
+    returns (bool result_)
   {
     uint256 size;
 
     assembly {
-        size := extcodesize(target)
+        size := extcodesize(_target)
     }
 
-    return size != 0;
+    result_ = (size != 0);
   }
 }

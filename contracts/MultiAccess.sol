@@ -8,12 +8,12 @@ contract MultiAccess is Owned {
 
   mapping(address => bool) accessAllowed;
 
-  function allowAccess(address _address) public onlyOwner {
+  function allowAccess(address _address) external onlyOwner {
     accessAllowed[_address] = true;
     emit AllowAccessEvent(_address);
   }
 
-  function denyAccess(address _address) public onlyOwner {
+  function denyAccess(address _address) external onlyOwner {
     accessAllowed[_address] = false;
     emit DenyAccessEvent(_address);
   }
@@ -21,5 +21,5 @@ contract MultiAccess is Owned {
   function isAllowedAccess() internal view {
     require(msg.sender == owner || accessAllowed[msg.sender]);
   }
-  
+
 }
