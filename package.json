@@ -3,7 +3,7 @@
   "version": "0.5.4",
   "description": "The Aventus Protocol",
   "author": "Artos Systems Ltd",
-  "license": "ISC",
+  "license": "GNU gpl v3.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AventusProtocolFoundation/protocol.git"
