@@ -25,9 +25,9 @@ library LEvents {
     _;
   }
 
-  modifier addressIsWhitelisted(IAventusStorage _storage, address delegate) {
+  modifier addressIsWhitelisted(IAventusStorage _storage, address _delegate) {
     require(
-      LApps.appIsRegistered(_storage, delegate),
+      LApps.appIsRegistered(_storage, _delegate),
       "App must have been registered as a delegate"
     );
     _;

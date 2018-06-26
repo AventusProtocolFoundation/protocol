@@ -1,10 +1,6 @@
 const EventsManager = artifacts.require("EventsManager");
 const AventusVote = artifacts.require("AventusVote");
-const AventusStorage = artifacts.require("AventusStorage");
-const LAventusTime = artifacts.require("LAventusTime");
-const LAventusTimeMock = artifacts.require("LAventusTimeMock");
 const AppsManager = artifacts.require("AppsManager");
-const IERC20 = artifacts.require("IERC20");
 const testHelper = require("./testHelper");
 const web3Utils = require('web3-utils');
 
@@ -28,15 +24,16 @@ const ticketDetailsBase = "Unallocated seating. Ticket number: ";
 let ticketCount = 1;
 
 async function before(_appAddress, _eventOwner) {
+  await testHelper.before();
+
   appAddress = _appAddress;
   eventOwner = _eventOwner;
-  await testHelper.before();
-  eventsManager = await EventsManager.deployed();
-  aventusVote = await AventusVote.deployed();
-  appsManager = await AppsManager.deployed();
 
-  let avtAddress = await testHelper.getAVTAddress();
-  avt = IERC20.at(avtAddress);
+  eventsManager = await EventsManager.deployed();
+  appsManager = await AppsManager.deployed();
+  aventusVote = testHelper.getAventusVote();
+
+  avt = testHelper.getAVTContract();
 };
 
 after(async () => await testHelper.checkFundsEmpty());
@@ -133,6 +130,9 @@ module.exports = {
   getEventDeposit: () => eventDeposit,
   getEventSupportURL: () => eventSupportURL,
   getEventCapacity: () => eventCapacity,
+  getEventsManager: () => eventsManager,
+  getAppsManager: () => appsManager,
+
   makeDeposit,
   makeEventDeposit,
   withdrawDeposit,

@@ -5,18 +5,13 @@ import "./LAventusTime.sol";
 import "./LEventsCommon.sol";
 
 library LEventsEnact {
-  bytes32 constant minimumEventReportingPeriodDaysKey = keccak256(abi.encodePacked("Events", "minimumEventReportingPeriodDays"));
-
   modifier onlyEventOwnerOrDelegate(IAventusStorage _storage, uint _eventId, address _eventOwnerOrDelegate) {
-    require(
-      LEventsCommon.addressIsOwner(_storage, _eventId, _eventOwnerOrDelegate) ||
-        LEventsCommon.addressIsDelegate(_storage, _eventId, _eventOwnerOrDelegate),
-      "Function must be called by owner or delegate only"
-    );
+    LEventsCommon.checkOwnerOrDelegate(_storage, _eventId, _eventOwnerOrDelegate);
     _;
   }
 
-  modifier isTicketRefundable(IAventusStorage _storage, uint _eventId, uint _ticketId) {
+
+  modifier ticketIsRefundable(IAventusStorage _storage, uint _eventId, uint _ticketId) {
     require(
       eventActive(_storage, _eventId),
       "Event must be active"
@@ -97,7 +92,7 @@ library LEventsEnact {
   function doRefundTicket(IAventusStorage _storage, uint _eventId, uint _ticketId, address _eventOwnerOrDelegate)
     external
     onlyEventOwnerOrDelegate(_storage, _eventId, _eventOwnerOrDelegate)
-    isTicketRefundable(_storage, _eventId, _ticketId)
+    ticketIsRefundable(_storage, _eventId, _ticketId)
   {
     bytes32 refundTicketKey = keccak256(abi.encodePacked("Event", _eventId, "RefundedTicketCount"));
     uint refundedTicketCount = _storage.getUInt(refundTicketKey);
@@ -141,7 +136,7 @@ library LEventsEnact {
     public
     returns (uint eventId_)
   {
-    validateEventCreation(_storage, _eventDesc, _eventTime, _capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime, _eventSupportURL, _owner);
+    LEventsCommon.validateEventCreation(_storage, _eventDesc, _eventTime, _capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime, _eventSupportURL, _owner);
 
     eventId_ = _storage.getUInt(LEventsCommon.getEventCountKey()) + 1;
 
@@ -153,10 +148,9 @@ library LEventsEnact {
     bytes32 key = keccak256(abi.encodePacked("ExpectedDeposits", _owner));
     _storage.setUInt(key, _storage.getUInt(key) + depositInAVTDecimals);
     require(
-      _storage.getUInt(key) <= _storage.getUInt(keccak256(abi.encodePacked("Lock", "deposit", _owner))),
+      _storage.getUInt(key) <= LLock.getBalance(_storage, _owner, "deposit"),
       "Insufficient deposit funds to create event"
     );
-
 
     _storage.setUInt(LEventsCommon.getEventCountKey(), eventId_);
     _storage.setAddress(keccak256(abi.encodePacked("Event", eventId_, "owner")), _owner);
@@ -204,7 +198,7 @@ library LEventsEnact {
     returns (uint ticketId_)
   {
     // TODO: Convert to a modifier when variable stack depth allows.
-    ticketId_ = checkEventOverCapacity(_storage, _eventId);
+    ticketId_ = LEventsCommon.checkEventOverCapacity(_storage, _eventId);
 
     bytes32 ticketHash = keccak256(abi.encodePacked("Event", _eventId, "Ticket", _ticketDetails));
     setTicketHashOwned(_storage, ticketHash);
@@ -235,38 +229,6 @@ library LEventsEnact {
     _storage.setBoolean(_hash, false);
   }
 
-  function validateEventCreation(IAventusStorage _storage, string _eventDesc, uint _eventTime, uint _capacity,
-    uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime, string _eventSupportURL, address _owner)
-    private
-  {
-    bytes32 hashMsg = LEventsCommon.hashEventParameters(_eventDesc, _eventTime, _capacity, _averageTicketPriceInUSCents,
-      _ticketSaleStartTime, _eventSupportURL, _owner);
-    bytes32 hashMsgKey = keccak256(abi.encodePacked("Event", "hashMessage", hashMsg));
-
-    uint minimumEventReportingPeriod = (1 days) * _storage.getUInt(minimumEventReportingPeriodDaysKey);
-    assert(minimumEventReportingPeriod > 0);
-    require(
-      _ticketSaleStartTime >= LAventusTime.getCurrentTime(_storage) + minimumEventReportingPeriod,
-      "Event cannot be created because there is not enough of a reporting period before its date"
-    );
-
-    // TODO: Consider a minimum ticket sale period from ParameterRegistry.
-    require(
-      _ticketSaleStartTime < _eventTime,
-      "Tickets sale period must start before event"
-    );
-    require(
-      bytes(_eventSupportURL).length != 0,
-      "Event creation requires a non-empty URL"
-    );
-    require(
-      !_storage.getBoolean(hashMsgKey),
-      "There is already an existing event with these data"
-    );
-
-    _storage.setBoolean(hashMsgKey, true);
-  }
-
   function setEventStatusCancelled(IAventusStorage _storage, uint _eventId) private {
     _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "status")), 1);
   }
@@ -289,18 +251,6 @@ library LEventsEnact {
 
   function ticketHashIsOwned(IAventusStorage _storage, bytes32 _hash) private view returns (bool hashOwned_) {
     hashOwned_ = _storage.getBoolean(_hash);
-  }
-
-  function checkEventOverCapacity(IAventusStorage _storage, uint _eventId) private view  returns (uint ticketCount_) {
-    uint capacity = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "capacity")));
-    ticketCount_ = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "TicketCount")));
-    uint refundedTicketCount = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "RefundedTicketCount")));
-    ticketCount_ += 1;
-
-    require(
-      ticketCount_ - refundedTicketCount <= capacity,
-      "Number of currently issued tickets must be below event capacity"
-    );
   }
 
 }

@@ -15,13 +15,13 @@ contract('Proxy testing', function () {
 
   before(async function () {
     await testHelper.before();
-    aventusStorage = await AventusStorage.deployed();
-    aventusVote = await AventusVote.deployed();
+
+    aventusStorage = testHelper.getStorage();
+    aventusVote = testHelper.getAventusVote();
     newLibraryAddress = (await LProposalForTesting.deployed()).address;
     oldLibraryAddress = await aventusStorage.getAddress(web3.sha3("LProposalInstance"));
 
-    let avtAddress = await testHelper.getAVTAddress();
-    avt = IERC20.at(avtAddress);
+    avt = testHelper.getAVTContract();
   });
 
   after(async () => await testHelper.checkFundsEmpty());
@@ -32,7 +32,7 @@ contract('Proxy testing', function () {
     await aventusVote.deposit("deposit", proposalDeposit);
 
     await aventusVote.createGovernanceProposal(desc);
-    const eventArgs = await testHelper.getEventArgs(aventusVote.CreateProposalEvent);
+    const eventArgs = await testHelper.getEventArgs(aventusVote.LogCreateProposal);
     return eventArgs.proposalId.toNumber();
   }
 

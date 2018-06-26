@@ -1,6 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "../interfaces/IAventusStorage.sol";
+import "./LLock.sol";
 
 /**
  * Library for dealing with the winnings of a challenge.
@@ -98,10 +99,6 @@ library LProposalWinnings {
     giveWinnings(_storage, winningsToChallengeEnderAVT, challengeEnder);
   }
 
-  // TODO: Consider keccak256(abi.encodePacked("Lock", address, "deposit") format for all of
-  // these calls and elsewhere: makes it clearer that deposit and stake are
-  // owned by the same address, also means we will not use "LockDeposit" or
-  // "LockStake" combined strings.
   // TODO: Consider using LLock for all these get/set calls.
   function takeAllWinningsFromProposalLoser(
       IAventusStorage _storage,
@@ -109,10 +106,7 @@ library LProposalWinnings {
       address _loser)
     private
   {
-    bytes32 depositLockKey = keccak256(abi.encodePacked("Lock", "deposit", _loser));
-    uint depositLock = _storage.getUInt(depositLockKey);
-    assert(depositLock >= _winnings);
-    _storage.setUInt(depositLockKey, depositLock - _winnings);
+    LLock.decreaseFund(_storage, _loser, "deposit", _winnings);
   }
 
   function giveWinnings(
@@ -121,9 +115,7 @@ library LProposalWinnings {
       address _payee)
     private
   {
-    bytes32 depositLockKey = keccak256(abi.encodePacked("Lock", "deposit", _payee));
-    uint depositLock = _storage.getUInt(depositLockKey);
-    _storage.setUInt(depositLockKey, depositLock + _winnings);
+    LLock.increaseFund(_storage, _payee, "deposit", _winnings);
   }
 
 }

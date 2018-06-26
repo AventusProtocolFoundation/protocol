@@ -1,6 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "../interfaces/IAventusStorage.sol";
+import "./LLock.sol";
 import "./zeppelin/LECRecovery.sol";
 
 library LProposalVoting {
@@ -67,7 +68,7 @@ library LProposalVoting {
     );
 
     // IFF we are still in the reveal period AND the user has non-zero stake at reveal time...
-    uint stake = _storage.getUInt(keccak256(abi.encodePacked("Lock", "stake", voter)));
+    uint stake = LLock.getBalance(_storage, voter, "stake");
     if (_proposalStatus == 3 && stake != 0) {
       // ...increment the total stake for this option with the voter's stake...
       bytes32 totalStakeForOptionKey = keccak256(abi.encodePacked("Proposal", _proposalId, "revealedStake", _optId));

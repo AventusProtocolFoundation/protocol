@@ -1,3 +1,5 @@
+const common = require('./common.js');
+
 const eip55 = require('eip55');
 const fs = require('fs');
 
@@ -22,7 +24,7 @@ function deployContracts(deployer, network) {
   console.log("Deploying Contracts...");
   let s;
   return deployer.then(() => {
-    return getAventusStorage(deployer, network);
+    return common.getStorageContractFromJsonFile(deployer, AventusStorage);
   }).then((_s) => {
     s = _s;
     if (network != "development") {
@@ -76,14 +78,4 @@ function saveContractToStorage(s, contractName, contract) {
     }
     return Promise.all(abiPromises);
   });
-}
-
-// TODO: This is used in the libraries migration file too. Share.
-function getAventusStorage(deployer, network) {
-  if (network === "development") {
-    return AventusStorage.deployed();
-  } else {
-    const rawdata = fs.readFileSync("./api/storage.json");
-    return deployer.then(() => AventusStorage.at(JSON.parse(rawdata).address));
-  }
 }

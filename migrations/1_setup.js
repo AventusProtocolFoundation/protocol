@@ -1,13 +1,13 @@
 const avtsaleJson = require('./AVTSale.json');
+const common = require('./common.js');
 const eip55 = require('eip55');
 const fs = require('fs');
 
 const Migrations = artifacts.require("Migrations");
 const AventusStorage = artifacts.require("AventusStorage");
 
-const storageJsonFile = "./api/storage.json";
-
-console.log("*** Version of web3: ", web3.version.api);
+// ALWAYS deploy storage unless we want to emulate an existing storage contract.
+let deployStorage = true;
 
 /**
  * @return Promise wrapping the address of the AVT contract.
@@ -39,14 +39,13 @@ function initialDeploy(_deployer, _network) {
 
 // Deploy a new (or use the old) storage contract.
 function getStorageContract(deployer, network) {
-  if (network === "development" || network === "rinkeby") {
-    // Always deploy a new one for dev.
+  if (deployStorage) {
     console.log("Deploying storage contract");
     return deployAndSaveStorageContract(deployer);
   } else {
     try {
-      console.log("Getting existing storage contract");
-      return getExistingStorageContract(deployer);
+      console.log("Using existing storage contract");
+      return common.getStorageContractFromJsonFile(deployer, AventusStorage);
     } catch (error) {
       console.log("No existing storage contract");
       return deployAndSaveStorageContract(deployer);
@@ -54,25 +53,24 @@ function getStorageContract(deployer, network) {
   }
 }
 
-function getExistingStorageContract(deployer) {
-  const rawdata = fs.readFileSync(storageJsonFile);
-  console.log("Using existing storage contract");
-  return deployer.then(() => AventusStorage.at(JSON.parse(rawdata).address));
-}
-
 function deployAndSaveStorageContract(deployer) {
   console.log("Deploying storage contract...");
   return deployer.deploy(AventusStorage).then((s) => {
     console.log("...saving storage contract for reuse.");
-    const sAddress = AventusStorage.address;
-    const storageObject = { address: eip55.encode(sAddress), abi: AventusStorage.abi };
-    fs.writeFileSync(storageJsonFile, JSON.stringify(storageObject, null, 4));
+    common.saveStorageContractToJsonFile(AventusStorage);
     return AventusStorage.deployed();
   });
 }
 
 module.exports = function(deployer, network, accounts) {
-  console.log("*** Starting setup...")
+  if (network === "live" || network === "rinkeby") {
+    return deployer;
+  }
+
+  console.log("PRIVATE NETWORK DEPLOYMENT");
+  console.log("*** Version of web3: ", web3.version.api);
+  console.log("*** Starting setup...");
+
   return initialDeploy(deployer, network).then(() => console.log("*** SETUP COMPLETE"));
 };
 
