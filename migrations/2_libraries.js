@@ -1,3 +1,4 @@
+const common = require('./common.js');
 const fs = require('fs');
 
 const AventusStorage = artifacts.require("AventusStorage");
@@ -17,7 +18,6 @@ const LLock = artifacts.require("LLock");
 const LProposalVoting = artifacts.require("LProposalVoting");
 const LProposal = artifacts.require("LProposal");
 const LProposalForTesting = artifacts.require("LProposalForTesting");
-const LECRecovery = artifacts.require("LECRecovery");
 
 // Proxies
 const PApps = artifacts.require("PApps");
@@ -25,7 +25,6 @@ const PAventusTime = artifacts.require("PAventusTime");
 const PEvents = artifacts.require("PEvents");
 const PLock = artifacts.require("PLock");
 const PProposal = artifacts.require("PProposal");
-const PECRecovery = artifacts.require("PECRecovery");
 
 module.exports = function(deployer, network, accounts) {
     console.log("*** Deploying Libraries...");
@@ -36,22 +35,21 @@ module.exports = function(deployer, network, accounts) {
 // necessary, eg for Live network.
 function deployLibraries(deployer, network) {
   let s;
-  return deployer.then(() => {
-    return getAventusStorage(deployer, network);
-  }).then((storageContract) => {
+  return common.getStorageContractFromJsonFile(deployer, AventusStorage)
+  .then((storageContract) => {
     s = storageContract;
     return deployLAventusTime(deployer, network, s);
   }).then(() => {
-    return deployer.link(LAventusTime, [LProposal, LLock, LEvents, LEventsEnact, ProposalManager]);
+    return deployer.link(LAventusTime, [LProposal, LLock, LEvents, LEventsCommon, LEventsEnact, ProposalManager]);
   }).then(() => {
-    return deployer.deploy([PProposal, PLock, PEvents, PApps, PECRecovery]);
+    return deployer.deploy([PProposal, PLock, PEvents, PApps]);
   }).then(() => {
     return deployer.deploy(LLock);
   }).then(() => {
     return deployer.then(() => s.setAddress(web3.sha3("LLockInstance"), LLock.address));
   }).then(() => {
     LLock.address = PLock.address;
-    return deployer.link(LLock, [LProposal, LEventsCommon, LApps, ProposalManager, AppsManager]);
+    return deployer.link(LLock, [LProposal, LProposalWinnings, LProposalVoting, LEventsCommon, LEventsEnact, LApps, ProposalManager, AppsManager]);
   }).then(() => {
     return deployer.deploy(LApps);
   }).then(() => {
@@ -59,13 +57,6 @@ function deployLibraries(deployer, network) {
   }).then(() => {
     LApps.address = PApps.address;
     return deployer.link(LApps, [LEvents, LEventsCommon, LEventsEnact, AppsManager]);
-  }).then(() => {
-    return deployer.deploy(LECRecovery);
-  }).then(() => {
-    return deployer.then(() => s.setAddress(web3.sha3("LECRecoveryInstance"), LECRecovery.address));
-  }).then(() => {
-    LECRecovery.address = PECRecovery.address;
-    return deployer.link(LECRecovery, LEvents);
   }).then(() => {
     return deployer.deploy(LEventsCommon);
   }).then(() => {
@@ -109,14 +100,4 @@ function deployLAventusTime(_deployer, _network, _storage) {
     LAventusTime.address = PAventusTime.address;
     return _deployer.then(() => _storage.setAddress(web3.sha3("LAventusTimeInstance"), timeAddress));
   });
-}
-
-// TODO: This is used in the contracts migration file too. Share.
-function getAventusStorage(deployer, network) {
-  if (network === "development") {
-    return AventusStorage.deployed();
-  } else {
-    const rawdata = fs.readFileSync("./api/storage.json");
-    return deployer.then(() => AventusStorage.at(JSON.parse(rawdata).address));
-  }
 }

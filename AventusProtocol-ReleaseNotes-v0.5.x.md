@@ -1,12 +1,23 @@
 # Aventus Protocol 0.5.x Release Notes
 
-This second public major point release (see v0.4.x for the first) represents the state of the protocol after the Solidified Audit.
+This second public major point release (see v0.4.x for the first) represents the state of the protocol after the Solidified Audit and the first main net release.
 
 The audit brought to light a number of issues, none of which were critical, which are fixed in these releases.
 
 The release notes for version 0.5.x follow, listed by sub-release and category, filtered by status.
 
+## Release 0.5.5 - 2018-06-26
+
+Minor changes:
+* Consistent naming of primary contract events as LogXXX()
+* Removal of LECRecovery and proxy from deployment (all methods are internal)
+* Release of initial deployment code used for main net release and support for future partial deployment
+* LLock now has account address before fund in mapping schema and is used directly
+* Various minor clean up and efficiency/consistency changes in Solidity and test code
+
 ## Release 0.5.4 - 2018-06-19
+
+DEPLOYED TO MAIN NET 2018-06-20: see MainNetRelease-20180620.md for details.
 
 Breaking changes:
 * All signed methods now use Zeppelin elliptic curve, ECRecovery, library, as suggested by Solidified.

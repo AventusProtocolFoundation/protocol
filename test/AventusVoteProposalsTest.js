@@ -1,5 +1,3 @@
-const AventusVote = artifacts.require("AventusVote.sol");
-const IERC20 = artifacts.require("IERC20");
 const testHelper = require("./helpers/testHelper");
 
 contract('AventusVote - Proposal set-up', function () {
@@ -13,9 +11,9 @@ contract('AventusVote - Proposal set-up', function () {
 
   before(async function() {
     await testHelper.before();
-    aventusVote = await AventusVote.deployed();
-    let avtAddress = await testHelper.getAVTAddress();
-    avt = IERC20.at(avtAddress);
+
+    aventusVote = testHelper.getAventusVote();
+    avt = testHelper.getAVTContract();
     deposit = await aventusVote.getGovernanceProposalDeposit();
   });
 
@@ -35,7 +33,7 @@ contract('AventusVote - Proposal set-up', function () {
     await aventusVote.deposit("deposit", deposit, {from: owner});
 
     await aventusVote.createGovernanceProposal(desc, {from: owner});
-    const eventArgs = await testHelper.getEventArgs(aventusVote.CreateProposalEvent);
+    const eventArgs = await testHelper.getEventArgs(aventusVote.LogCreateProposal);
     const oldProposalId = proposalId;
     proposalId = eventArgs.proposalId;
     assert.equal(proposalId.toNumber(), oldProposalId.plus(1).toNumber(), "ids are not sequential");

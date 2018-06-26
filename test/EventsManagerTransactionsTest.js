@@ -31,7 +31,8 @@ contract('EventsManager - transactions', function () {
 
   before(async function() {
     await eventsTestHelper.before(appAddress, eventOwner);
-    eventsManager = await EventsManager.deployed();
+
+    eventsManager = eventsTestHelper.getEventsManager();
   });
 
   after(async () => await testHelper.checkFundsEmpty());

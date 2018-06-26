@@ -150,7 +150,7 @@ library LProposal {
     _storage.setUInt(expectedDepositsKey, _storage.getUInt(expectedDepositsKey) + _deposit);
 
     uint expectedDeposits = _storage.getUInt(expectedDepositsKey);
-    uint actualDeposits = _storage.getUInt(keccak256(abi.encodePacked("Lock", "deposit", owner)));
+    uint actualDeposits = LLock.getBalance(_storage, owner, "deposit");
     require(
       actualDeposits >= expectedDeposits,
       "Owner has insufficient deposit funds to create a proposal"

@@ -5,17 +5,15 @@ const web3Utils = require('web3-utils');
 let aventusVote;
 
 async function before() {
-  aventusVote = await AventusVote.deployed();
+  await testHelper.before();
+  aventusVote = testHelper.getAventusVote();
 }
-
-// TODO: Share these methods with the events signing test code.
 
 function getSignedMessage(proposalId, optionId, _address) {
   let hexString = convertToBytes32HexString(proposalId * 10 + optionId);
   let data = web3Utils.soliditySha3("0x" + hexString);
   let address = _address || testHelper.getAccount(0);
-  let signedMessage = web3.eth.sign(address, data);
-  return signedMessage;
+  return testHelper.createSignedMessage(address, data);
 }
 
 // convert a number to hex-64 zero-padded string

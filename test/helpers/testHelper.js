@@ -2,6 +2,7 @@ const AventusStorage = artifacts.require("AventusStorage.sol");
 const AventusVote = artifacts.require("AventusVote.sol");
 const LAventusTime = artifacts.require("LAventusTime");
 const LAventusTimeMock = artifacts.require("LAventusTimeMock");
+const IERC20 = artifacts.require("IERC20");
 const web3Utils = require('web3-utils');
 
 const oneDay = 86400;    // seconds in one day.
@@ -16,6 +17,7 @@ async function before() {
   aventusStorage = await AventusStorage.deployed();
   avtAddress = await aventusStorage.getAddress(web3.sha3("AVT"));
   aventusVote = await AventusVote.deployed();
+
   blockChainTime = new web3.BigNumber(web3.eth.getBlock(web3.eth.blockNumber).timestamp);
   await useMockTime();
   lastEventBlockNumber = -1;
@@ -119,6 +121,8 @@ module.exports = {
 
     now: () => blockChainTime,
     getStorage: () => aventusStorage,
+    getAventusVote: () => aventusVote,
+    getAVTContract: () => IERC20.at(avtAddress),
 
     before,
     checkFundsEmpty,
@@ -132,5 +136,4 @@ module.exports = {
     advanceTimeToEventEnd,
     createSignedMessage,
 
-    getAVTAddress: () => avtAddress
 }

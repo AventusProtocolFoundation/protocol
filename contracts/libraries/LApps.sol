@@ -15,7 +15,7 @@ library LApps {
       uint appDeposit = getAppDeposit(_storage);
       uint expectedDeposits = _storage.getUInt(expectedDepositsKey) + appDeposit;
       _storage.setUInt(expectedDepositsKey, expectedDeposits);
-      uint actualDeposits = _storage.getUInt(keccak256(abi.encodePacked("Lock", "deposit", _appAddress)));
+      uint actualDeposits = LLock.getBalance(_storage, _appAddress, "deposit");
       require(
         actualDeposits >= expectedDeposits,
         'Insufficient deposits to register this address'

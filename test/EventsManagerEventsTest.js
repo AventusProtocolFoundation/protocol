@@ -1,10 +1,4 @@
 const EventsManager = artifacts.require("EventsManager");
-const AventusVote = artifacts.require("AventusVote");
-const AventusStorage = artifacts.require("AventusStorage");
-const LAventusTime = artifacts.require("LAventusTime");
-const LAventusTimeMock = artifacts.require("LAventusTimeMock");
-const AppsManager = artifacts.require("AppsManager");
-const IERC20 = artifacts.require("IERC20");
 const testHelper = require("./helpers/testHelper");
 const eventsTestHelper = require("./helpers/eventsTestHelper");
 const web3Utils = require('web3-utils');
@@ -24,8 +18,9 @@ contract('EventsManager - event management', function () {
 
   before(async function() {
     await eventsTestHelper.before(appAddress, eventOwner);
+
     eventsManager = await EventsManager.deployed();
-    aventusStorage = await AventusStorage.deployed();
+    aventusStorage = testHelper.getStorage();
   });
 
   after(async () => await testHelper.checkFundsEmpty());
@@ -70,6 +65,7 @@ contract('EventsManager - event management', function () {
   });
 
   const signedEvent = [false, true];
+
   for (let i = 0; i < signedEvent.length; ++i) {
     const eventIsSigned = signedEvent[i];
     const eventPreTitle = (eventIsSigned ? "Signed" : "Unsigned") + " event ";
@@ -88,6 +84,7 @@ contract('EventsManager - event management', function () {
       }
 
       if (eventIsSigned) {
+
         it(eventPreTitle + "creation fails unless sending address is whitelisted", async function() {
           eventsTestHelper.setupUniqueEventParameters();
           await eventsTestHelper.makeEventDeposit();
@@ -97,6 +94,7 @@ contract('EventsManager - event management', function () {
           await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(appAddress);
           await eventsTestHelper.endEventAndWithdrawDeposit();
         });
+
       }
 
       context(eventPreTitle + (eventIsSigned ? "with whitelisted app address" : ""), async () => {

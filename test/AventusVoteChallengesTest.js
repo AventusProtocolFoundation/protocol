@@ -1,6 +1,4 @@
 const EventsManager = artifacts.require("EventsManager");
-const AventusVote = artifacts.require("AventusVote");
-const IERC20 = artifacts.require("IERC20");
 const testHelper = require("./helpers/testHelper");
 const votingTestHelper = require("./helpers/votingTestHelper");
 
@@ -23,13 +21,11 @@ contract('AventusVote - Event challenges', async () => {
   const fixedPercentageToChallengeEnder = 10;
 
   before(async function() {
-    await testHelper.before();
     await votingTestHelper.before();
-    eventsManager = await EventsManager.deployed();
-    aventusVote = await AventusVote.deployed();
 
-    let avtAddress = await testHelper.getAVTAddress();
-    avt = IERC20.at(avtAddress);
+    eventsManager = await EventsManager.deployed();
+    aventusVote = testHelper.getAventusVote();
+    avt = testHelper.getAVTContract();
   });
 
   // Create an event: always owned by account 0.
