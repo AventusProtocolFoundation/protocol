@@ -25,7 +25,7 @@ Proxied by PApps: (0x658145bc5eecd0e5f9436a5e04257791bbba9590)
 ## LECRecovery: 0x2752c0e0520c5ecbb9c87fda14ef66caf4451acc
 Our version of the Zeppelin ECDSA library for signing messages.
 Proxied by PECRecovery (0x3e1cfde5986750f4cdecc8abde828d2bf0b0f1ff)
-##Events
+## Events
 Event management is split into 3 libraries due to size constraints on Ethereum, with LEvents as the proxied entry point:
 ### LEvents: 0xf67b8487d15df5c97a463bd5e1941fc632134bcc
 Entry point for all events transactions, ie creating and cancelling events, handling delegates, selling and refunding tickets.
