@@ -57,10 +57,10 @@ library LEventsCommon {
     isValid_ = _eventId != 0 && _eventId <= _storage.getUInt(eventCountKey);
   }
 
-  function checkOwnerOrDelegate(IAventusStorage _storage, uint _eventId, address _eventOwnerOrDelegate) external view {
+  function checkOwnerOrDelegateByRole(IAventusStorage _storage, uint _eventId, address _eventOwnerOrDelegate, string _role) external view {
     require(
       addressIsOwner(_storage, _eventId, _eventOwnerOrDelegate) ||
-      addressIsDelegate(_storage, _eventId, _eventOwnerOrDelegate),
+      addressIsDelegate(_storage, _eventId, _role, _eventOwnerOrDelegate),
       "Function must be called by owner or delegate only"
     );
   }
@@ -86,15 +86,16 @@ library LEventsCommon {
   * @dev Check if an address is registered as a delegate for an event
   * @param _storage Storage contract
   * @param _eventId - ID of the event
+  * @param _role - "primary" or "secondary" delegate role
   * @param _delegate - address to check
   * @return registered_ - returns true if the supplied delegate is registered
   */
-  function addressIsDelegate(IAventusStorage _storage, uint _eventId, address _delegate)
+  function addressIsDelegate(IAventusStorage _storage, uint _eventId, string _role, address _delegate)
     public
     view
     returns (bool registered_)
   {
-    registered_ = _storage.getBoolean(keccak256(abi.encodePacked("Event", _eventId, "delegate", _delegate))) &&
+    registered_ = _storage.getBoolean(keccak256(abi.encodePacked("Event", _eventId, "role", _role, "delegate", _delegate))) &&
       LApps.appIsRegistered(_storage, _delegate);
   }
 

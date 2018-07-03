@@ -29,11 +29,18 @@ contract('AppsManager', function () {
   async function depositAndRegisterApp(accountNum) {
     let account = await makeDepositForApp(accountNum);
     await appsManager.registerApp(account);
+    // check that this action was properly logged
+    const eventArgs = await testHelper.getEventArgs(appsManager.LogAppRegistered);
+    assert.equal(eventArgs.appAddress, account, "wrong app address");
     return account;
   }
 
   async function deregisterAppAndWithdrawDeposit(account) {
     await appsManager.deregisterApp(account);
+    // check that this action was properly logged
+    const eventArgs = await testHelper.getEventArgs(appsManager.LogAppDeregistered);
+    assert.equal(eventArgs.appAddress, account, "wrong app address");
+
     await withdrawDeposit(account);
   }
 

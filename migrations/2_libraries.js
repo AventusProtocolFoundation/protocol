@@ -31,73 +31,147 @@ module.exports = function(deployer, network, accounts) {
     return deployLibraries(deployer, network).then(() => console.log("*** LIBRARIES DEPLOY COMPLETE"));
 };
 
-// TODO: Write another version of this that handles partial redeploying when
-// necessary, eg for Live network.
+let deployLAventusTime;
+let deployLLock;
+let deployLApps;
+let deployLEvents;
+let deployLProposal;
+let deployLProposalForTesting;
+let deployLAventusTimeMock;
+
 function deployLibraries(deployer, network) {
+  const developmentMode = network === "development";
+  const notLiveMode = network != "live";
+
+  deployLAventusTime = developmentMode;
+  deployLLock = developmentMode;
+  deployLApps = developmentMode;
+  deployLEvents = developmentMode;
+  deployLProposal = developmentMode;
+  deployLProposalForTesting = developmentMode;
+  deployLAventusTimeMock = notLiveMode;
+
   let s;
-  return common.getStorageContractFromJsonFile(deployer, AventusStorage)
-  .then((storageContract) => {
+  return deployer.then(() => {
+    return common.getStorageContractFromJsonFile(deployer, AventusStorage)
+  }).then((storageContract) => {
     s = storageContract;
-    return deployLAventusTime(deployer, network, s);
+    return doDeployLAventusTime(deployer, s);
   }).then(() => {
-    return deployer.link(LAventusTime, [LProposal, LLock, LEvents, LEventsCommon, LEventsEnact, ProposalManager]);
+    return doDeployLLock(deployer, s);
   }).then(() => {
-    return deployer.deploy([PProposal, PLock, PEvents, PApps]);
+    return doDeployLApps(deployer, s);
   }).then(() => {
-    return deployer.deploy(LLock);
+    return doDeployLEvents(deployer, s);
   }).then(() => {
-    return deployer.then(() => s.setAddress(web3.sha3("LLockInstance"), LLock.address));
-  }).then(() => {
-    LLock.address = PLock.address;
-    return deployer.link(LLock, [LProposal, LProposalWinnings, LProposalVoting, LEventsCommon, LEventsEnact, LApps, ProposalManager, AppsManager]);
-  }).then(() => {
-    return deployer.deploy(LApps);
-  }).then(() => {
-    return deployer.then(() => s.setAddress(web3.sha3("LAppsInstance"), LApps.address));
-  }).then(() => {
-    LApps.address = PApps.address;
-    return deployer.link(LApps, [LEvents, LEventsCommon, LEventsEnact, AppsManager]);
-  }).then(() => {
-    return deployer.deploy(LEventsCommon);
-  }).then(() => {
-    return deployer.link(LEventsCommon, [LEvents, LEventsEnact]);
-  }).then(() => {
-    return deployer.deploy(LEventsEnact);
-  }).then(() => {
-    return deployer.link(LEventsEnact, LEvents);
-  }).then(() => {
-    return deployer.deploy(LEvents);
-  }).then(() => {
-    return network === "live" ? deployer : deployer.deploy(LProposalForTesting);
-  }).then(() => {
-    return deployer.then(() => s.setAddress(web3.sha3("LEventsInstance"), LEvents.address));
-  }).then(() => {
-    LEvents.address = PEvents.address;
-    return deployer.link(LEvents, [LProposal, EventsManager, ProposalManager]);
-  }).then(() => {
-    return deployer.deploy(LProposalWinnings);
-  }).then(() => {
-    return deployer.link(LProposalWinnings, LProposal);
-  }).then(() => {
-    return deployer.deploy(LProposalVoting);
-  }).then(() => {
-    return deployer.link(LProposalVoting, LProposal);
-  }).then(() => {
-    return deployer.deploy(LProposal);
-  }).then(() => {
-    return deployer.then(() => s.setAddress(web3.sha3("LProposalInstance"), LProposal.address));
-  }).then(() => {
-    LProposal.address = PProposal.address;
-    return deployer.link(LProposal, ProposalManager);
+    return doDeployLProposal(deployer, s);
   });
 }
 
-function deployLAventusTime(_deployer, _network, _storage) {
-  return _deployer.deploy([LAventusTime, PAventusTime]).then(() => {
-    return _network === "live" ? _deployer : _deployer.deploy(LAventusTimeMock);
-  }).then(() => {
-    const timeAddress = _network === "live" ? LAventusTime.address : LAventusTimeMock.address;
-    LAventusTime.address = PAventusTime.address;
-    return _deployer.then(() => _storage.setAddress(web3.sha3("LAventusTimeInstance"), timeAddress));
+function doDeployLAventusTime(_deployer, _storage) {
+  const libraryName = "LAventusTimeInstance";
+  const proxyName = "PAventusTimeInstance";
+  const library = LAventusTime;
+  const proxy = PAventusTime;
+  const deployLibrary = deployLAventusTime;
+  const dependents = [LProposal, LLock, LEvents, LEventsEnact, LEventsCommon, ProposalManager];
+
+  return doDeployLibrary(_deployer, _storage, libraryName, proxyName, library, proxy, deployLibrary, dependents)
+  .then(() => {
+    if (deployLAventusTimeMock) {
+      return _deployer.deploy(LAventusTimeMock)
+      .then(() => setProxiedLibraryAddress(_storage, libraryName, proxy, LAventusTimeMock));
+    } else {
+      return _deployer;
+    }
   });
+}
+
+function doDeployLLock(_deployer, _storage) {
+  const libraryName = "LLockInstance";
+  const proxyName = "PLockInstance";
+  const library = LLock;
+  const proxy = PLock;
+  const deployLibrary = deployLLock;
+  const dependents = [LProposal, LProposalWinnings, LProposalVoting, LEventsCommon, LEventsEnact, LApps, ProposalManager, AppsManager];
+
+  return doDeployLibrary(_deployer, _storage, libraryName, proxyName, library, proxy, deployLibrary, dependents);
+}
+
+function doDeployLApps(_deployer, _storage) {
+  const libraryName = "LAppsInstance";
+  const proxyName = "PAppsInstance";
+  const library = LApps;
+  const proxy = PApps;
+  const deployLibrary = deployLApps;
+  const dependents = [LEvents, LEventsCommon, LEventsEnact, AppsManager];
+
+  return doDeployLibrary(_deployer, _storage, libraryName, proxyName, library, proxy, deployLibrary, dependents);
+}
+
+function doDeployLEvents(_deployer, _storage) {
+  const libraryName = "LEventsInstance";
+  const proxyName = "PEventsInstance";
+  const library = LEvents;
+  const proxy = PEvents;
+  const deployLibrary = deployLEvents;
+  const dependents = [LProposal, EventsManager, ProposalManager];
+
+  return doDeployLibrary(_deployer, _storage, libraryName, proxyName, library, proxy, deployLibrary, dependents);
+}
+
+function doDeployLProposal(_deployer, _storage) {
+  const libraryName = "LProposalInstance";
+  const proxyName = "PProposalInstance";
+  const library = LProposal;
+  const proxy = PProposal;
+  const deployLibrary = deployLProposal;
+  const dependents = ProposalManager;
+
+  return doDeployLibrary(_deployer, _storage, libraryName, proxyName, library, proxy, deployLibrary, dependents)
+    .then(() => deployLProposalForTesting ? _deployer.deploy(LProposalForTesting) : _deployer);
+}
+
+function doDeployLibrary(_deployer, _storage, libraryName, proxyName, library, proxy, deployLibrary, dependents) {
+  return _storage.getAddress(web3.sha3(proxyName)
+  ).then((address) => {
+    if (address == 0 || deployLibrary) {
+      return doDeploySubLibraries(_deployer, library)
+      .then(() => _deployer.deploy([library, proxy])
+      ).then(() => setProxiedLibraryAddress(_storage, libraryName, proxy, library)
+      ).then(() => {
+        console.log("Using newly deployed", proxyName, proxy.address);
+        return _storage.setAddress(web3.sha3(proxyName), proxy.address);
+      });
+    } else {
+      console.log("Using pre-existing", proxyName, address);
+      return _deployer;
+    }
+  }).then(() => _storage.getAddress(web3.sha3(proxyName))
+  ).then((proxyAddress) => {
+    library.address = proxyAddress;
+    return _deployer.link(library, dependents);
+  });
+}
+
+function doDeploySubLibraries(_deployer, library) {
+  if (library === LProposal) {
+    return _deployer.deploy(LProposalWinnings).then(
+      () => _deployer.link(LProposalWinnings, LProposal)).then(
+      () => _deployer.deploy(LProposalVoting)).then(
+      () => _deployer.link(LProposalVoting, LProposal));
+  } else if (library === LEvents) {
+    return _deployer.deploy(LEventsCommon).then(
+      () => _deployer.link(LEventsCommon, [LEvents, LEventsEnact])).then(
+      () => _deployer.deploy(LEventsEnact)).then(
+      () => _deployer.link(LEventsEnact, LEvents));
+  }
+  return _deployer;
+}
+
+function setProxiedLibraryAddress(_storage, _libraryName, _proxy, _library) {
+  // TODO: add version number to key name.
+  const key = _libraryName;
+  console.log("Setting library hash of", key, "to use address", _library.address);
+  return _storage.setAddress(web3.sha3(key), _library.address);
 }

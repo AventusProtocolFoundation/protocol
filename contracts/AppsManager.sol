@@ -3,12 +3,11 @@ pragma solidity ^0.4.24;
 import './interfaces/IAppsManager.sol';
 import './interfaces/IAventusStorage.sol';
 import './libraries/LApps.sol';
-import './libraries/LLock.sol';
 import './Owned.sol';
 
 contract AppsManager is IAppsManager, Owned {
-
-    // TODO: Consider emitting logging events for these transactions.
+    event LogAppRegistered(address indexed appAddress);
+    event LogAppDeregistered(address indexed appAddress);
 
     IAventusStorage public s;
 
@@ -25,6 +24,7 @@ contract AppsManager is IAppsManager, Owned {
       onlyOwner
     {
       LApps.registerApp(s, _appAddress);
+      emit LogAppRegistered(_appAddress);
     }
 
     function deregisterApp(address _appAddress)
@@ -32,6 +32,7 @@ contract AppsManager is IAppsManager, Owned {
       onlyOwner
     {
       LApps.deregisterApp(s, _appAddress);
+      emit LogAppDeregistered(_appAddress);
     }
 
     function challengeApp(address /*_appAddress*/)

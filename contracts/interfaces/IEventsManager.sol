@@ -91,43 +91,48 @@ interface IEventsManager {
   /**
   * @dev Register a delegate for an event
   * @param _eventId - ID of the event
+  * @param _role - type of delegate (must be "primary" or "secondary")
   * @param _delegate - delegate address
   */
-  function registerDelegate(uint _eventId, address _delegate) external;
+  function registerDelegate(uint _eventId, string _role, address _delegate) external;
 
   /**
   * @dev Deregister a delegate to an event
   * @param _eventId - ID of the event
+  * @param _role - type of delegate (must be "primary" or "secondary")
   * @param _delegate - delegate of the event
   */
-  function deregisterDelegate(uint _eventId, address _delegate) external;
+  function deregisterDelegate(uint _eventId, string _role, address _delegate) external;
 
   /**
    * Sell a ticket on the secondary market.
+   * @param _eventId - ID of the event
    * @param _ticketId identifier for the ticket: unique to this event.
+   * @param _ownerPermission - signed by the owner
    * @param _newBuyer address of the new buyer of the ticket.
    */
-  function resellTicket(uint _ticketId, address _newBuyer)
-    external
-    pure;
+  function resellTicket(uint _eventId, uint _ticketId, bytes _ownerPermission, address _newBuyer)
+    external;
 
   /**
    * Sell a ticket on the secondary market on behalf of a signer.
    * @param _signedMessage a signed message
+   * @param _eventId - ID of the event
    * @param _ticketId identifier for the ticket: unique to this event.
+   * @param _ownerPermission - signed by the owner
    * @param _newBuyer address of the new buyer of the ticket.
    */
-  function signedResellTicket(bytes _signedMessage, uint _ticketId, address _newBuyer)
-    external
-    pure;
+  function signedResellTicket(bytes _signedMessage, uint _eventId, uint _ticketId, bytes _ownerPermission, address _newBuyer)
+    external;
 
   /**
   * @dev Check if a delegate is registered for an event
   * @param _eventId - ID of the event
+  * @param _role - type of delegate (must be "primary" or "secondary")
   * @param _delegate - Delegate to check
   * @return _registered - returns true if the supplied delegate is registered
   */
-  function addressIsDelegate(uint _eventId, address _delegate)
+  function addressIsDelegate(uint _eventId, string _role, address _delegate)
     external
     view
     returns (bool registered_);

@@ -13,10 +13,12 @@ contract EventsManager is IEventsManager, Owned {
   event LogSignedEventCancellation(uint eventId);
   event LogTicketSale(uint eventId, uint ticketId, address buyer);
   event LogSignedTicketSale(uint eventId, uint ticketId, address buyer);
+  event LogTicketResale(uint eventId, uint ticketId, address newBuyer);
+  event LogSignedTicketResale(uint eventId, uint ticketId, address newBuyer);
   event LogTicketRefund(uint eventId, uint ticketId);
   event LogSignedTicketRefund(uint eventId, uint ticketId);
-  event LogRegisterDelegate(uint eventId, address delegate);
-  event LogDeregisterDelegate(uint eventId, address delegate);
+  event LogRegisterDelegate(uint eventId, string role, address delegate);
+  event LogDeregisterDelegate(uint eventId, string role, address delegate);
 
   IAventusStorage public s;
 
@@ -83,35 +85,35 @@ contract EventsManager is IEventsManager, Owned {
     emit LogSignedTicketRefund(_eventId, _ticketId);
   }
 
-  function resellTicket(uint /* _ticketId */, address /* _newBuyer */)
-    external
-    pure {
-    // TODO: Support secondary market sales.
+  function resellTicket(uint _eventId, uint _ticketId, bytes _ownerPermission, address _newBuyer)
+    external {
+      LEvents.resellTicket(s, _eventId, _ticketId, _ownerPermission, _newBuyer);
+      emit LogTicketResale(_eventId, _ticketId, _newBuyer);
   }
 
-  function signedResellTicket(bytes /* _signedMessage*/,
-      uint /* _ticketId */, address /* _newBuyer */)
-    external
-    pure {
-    // TODO: Support secondary market sales.
+  function signedResellTicket(bytes _signedMessage, uint _eventId, uint _ticketId,
+    bytes _ownerPermission, address _newBuyer)
+    external {
+    LEvents.signedResellTicket(s, _signedMessage, _eventId, _ticketId, _ownerPermission, _newBuyer);
+    emit LogSignedTicketResale(_eventId, _ticketId, _newBuyer);
   }
 
-  function registerDelegate(uint _eventId, address _delegate) external {
-    LEvents.registerDelegate(s, _eventId, _delegate);
-    emit LogRegisterDelegate(_eventId, _delegate);
+  function registerDelegate(uint _eventId, string _role, address _delegate) external {
+    LEvents.registerDelegate(s, _eventId, _role, _delegate);
+    emit LogRegisterDelegate(_eventId, _role, _delegate);
   }
 
-  function deregisterDelegate(uint _eventId, address _delegate) external {
-    LEvents.deregisterDelegate(s, _eventId, _delegate);
-    emit LogDeregisterDelegate(_eventId, _delegate);
+  function deregisterDelegate(uint _eventId, string _role, address _delegate) external {
+    LEvents.deregisterDelegate(s, _eventId, _role, _delegate);
+    emit LogDeregisterDelegate(_eventId, _role, _delegate);
   }
 
-  function addressIsDelegate(uint _eventId, address _delegate)
+  function addressIsDelegate(uint _eventId, string _role, address _delegate)
     external
     view
     returns (bool registered_)
   {
-    registered_ = LEvents.addressIsDelegate(s, _eventId, _delegate);
+    registered_ = LEvents.addressIsDelegate(s, _eventId, _role, _delegate);
   }
 
   function getEventDeposit(uint _capacity, uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime)
