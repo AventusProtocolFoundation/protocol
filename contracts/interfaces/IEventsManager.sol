@@ -108,7 +108,7 @@ interface IEventsManager {
    * Sell a ticket on the secondary market.
    * @param _eventId - ID of the event
    * @param _ticketId identifier for the ticket: unique to this event.
-   * @param _ownerPermission - eventId and ticketId signed by the owner
+   * @param _ownerPermission - signed by the owner
    * @param _newBuyer address of the new buyer of the ticket.
    */
   function resellTicket(uint _eventId, uint _ticketId, bytes _ownerPermission, address _newBuyer)
@@ -119,7 +119,7 @@ interface IEventsManager {
    * @param _signedMessage a signed message
    * @param _eventId - ID of the event
    * @param _ticketId identifier for the ticket: unique to this event.
-   * @param _ownerPermission - eventId and ticketId signed by the owner
+   * @param _ownerPermission - signed by the owner
    * @param _newBuyer address of the new buyer of the ticket.
    */
   function signedResellTicket(bytes _signedMessage, uint _eventId, uint _ticketId, bytes _ownerPermission, address _newBuyer)
