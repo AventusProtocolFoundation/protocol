@@ -2,3 +2,5 @@ build/
 logs/
 node_modules/
 package-lock.json
+.node-xmlhttprequest-sync-*
+tools/previousBinarySizes.json

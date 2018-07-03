@@ -14,7 +14,8 @@ contract('EventsManager - event management', function () {
 
   const appAddress = testHelper.getAccount(0);
   const eventOwner = testHelper.getAccount(1);
-  const delegate = testHelper.getAccount(2);
+  const primaryDelegate = testHelper.getAccount(2);
+  const secondaryDelegate = testHelper.getAccount(3);
 
   before(async function() {
     await eventsTestHelper.before(appAddress, eventOwner);
@@ -192,52 +193,77 @@ contract('EventsManager - event management', function () {
             await eventsTestHelper.endEventAndWithdrawDeposit();
           });
 
-          async function registerDelegateSucceeds() {
-            await eventsManager.registerDelegate(eventId, delegate, {from: eventOwner});
+          async function registerPrimaryDelegateSucceeds() {
+            await eventsManager.registerDelegate(eventId, "primary", primaryDelegate, {from: eventOwner});
           }
 
-          async function registerDelegateFails(_delegate) {
-            await testHelper.expectRevert(() => eventsManager.registerDelegate(eventId, delegate, {from: _delegate}));
+          async function registerPrimaryDelegateFails(_delegate) {
+            await testHelper.expectRevert(() => eventsManager.registerDelegate(eventId, "primary", primaryDelegate, {from: _delegate}));
           }
 
-          async function deregisterDelegateSucceeds() {
-            await eventsManager.deregisterDelegate(eventId, delegate, {from: eventOwner});
+          async function deregisterPrimaryDelegateSucceeds() {
+            await eventsManager.deregisterDelegate(eventId, "primary", primaryDelegate, {from: eventOwner});
           }
 
-          it("can register/deregister a whitelisted delegate", async function() {
-            await eventsTestHelper.depositAndWhitelistApp(delegate);
+          async function registerUnknownRoleDelegateFails() {
+            await testHelper.expectRevert(() => eventsManager.registerDelegate(eventId, "unknown_role", primaryDelegate, {from: eventOwner}));
+          }
 
-            let registered = await eventsManager.addressIsDelegate(eventId, delegate);
+          it("can register/deregister a whitelisted primary delegate", async function() {
+            await eventsTestHelper.depositAndWhitelistApp(primaryDelegate);
+
+            let registered = await eventsManager.addressIsDelegate(eventId, "primary", primaryDelegate);
             assert.ok(!registered);
 
-            await registerDelegateSucceeds();
-            registered = await eventsManager.addressIsDelegate(eventId, delegate);
+            await registerPrimaryDelegateSucceeds();
+            registered = await eventsManager.addressIsDelegate(eventId, "primary", primaryDelegate);
             assert.ok(registered);
 
-            await deregisterDelegateSucceeds()
-            registered = await eventsManager.addressIsDelegate(eventId, delegate);
+            await deregisterPrimaryDelegateSucceeds()
+            registered = await eventsManager.addressIsDelegate(eventId, "primary", primaryDelegate);
             assert.ok(!registered);
 
-            await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(delegate);
+            await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(primaryDelegate);
+          });
+
+          it("can register/deregister a whitelisted secondary delegate", async function() {
+            await eventsTestHelper.depositAndWhitelistApp(secondaryDelegate);
+
+            let registered = await eventsManager.addressIsDelegate(eventId, "secondary", secondaryDelegate);
+            assert.ok(!registered);
+
+            await eventsManager.registerDelegate(eventId, "secondary", secondaryDelegate, {from: eventOwner});
+            registered = await eventsManager.addressIsDelegate(eventId, "secondary", secondaryDelegate);
+            assert.ok(registered);
+
+            await eventsManager.deregisterDelegate(eventId, "secondary", secondaryDelegate, {from: eventOwner});
+            registered = await eventsManager.addressIsDelegate(eventId, "secondary", secondaryDelegate);
+            assert.ok(!registered);
+
+            await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(secondaryDelegate);
           });
 
           it("cannot register a delegate if they are not whitelisted", async function() {
-            await registerDelegateFails(eventOwner);
+            await registerPrimaryDelegateFails(eventOwner);
           });
 
           it ("can deregister a delegate if they are not registered", async function() {
-            await eventsTestHelper.depositAndWhitelistApp(delegate);
-            await deregisterDelegateSucceeds()
-            await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(delegate);
+            await eventsTestHelper.depositAndWhitelistApp(primaryDelegate);
+            await deregisterPrimaryDelegateSucceeds()
+            await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(primaryDelegate);
           });
 
           it("cannot register/deregister a delegate if not the owner", async function() {
-            await eventsTestHelper.depositAndWhitelistApp(delegate);
-            await registerDelegateFails(delegate);
-            await registerDelegateSucceeds();
-            await testHelper.expectRevert(() => eventsManager.deregisterDelegate(eventId, delegate, {from: delegate}));
-            await deregisterDelegateSucceeds()
-            await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(delegate);
+            await eventsTestHelper.depositAndWhitelistApp(primaryDelegate);
+            await registerPrimaryDelegateFails(primaryDelegate);
+            await registerPrimaryDelegateSucceeds();
+            await testHelper.expectRevert(() => eventsManager.deregisterDelegate(eventId, "primary", primaryDelegate, {from: primaryDelegate}));
+            await deregisterPrimaryDelegateSucceeds()
+            await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(primaryDelegate);
+          });
+
+          it("cannot register a delegate with an unknown role", async function() {
+            await registerUnknownRoleDelegateFails(eventOwner);
           });
         });
       });

@@ -5,7 +5,7 @@ const storageJsonFile = "./api/storage.json";
 
 function getStorageContractFromJsonFile(deployer, aventusStorage) {
   const rawdata = fs.readFileSync(storageJsonFile);
-  return deployer.then(() => aventusStorage.at(JSON.parse(rawdata).address));
+  return aventusStorage.at(JSON.parse(rawdata).address);
 }
 
 function saveStorageContractToJsonFile(aventusStorage) {

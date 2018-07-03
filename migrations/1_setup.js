@@ -2,12 +2,13 @@ const avtsaleJson = require('./AVTSale.json');
 const common = require('./common.js');
 const eip55 = require('eip55');
 const fs = require('fs');
+const binariesCheck = require('../tools/binariesCheck.js')
 
 const Migrations = artifacts.require("Migrations");
 const AventusStorage = artifacts.require("AventusStorage");
 
 // ALWAYS deploy storage unless we want to emulate an existing storage contract.
-let deployStorage = true;
+let forceDeployStorage = true;
 
 /**
  * @return Promise wrapping the address of the AVT contract.
@@ -39,17 +40,16 @@ function initialDeploy(_deployer, _network) {
 
 // Deploy a new (or use the old) storage contract.
 function getStorageContract(deployer, network) {
-  if (deployStorage) {
+  if (forceDeployStorage) {
     console.log("Deploying storage contract");
     return deployAndSaveStorageContract(deployer);
   } else {
-    try {
       console.log("Using existing storage contract");
-      return common.getStorageContractFromJsonFile(deployer, AventusStorage);
-    } catch (error) {
-      console.log("No existing storage contract");
-      return deployAndSaveStorageContract(deployer);
-    }
+      const truffleContract = common.getStorageContractFromJsonFile(deployer, AventusStorage);
+      return truffleContract.then(() => truffleContract).catch( e => {
+        console.log("No existing storage contract");
+        return deployAndSaveStorageContract(deployer);
+      });
   }
 }
 
@@ -62,11 +62,20 @@ function deployAndSaveStorageContract(deployer) {
   });
 }
 
+function exitOnOversizeBinary() {
+  let oversize = binariesCheck();
+  if (oversize) {
+    console.log('\n*BINARY OVERSIZE*', oversize, 'bytes\n');
+    process.exit(1);
+  }
+}
+
 module.exports = function(deployer, network, accounts) {
+  exitOnOversizeBinary();
+
   if (network === "live" || network === "rinkeby") {
     return deployer;
   }
-
   console.log("PRIVATE NETWORK DEPLOYMENT");
   console.log("*** Version of web3: ", web3.version.api);
   console.log("*** Starting setup...");
@@ -96,4 +105,3 @@ function createAVTContract() {
       });
     });
 }
-

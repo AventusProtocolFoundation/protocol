@@ -41,6 +41,15 @@ library LEvents {
     _;
   }
 
+  modifier validDelegateRole(IAventusStorage _storage, string _role) {
+    require(
+      keccak256(abi.encodePacked(_role)) == keccak256("primary") ||
+      keccak256(abi.encodePacked(_role)) == keccak256("secondary"),
+      "Delegate role must be primary or secondary"
+    );
+    _;
+  }
+
   function createEvent(IAventusStorage _storage, string _eventDesc, uint _eventTime, uint _capacity,
     uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime, string _eventSupportURL)
     external
@@ -117,32 +126,72 @@ library LEvents {
     LEventsEnact.doRefundTicket(_storage, _eventId, _ticketId, signer);
   }
 
+  function resellTicket(IAventusStorage _storage, uint _eventId, uint _ticketId, bytes _ownerPermission, address _newBuyer)
+  external
+  {
+    ownerPermissionCheck(_storage, _eventId, _ticketId, _ownerPermission);
+    LEventsEnact.doResellTicket(_storage, _eventId, _ticketId, _newBuyer, msg.sender);
+  }
+
+  function signedResellTicket(IAventusStorage _storage, bytes _signedMessage, uint _eventId,
+    uint _ticketId, bytes _ownerPermission, address _newBuyer)
+    external
+    addressIsWhitelisted(_storage, msg.sender)
+  {
+    bytes32 msgHash = keccak256(abi.encodePacked(_eventId, _ticketId, _ownerPermission, _newBuyer));
+    msgHash = LECRecovery.toEthSignedMessageHash(msgHash);
+    address signer = LECRecovery.recover(msgHash, _signedMessage);
+    checkNotMsgSender(signer);
+
+    ownerPermissionCheck(_storage, _eventId, _ticketId, _ownerPermission);
+    LEventsEnact.doResellTicket(_storage, _eventId, _ticketId, _newBuyer, signer);
+  }
+
+   function ownerPermissionCheck(IAventusStorage _storage, uint _eventId, uint _ticketId, bytes _ownerPermission) private view {
+     address currentOwner = _storage.getAddress(keccak256(abi.encodePacked("Event", _eventId, "Ticket", _ticketId, "buyer")));
+     bytes32 msgHash = keccak256(abi.encodePacked(_eventId, _ticketId, currentOwner));
+     msgHash = LECRecovery.toEthSignedMessageHash(msgHash);
+     address signer = LECRecovery.recover(msgHash, _ownerPermission);
+     addressMatch(signer, currentOwner);
+   }
+
+   function addressMatch(address _addrA, address _addrB) private pure  {
+     require(
+       _addrA == _addrB,
+       "Addresses do not match"
+     );
+   }
+
   /**
   * @dev Register a delegate for an existing event
   * @param _storage Storage contract
   * @param _eventId - ID of the event
+  * @param _role - type of delegate (must be "primary" or "secondary")
   * @param _delegate - delegate address
   */
-  function registerDelegate(IAventusStorage _storage, uint _eventId, address _delegate)
+  function registerDelegate(IAventusStorage _storage, uint _eventId, string _role, address _delegate)
     external
     onlyEventOwner(_storage, _eventId)
     addressIsWhitelisted(_storage, _delegate)
+    validDelegateRole(_storage, _role)
   {
-    _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "delegate", _delegate)), true);
+    _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "role", _role, "delegate", _delegate)), true);
   }
 
   /**
   * @dev Deregister a delegate to an existing event
   * @param _storage Storage contract
   * @param _eventId - ID of the event
+  * @param _role - type of delegate (must be "primary" or "secondary")
   * @param _delegate - delegate of the event
   */
-  function deregisterDelegate(IAventusStorage _storage, uint _eventId, address _delegate)
+  function deregisterDelegate(IAventusStorage _storage, uint _eventId, string _role, address _delegate)
     external
     onlyEventOwner(_storage, _eventId)
+    validDelegateRole(_storage, _role)
   {
-    if (addressIsDelegate(_storage, _eventId, _delegate))
-      _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "delegate", _delegate)), false);
+    if (addressIsDelegate(_storage, _eventId, _role, _delegate))
+      _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "role", _role, "delegate", _delegate)), false);
   }
 
   function setEventAsChallenged(IAventusStorage _storage, uint _eventId, uint _challengeProposalId)
@@ -206,14 +255,15 @@ library LEvents {
   * @param _storage Storage contract
   * @param _eventId - ID of the event
   * @param _delegate - address to check
-  * @return _registered - returns true if the supplied delegate is registered
+  * @param _role - type of delegate (must be "primary" or "secondary")
+  * @return registered_ - returns true if the supplied delegate is registered
   */
-  function addressIsDelegate(IAventusStorage _storage, uint _eventId, address _delegate)
+  function addressIsDelegate(IAventusStorage _storage, uint _eventId, string _role, address _delegate)
     public
     view
     returns (bool registered_)
   {
-    registered_ = LEventsCommon.addressIsDelegate(_storage, _eventId, _delegate);
+    registered_ = LEventsCommon.addressIsDelegate(_storage, _eventId, _role, _delegate);
   }
 
   function getEventDeposit(IAventusStorage _storage, uint _capacity, uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime)

@@ -5,13 +5,17 @@ import "./LAventusTime.sol";
 import "./LEventsCommon.sol";
 
 library LEventsEnact {
-  modifier onlyEventOwnerOrDelegate(IAventusStorage _storage, uint _eventId, address _eventOwnerOrDelegate) {
-    LEventsCommon.checkOwnerOrDelegate(_storage, _eventId, _eventOwnerOrDelegate);
+  modifier onlyEventOwnerOrPrimaryDelegate(IAventusStorage _storage, uint _eventId, address _eventOwnerOrDelegate) {
+    LEventsCommon.checkOwnerOrDelegateByRole(_storage, _eventId, _eventOwnerOrDelegate, "primary");
     _;
   }
 
+  modifier onlyEventOwnerOrSecondaryDelegate(IAventusStorage _storage, uint _eventId, address _eventOwnerOrDelegate) {
+    LEventsCommon.checkOwnerOrDelegateByRole(_storage, _eventId, _eventOwnerOrDelegate, "secondary");
+    _;
+  }
 
-  modifier ticketIsRefundable(IAventusStorage _storage, uint _eventId, uint _ticketId) {
+  modifier ticketIsRefundableOrResellable(IAventusStorage _storage, uint _eventId, uint _ticketId) {
     require(
       eventActive(_storage, _eventId),
       "Event must be active"
@@ -91,8 +95,8 @@ library LEventsEnact {
   */
   function doRefundTicket(IAventusStorage _storage, uint _eventId, uint _ticketId, address _eventOwnerOrDelegate)
     external
-    onlyEventOwnerOrDelegate(_storage, _eventId, _eventOwnerOrDelegate)
-    ticketIsRefundable(_storage, _eventId, _ticketId)
+    onlyEventOwnerOrPrimaryDelegate(_storage, _eventId, _eventOwnerOrDelegate)
+    ticketIsRefundableOrResellable(_storage, _eventId, _ticketId)
   {
     bytes32 refundTicketKey = keccak256(abi.encodePacked("Event", _eventId, "RefundedTicketCount"));
     uint refundedTicketCount = _storage.getUInt(refundTicketKey);
@@ -115,6 +119,25 @@ library LEventsEnact {
   {
     setEventStatusCancelled(_storage, _eventId);
     doUnlockEventDeposit(_storage, _eventId);
+  }
+
+  /**
+  * @dev Resell tickets for an active event.
+  * @param _storage Storage contract
+  * @param _eventId - event id for the event in context
+  * @param _ticketId - original ticketId
+  * @param _newBuyer - address of the ticket buyer
+  * @param _eventOwnerOrDelegate address requesting this sale - must be event owner or delegate
+  *
+  * TODO: Could be external but too many variables for stack unless public
+  */
+  function doResellTicket(IAventusStorage _storage, uint _eventId, uint _ticketId, address _newBuyer, address _eventOwnerOrDelegate)
+    external
+    onlyEventOwnerOrSecondaryDelegate(_storage, _eventId, _eventOwnerOrDelegate)
+    inTicketSalePeriod(_storage, _eventId)
+    ticketIsRefundableOrResellable(_storage, _eventId, _ticketId)
+  {
+    _storage.setAddress(keccak256(abi.encodePacked("Event", _eventId, "Ticket", _ticketId, "buyer")), _newBuyer);
   }
 
   /**
@@ -192,7 +215,7 @@ library LEventsEnact {
   */
   function doSellTicket(IAventusStorage _storage, uint _eventId, string _ticketDetails, address _buyer, address _eventOwnerOrDelegate)
     public
-    onlyEventOwnerOrDelegate(_storage, _eventId, _eventOwnerOrDelegate)
+    onlyEventOwnerOrPrimaryDelegate(_storage, _eventId, _eventOwnerOrDelegate)
     inTicketSalePeriod(_storage, _eventId)
     isActiveEvent(_storage, _eventId)
     returns (uint ticketId_)

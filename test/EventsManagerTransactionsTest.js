@@ -22,9 +22,11 @@ contract('EventsManager - transactions', function () {
 
   const appAddress = testHelper.getAccount(0);
   const eventOwner = testHelper.getAccount(1);
-  const delegate = testHelper.getAccount(2);
-  const buyer1 = testHelper.getAccount(3);
-  const buyer2 = testHelper.getAccount(4);
+  const primaryDelegate = testHelper.getAccount(2);
+  const secondaryDelegate = testHelper.getAccount(3);
+  const buyer1 = testHelper.getAccount(4);
+  const buyer2 = testHelper.getAccount(5);
+  const newBuyer1 = testHelper.getAccount(6);
 
   const ticketDetailsBase = "Unallocated seating. Ticket number: ";
   let ticketCount = 1;
@@ -135,6 +137,35 @@ contract('EventsManager - transactions', function () {
             await eventsManager.signedRefundTicket(signedMessage, _eventId, _ticketId, {from: _sender});
           }
 
+          async function doResellTicket(_eventId, _ticketId, _currentOwner, _newBuyer, _seller) {
+            let keccak256Msg = await web3Utils.soliditySha3(_eventId, _ticketId, _currentOwner);
+            let ownerPermission = testHelper.createSignedMessage(_currentOwner, keccak256Msg);
+            if (transactionIsSigned) {
+              await doSignedResellTicket(_eventId, _ticketId, ownerPermission, _newBuyer, _seller, appAddress);
+            } else {
+              await eventsManager.resellTicket(_eventId, _ticketId, ownerPermission, _newBuyer, {from: _seller});
+            }
+          }
+
+          async function doSignedResellTicket(_eventId, _ticketId, _ownerPermission, _newBuyer, _seller, _sender) {
+            let keccak256Msg = await web3Utils.soliditySha3(_eventId, _ticketId, _ownerPermission, _newBuyer);
+            let signedMessage = testHelper.createSignedMessage(_seller, keccak256Msg);
+            await eventsManager.signedResellTicket(signedMessage, _eventId, _ticketId, _ownerPermission, _newBuyer, {from: _sender});
+          }
+
+          async function resellTicketSucceeds(_eventId, _ticketId, _currentOwner, _newBuyer, _seller) {
+            const seller = _seller || eventOwner;
+            await doResellTicket(_eventId, _ticketId, _currentOwner, _newBuyer, seller);
+            const eventArgs = await testHelper.getEventArgs(transactionIsSigned
+              ? eventsManager.LogSignedTicketResale
+              : eventsManager.LogTicketResale);
+            assert.equal(eventArgs.newBuyer, _newBuyer);
+          }
+
+          async function resellTicketFails(_eventId, _ticketId, _currentOwner, _newBuyer, _seller) {
+            await testHelper.expectRevert(() => doResellTicket(_eventId, _ticketId, _currentOwner, _newBuyer, _seller));
+          }
+
           context(transactionPreTitle + "cancel event", async () => {
             async function cancelEventFails(_eventId, _canceller) {
               const canceller = _canceller || eventOwner;
@@ -186,12 +217,20 @@ contract('EventsManager - transactions', function () {
                 await cancelEventFails(eventId, buyer1);
               });
 
-              it("if done by a delegate", async function () {
-                await eventsTestHelper.depositAndWhitelistApp(delegate);
-                await cancelEventFails(eventId, delegate); // when not delegate
-                await eventsManager.registerDelegate(eventId, delegate, {from: eventOwner});
-                await cancelEventFails(eventId, delegate); // when delegate
-                await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(delegate);
+              it("if done by a primary delegate", async function () {
+                await eventsTestHelper.depositAndWhitelistApp(primaryDelegate);
+                await cancelEventFails(eventId, primaryDelegate); // when not primary delegate
+                await eventsManager.registerDelegate(eventId, "primary", primaryDelegate, {from: eventOwner});
+                await cancelEventFails(eventId, primaryDelegate); // when primary delegate
+                await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(primaryDelegate);
+              });
+
+              it("if done by a secondary delegate", async function () {
+                await eventsTestHelper.depositAndWhitelistApp(secondaryDelegate);
+                await cancelEventFails(eventId, secondaryDelegate); // when not secondary delegate
+                await eventsManager.registerDelegate(eventId, "secondary", secondaryDelegate, {from: eventOwner});
+                await cancelEventFails(eventId, secondaryDelegate); // when secondary delegate
+                await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(secondaryDelegate);
               });
 
               it("if tickets have been sold", async function() {
@@ -243,12 +282,12 @@ contract('EventsManager - transactions', function () {
                     await sellTicketSucceeds(eventId);
                   });
 
-                  it("seller is a delegate", async function () {
-                    await eventsTestHelper.depositAndWhitelistApp(delegate);
-                    await testHelper.expectRevert(() => doSellTicket(eventId, setupUniqueTicketParameters(), buyer1, delegate));
-                    await eventsManager.registerDelegate(eventId, delegate, {from: eventOwner});
-                    await doSellTicket(eventId, setupUniqueTicketParameters(), buyer1, delegate);
-                    await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(delegate);
+                  it("seller is a primary delegate", async function () {
+                    await eventsTestHelper.depositAndWhitelistApp(primaryDelegate);
+                    await testHelper.expectRevert(() => doSellTicket(eventId, setupUniqueTicketParameters(), buyer1, primaryDelegate));
+                    await eventsManager.registerDelegate(eventId, "primary", primaryDelegate, {from: eventOwner});
+                    await doSellTicket(eventId, setupUniqueTicketParameters(), buyer1, primaryDelegate);
+                    await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(primaryDelegate);
                   });
                 });
 
@@ -260,8 +299,16 @@ contract('EventsManager - transactions', function () {
                     await testHelper.expectRevert(() => doSellTicket(eventId, ticketDetails, buyer2));
                   });
 
-                  it("the ticket seller is not the event owner or a delegate", async function() {
+                  it("the ticket seller is not the event owner or a primary delegate", async function() {
                     await testHelper.expectRevert(() => doSellTicket(eventId, setupUniqueTicketParameters(), buyer1, buyer1));
+                  });
+
+                  it("the seller is a secondary delegate", async function () {
+                    await eventsTestHelper.depositAndWhitelistApp(secondaryDelegate);
+                    await testHelper.expectRevert(() => doSellTicket(eventId, setupUniqueTicketParameters(), buyer1, secondaryDelegate));
+                    await eventsManager.registerDelegate(eventId, "secondary", secondaryDelegate, {from: eventOwner});
+                    await testHelper.expectRevert(() => doSellTicket(eventId, setupUniqueTicketParameters(), buyer1, secondaryDelegate));
+                    await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(secondaryDelegate);
                   });
 
                   it("the wrong eventId is used", async function() {
@@ -312,6 +359,95 @@ contract('EventsManager - transactions', function () {
             });
           });
 
+          context(transactionPreTitle + "resell ticket", async () => {
+            let soldTicketId;
+            let currentOwner;
+
+            beforeEach(async function() {
+              await testHelper.advanceTimeToEventTicketSaleStart(eventId);
+              const ticketDetails = setupUniqueTicketParameters();
+              await doSellTicket(eventId, ticketDetails, buyer1);
+              const eventArgs = await testHelper.getEventArgs(transactionIsSigned
+                ? eventsManager.LogSignedTicketSale
+                : eventsManager.LogTicketSale);
+              soldTicketId = eventArgs.ticketId.toNumber();
+              currentOwner = eventArgs.buyer;
+            });
+
+            afterEach(async function() {
+              await testHelper.advanceTimeToEventEnd(eventId);
+              await eventsManager.unlockEventDeposit(eventId);
+              await eventsTestHelper.withdrawDeposit(eventDeposit, eventOwner);
+            });
+
+            context("with valid event", async () => {
+              context("succeeds if", async() => {
+                context("ticket exists and", async() => {
+                  it("current owner provides resale permission to event owner", async function() {
+                    await resellTicketSucceeds(eventId, soldTicketId, currentOwner, newBuyer1);
+                  });
+
+                  it("current owner provides resale permission to secondary delegate", async function() {
+                    await eventsTestHelper.depositAndWhitelistApp(secondaryDelegate);
+                    await eventsManager.registerDelegate(eventId, "secondary", secondaryDelegate, {from: eventOwner});
+                    await resellTicketSucceeds(eventId, soldTicketId, currentOwner, newBuyer1, secondaryDelegate);
+                    await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(secondaryDelegate);
+                  });
+                });
+              });
+
+              context("fails if", async() => {
+                it("ticket does not exist", async function() {
+                  await resellTicketFails(eventId, 999, currentOwner, newBuyer1, eventOwner);
+                });
+
+                context("ticket exists but", async () => {
+                  it("reseller is a primary delegate", async function() {
+                    await eventsTestHelper.depositAndWhitelistApp(primaryDelegate);
+                    await eventsManager.registerDelegate(eventId, "primary", primaryDelegate, {from: eventOwner});
+                    await resellTicketFails(eventId, soldTicketId, currentOwner, newBuyer1, primaryDelegate, eventOwner);
+                    await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(primaryDelegate);
+                  });
+
+                  it("has already been refunded", async function() {
+                    await doRefundTicket(eventId, soldTicketId);
+                    await resellTicketFails(eventId, soldTicketId, currentOwner, newBuyer1, eventOwner);
+                  });
+
+                  it("is out of sale period", async function() {
+                    await testHelper.advanceTimeToEventEnd(eventId);
+                    await resellTicketFails(eventId, soldTicketId, currentOwner, newBuyer1, eventOwner);
+                  });
+
+                  it("current owner has not granted permission for resale", async function() {
+                    await resellTicketFails(eventId, soldTicketId, buyer2, newBuyer1, eventOwner);
+                  });
+
+                  it("secondary delegate is not registered", async function() {
+                    await eventsTestHelper.depositAndWhitelistApp(secondaryDelegate);
+                    await eventsManager.registerDelegate(eventId, "secondary", secondaryDelegate, {from: eventOwner});
+                    await resellTicketSucceeds(eventId, soldTicketId, currentOwner, newBuyer1, secondaryDelegate);
+                    await eventsManager.deregisterDelegate(eventId, "secondary", secondaryDelegate, {from: eventOwner});
+                    await resellTicketFails(eventId, soldTicketId, currentOwner, newBuyer1, secondaryDelegate, eventOwner);
+                    await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(secondaryDelegate);
+                  });
+                });
+
+                context("event", async() => {
+                  it("has ended", async function() {
+                    await testHelper.advanceTimeToEventEnd(eventId);
+                    await resellTicketFails(eventId, soldTicketId, currentOwner, newBuyer1, eventOwner);
+                  });
+                });
+              });
+            });
+            context("fails if", async () => {
+              it("event does not exist", async function() {
+                await resellTicketFails(999, soldTicketId, currentOwner, newBuyer1, eventOwner);
+              });
+            });
+          });
+
           context(transactionPreTitle + "refund and sell ticket again", async () => {
             beforeEach(async function() {
               await testHelper.advanceTimeToEventTicketSaleStart(eventId);
@@ -346,7 +482,7 @@ contract('EventsManager - transactions', function () {
                 await testHelper.expectRevert(() => doRefundTicket(eventId, 999));
               });
 
-              it("cannot refund ticket if not event owner or delegate", async function() {
+              it("cannot refund ticket if not event owner or primary delegate", async function() {
                 await testHelper.expectRevert(() => doRefundTicket(eventId, ticketId, buyer1));
               });
 
@@ -355,12 +491,20 @@ contract('EventsManager - transactions', function () {
                 await testHelper.expectRevert(() => doRefundTicket(eventId, ticketId));
               });
 
-              it("can refund a ticket if sender is a delegate", async function () {
-                await eventsTestHelper.depositAndWhitelistApp(delegate);
-                await testHelper.expectRevert(() => doRefundTicket(eventId, ticketId, delegate));
-                await eventsManager.registerDelegate(eventId, delegate, {from: eventOwner});
-                await doRefundTicket(eventId, ticketId, delegate);
-                await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(delegate);
+              it("cannot refund a ticket if sender is a secondary delegate", async function () {
+                await eventsTestHelper.depositAndWhitelistApp(secondaryDelegate);
+                await testHelper.expectRevert(() => doRefundTicket(eventId, ticketId, secondaryDelegate));
+                await eventsManager.registerDelegate(eventId, "secondary", secondaryDelegate, {from: eventOwner});
+                await testHelper.expectRevert(() => doRefundTicket(eventId, ticketId, secondaryDelegate));
+                await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(secondaryDelegate);
+              });
+
+              it("can refund a ticket if sender is a primary delegate", async function () {
+                await eventsTestHelper.depositAndWhitelistApp(primaryDelegate);
+                await testHelper.expectRevert(() => doRefundTicket(eventId, ticketId, primaryDelegate));
+                await eventsManager.registerDelegate(eventId, "primary", primaryDelegate, {from: eventOwner});
+                await doRefundTicket(eventId, ticketId, primaryDelegate);
+                await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(primaryDelegate);
               });
 
               if (transactionIsSigned) {
