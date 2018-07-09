@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "../interfaces/IAventusStorage.sol";
-import "./LLock.sol";
+import "./LAVTManager.sol";
 import "./zeppelin/LECRecovery.sol";
 
 library LProposalVoting {
@@ -68,7 +68,7 @@ library LProposalVoting {
     );
 
     // IFF we are still in the reveal period AND the user has non-zero stake at reveal time...
-    uint stake = LLock.getBalance(_storage, voter, "stake");
+    uint stake = LAVTManager.getBalance(_storage, voter, "stake");
     if (_proposalStatus == 3 && stake != 0) {
       // ...increment the total stake for this option with the voter's stake...
       bytes32 totalStakeForOptionKey = keccak256(abi.encodePacked("Proposal", _proposalId, "revealedStake", _optId));
@@ -82,7 +82,6 @@ library LProposalVoting {
       _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedVoter", _optId, voter, "stake")), stake);
     }
 
-    // Removing the vote will unlock the user's AVT stake for this proposal.
     removeSendersVoteFromDLL(_storage, _proposalId);
   }
 

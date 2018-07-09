@@ -4,7 +4,7 @@ import "../interfaces/IAventusStorage.sol";
 import "./LAventusTime.sol";
 import "./LProposalWinnings.sol";
 import "./LEvents.sol";
-import './LLock.sol';
+import './LAVTManager.sol';
 import "./LProposalVoting.sol";
 
 // Library for extending voting protocol functionality
@@ -12,6 +12,14 @@ library LProposal {
   bytes32 constant governanceProposalFixedDepositInUsCentsKey =
       keccak256(abi.encodePacked("Proposal", "governanceProposalFixedDepositInUsCents"));
   bytes32 constant proposalCountKey = keccak256(abi.encodePacked("ProposalCount"));
+
+  /// See IProposalsManager interface for events description
+  event LogCreateProposal(address indexed sender, string desc, uint indexed proposalId, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd);
+  event LogCreateEventChallenge(uint indexed eventId, uint indexed proposalId, string supportingUrl, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd);
+  event LogCastVote(uint indexed proposalId, address indexed sender, bytes32 secret, uint prevTime);
+  event LogRevealVote(uint indexed proposalId, uint8 indexed optId, uint revealingStart, uint revealingEnd);
+  event LogClaimVoterWinnings(uint indexed proposalId);
+  event LogEndProposal(uint indexed proposalId, uint votesFor, uint votesAgainst, uint revealingEnd);
 
   modifier onlyProposalOwner(IAventusStorage _storage, uint _proposalId) {
     require(
@@ -63,6 +71,13 @@ library LProposal {
     returns (uint proposalId_)
   {
     proposalId_ = createProposal(_storage, _desc, getGovernanceProposalDeposit(_storage));
+
+    uint votingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", proposalId_, "votingStart")));
+    uint revealingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", proposalId_, "revealingStart")));
+    uint revealingEnd = _storage.getUInt(keccak256(abi.encodePacked("Proposal", proposalId_, "revealingEnd")));
+    uint lobbyingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", proposalId_, "lobbyingStart")));
+
+    emit LogCreateProposal(msg.sender, _desc, proposalId_, lobbyingStart, votingStart, revealingStart, revealingEnd);
   }
 
   function castVote(
@@ -75,12 +90,17 @@ library LProposal {
     isStatus(_storage, _proposalId, 2) // Ensure voting period is currently active
   {
     LProposalVoting.castVote(_storage, _proposalId, _secret, _prevTime);
+    emit LogCastVote(_proposalId, msg.sender, _secret, _prevTime);
   }
 
   function revealVote(IAventusStorage _storage, bytes _signedMessage, uint _proposalId, uint8 _optId) external {
     // Make sure proposal status is Reveal or after.
     uint proposalStatus = getProposalStatus(_storage, _proposalId);
     LProposalVoting.revealVote(_storage, _signedMessage, _proposalId, _optId, proposalStatus);
+
+    uint revealingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingStart")));
+    uint revealingEnd = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingEnd")));
+    emit LogRevealVote(_proposalId, _optId, revealingStart, revealingEnd);
   }
 
   /**
@@ -97,10 +117,18 @@ library LProposal {
     challengeProposalId_ = createProposal(_storage, "", deposit);
     _storage.setUInt(keccak256(abi.encodePacked("Proposal", challengeProposalId_, "ChallengeEvent")), _eventId);
     LEvents.setEventAsChallenged(_storage, _eventId, challengeProposalId_);
+
+    bytes32 supportingUrlKey = keccak256(abi.encodePacked("Event", _eventId, "eventSupportURL"));
+    uint votingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", challengeProposalId_, "votingStart")));
+    uint revealingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", challengeProposalId_, "revealingStart")));
+    uint revealingEnd = _storage.getUInt(keccak256(abi.encodePacked("Proposal", challengeProposalId_, "revealingEnd")));
+    uint lobbyingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", challengeProposalId_, "lobbyingStart")));
+    emit LogCreateEventChallenge(_eventId, challengeProposalId_, _storage.getString(supportingUrlKey), lobbyingStart, votingStart, revealingStart, revealingEnd);
   }
 
   function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) external {
     LProposalWinnings.claimVoterWinnings(_storage, _proposalId);
+    emit LogClaimVoterWinnings(_proposalId);
   }
 
   function endProposal(IAventusStorage _storage, uint _proposalId) external
@@ -110,6 +138,11 @@ library LProposal {
       endEventChallenge(_storage, _proposalId);
     }
     unlockProposalDeposit(_storage, _proposalId);
+
+    uint votesFor = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedStake", uint8(1))));
+    uint votesAgainst = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedStake", uint8(2))));
+    uint revealingEnd = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingEnd")));
+    emit LogEndProposal(_proposalId, votesFor, votesAgainst, revealingEnd);
   }
 
   function getPrevTimeParamForCastVote(IAventusStorage _storage, uint _proposalId) external view returns (uint prevTime_) {
@@ -119,7 +152,7 @@ library LProposal {
   // @return AVT value with 18 decimal places of precision.
   function getGovernanceProposalDeposit(IAventusStorage _storage) view public returns (uint depositInAVT_) {
     uint depositInUSCents = _storage.getUInt(governanceProposalFixedDepositInUsCentsKey);
-    depositInAVT_ = LLock.getAVTDecimals(_storage, depositInUSCents);
+    depositInAVT_ = LAVTManager.getAVTDecimals(_storage, depositInUSCents);
   }
 
   function unlockProposalDeposit(IAventusStorage _storage, uint _proposalId) private
@@ -150,7 +183,7 @@ library LProposal {
     _storage.setUInt(expectedDepositsKey, _storage.getUInt(expectedDepositsKey) + _deposit);
 
     uint expectedDeposits = _storage.getUInt(expectedDepositsKey);
-    uint actualDeposits = LLock.getBalance(_storage, owner, "deposit");
+    uint actualDeposits = LAVTManager.getBalance(_storage, owner, "deposit");
     require(
       actualDeposits >= expectedDeposits,
       "Owner has insufficient deposit funds to create a proposal"

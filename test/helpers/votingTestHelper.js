@@ -1,12 +1,12 @@
-const AventusVote = artifacts.require("AventusVote.sol");
+const ProposalsManager = artifacts.require("ProposalsManager.sol");
 const testHelper = require("./testHelper");
 const web3Utils = require('web3-utils');
 
-let aventusVote;
+let proposalsManager;
 
 async function before() {
   await testHelper.before();
-  aventusVote = testHelper.getAventusVote();
+  proposalsManager = testHelper.getProposalsManager();
 }
 
 function getSignedMessage(proposalId, optionId, _address) {
@@ -30,14 +30,14 @@ function getSignatureSecret(_signedMessage) {
 async function castVote(_proposalId, _optionId, _address) {
   let address = _address || testHelper.getAccount(0);
   const signedMessage = await getSignedMessage(_proposalId, _optionId, _address);
-  let prevTime = await aventusVote.getPrevTimeParamForCastVote(_proposalId, {from: address});
-  await aventusVote.castVote(_proposalId, getSignatureSecret(signedMessage), prevTime, {from: address});
+  let prevTime = await proposalsManager.getPrevTimeParamForCastVote(_proposalId, {from: address});
+  await proposalsManager.castVote(_proposalId, getSignatureSecret(signedMessage), prevTime, {from: address});
   return signedMessage;
 }
 
 async function revealVote(_signedMessage, _proposalId, _optionId, _address) {
   let address = _address || testHelper.getAccount(0);
-  await aventusVote.revealVote(_signedMessage, _proposalId, _optionId, {from: address});
+  await proposalsManager.revealVote(_signedMessage, _proposalId, _optionId, {from: address});
 }
 
 module.exports = {

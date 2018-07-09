@@ -2,7 +2,7 @@ pragma solidity ^0.4.24;
 
 import '../interfaces/IAventusStorage.sol';
 import "./LAventusTime.sol";
-import './LLock.sol';
+import './LAVTManager.sol';
 import './LApps.sol';
 
 library LEventsCommon {
@@ -79,7 +79,7 @@ library LEventsCommon {
     returns (uint depositInUSCents_, uint depositInAVTDecimals_)
   {
     depositInUSCents_ = getDepositInUSCents(_storage, _capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime);
-    depositInAVTDecimals_ = LLock.getAVTDecimals(_storage, depositInUSCents_);
+    depositInAVTDecimals_ = LAVTManager.getAVTDecimals(_storage, depositInUSCents_);
   }
 
   /**

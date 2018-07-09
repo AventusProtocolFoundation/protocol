@@ -8,7 +8,7 @@ contract('AppsManager', function () {
     await testHelper.before();
 
     appsManager = await AppsManager.deployed();
-    aventusVote = testHelper.getAventusVote();
+    avtManager = testHelper.getAVTManager();
     avt = testHelper.getAVTContract();
   });
 
@@ -21,8 +21,8 @@ contract('AppsManager', function () {
         // Any other account will not have any AVT: give them what they need.
         await avt.transfer(account, amount);
     }
-    await avt.approve(aventusVote.address, amount, {from: account});
-    await aventusVote.deposit("deposit", amount, {from: account});
+    await avt.approve(avtManager.address, amount, {from: account});
+    await avtManager.deposit("deposit", amount, {from: account});
     return account;
   }
 
@@ -46,7 +46,7 @@ contract('AppsManager', function () {
 
   async function withdrawDeposit(account) {
     let deposit = await appsManager.getAppDeposit();
-    await aventusVote.withdraw("deposit", deposit, {from: account});
+    await avtManager.withdraw("deposit", deposit, {from: account});
   }
 
   context("Register and deregister apps", function() {

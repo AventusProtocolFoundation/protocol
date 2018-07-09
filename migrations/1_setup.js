@@ -15,8 +15,9 @@ let forceDeployStorage = true;
  */
 function getAVTContract(_deployer, _network, _storage) {
   // Create the AVT only if it doesn't exist.
-  let avtPromise = _storage.getAddress(web3.sha3("AVT"));
-  return avtPromise.then((avtAddress) => {
+  let avtPromise = _storage.getAddress(web3.sha3("AVTERC20Instance"));
+  return avtPromise
+  .then(avtAddress => {
     if (avtAddress != 0) {
       console.log("AVT address exists:", avtAddress);
       return avtPromise;
@@ -27,15 +28,18 @@ function getAVTContract(_deployer, _network, _storage) {
 }
 
 function initialDeploy(_deployer, _network) {
-  return _deployer.deploy(Migrations).then(() =>
-    getStorageContract(_deployer, _network).then((s) => {
-      console.log("Storage address:", s.address);
-      return getAVTContract(_deployer, _network, s).then((avtAddress) => {
-        console.log("AVT address:", avtAddress);
-        return s.setAddress(web3.sha3("AVT"), avtAddress);
-      })
-    })
-  );
+  let storage;
+  return _deployer.deploy(Migrations)
+  .then(() => getStorageContract(_deployer, _network))
+  .then(arg => {
+    storage = arg;
+    console.log("Storage address:", storage.address);
+    return getAVTContract(_deployer, _network, storage);
+  })
+  .then(arg => {
+    console.log("AVT ERC20 address:", arg);
+    return storage.setAddress(web3.sha3("AVTERC20Instance"), arg);
+  });
 }
 
 // Deploy a new (or use the old) storage contract.
@@ -44,18 +48,22 @@ function getStorageContract(deployer, network) {
     console.log("Deploying storage contract");
     return deployAndSaveStorageContract(deployer);
   } else {
-      console.log("Using existing storage contract");
-      const truffleContract = common.getStorageContractFromJsonFile(deployer, AventusStorage);
-      return truffleContract.then(() => truffleContract).catch( e => {
-        console.log("No existing storage contract");
-        return deployAndSaveStorageContract(deployer);
-      });
+    console.log("Using existing storage contract");
+    // This weird way of error handling is because the truffleContract is thenable but not a proper
+    // promise. See https://github.com/trufflesuite/truffle-contract/blob/develop/contract.js.
+    const truffleContract = common.getStorageContractFromJsonFile(deployer, AventusStorage);
+    return truffleContract
+    .then(() => truffleContract).catch(e => {
+      console.log("No existing storage contract");
+      return deployAndSaveStorageContract(deployer);
+    });
   }
 }
 
 function deployAndSaveStorageContract(deployer) {
   console.log("Deploying storage contract...");
-  return deployer.deploy(AventusStorage).then((s) => {
+  return deployer.deploy(AventusStorage)
+  .then(storage => {
     console.log("...saving storage contract for reuse.");
     common.saveStorageContractToJsonFile(AventusStorage);
     return AventusStorage.deployed();
@@ -80,7 +88,8 @@ module.exports = function(deployer, network, accounts) {
   console.log("*** Version of web3: ", web3.version.api);
   console.log("*** Starting setup...");
 
-  return initialDeploy(deployer, network).then(() => console.log("*** SETUP COMPLETE"));
+  return initialDeploy(deployer, network)
+  .then(() => console.log("*** SETUP COMPLETE"));
 };
 
 function createAVTContract() {

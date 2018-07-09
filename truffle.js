@@ -3,21 +3,23 @@ module.exports = {
     development: {
       host: "localhost",
       port: 8545,
-      network_id: "*" // Match any network id
+      network_id: "*",
+      gas: 7554321 // Match the lower of the mainnet/rinkeby values where possible
     },
     rinkeby: {
       host: "localhost",
       port: 8546,
-      from: "0xa142e70ea708ef475efd00a82f028fe2de5550f4", // default address to use for any transaction Truffle makes during migrations
       network_id: 4,
-      gas: 7654321 // Gas limit used for deploys
+      gas: 7554321, // See https://www.rinkeby.io/#stats to make sure this is not over the network limit
+      gasPrice: 10e9  // 10 GWEi
     },
     live: {
       host: "localhost",
       port: 8547,
       network_id: 1,
-      from: "0x89826e7D8F1202A473a49bA149B57b66bD9885b3",
-      gas: 7654321
-    }
+      from: "0x5126f4c7d6f6436a5a789e939634d5fe7c92fa4b",
+      gas: 7654321, // See https://ethstats.net/ to make sure this is not over the network limit
+      gasPrice: 10e9  // 10 GWEi: see https://ethgasstation.info/ for recommended prices
+    },
   }
 };

@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "../interfaces/IAventusStorage.sol";
-import "./LLock.sol";
+import "./LAVTManager.sol";
 
 /**
  * Library for dealing with the winnings of a challenge.
@@ -99,14 +99,13 @@ library LProposalWinnings {
     giveWinnings(_storage, winningsToChallengeEnderAVT, challengeEnder);
   }
 
-  // TODO: Consider using LLock for all these get/set calls.
   function takeAllWinningsFromProposalLoser(
       IAventusStorage _storage,
       uint _winnings,
       address _loser)
     private
   {
-    LLock.decreaseFund(_storage, _loser, "deposit", _winnings);
+    LAVTManager.decreaseFund(_storage, _loser, "deposit", _winnings);
   }
 
   function giveWinnings(
@@ -115,7 +114,7 @@ library LProposalWinnings {
       address _payee)
     private
   {
-    LLock.increaseFund(_storage, _payee, "deposit", _winnings);
+    LAVTManager.increaseFund(_storage, _payee, "deposit", _winnings);
   }
 
 }

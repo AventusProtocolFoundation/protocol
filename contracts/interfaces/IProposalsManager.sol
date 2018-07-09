@@ -2,6 +2,36 @@ pragma solidity ^0.4.24;
 
 interface IProposalsManager {
   /**
+   * Event emitted for a createGovernanceProposal transaction.
+   */
+  event LogCreateProposal(address indexed sender, string desc, uint indexed proposalId, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd);
+
+  /**
+   * Event emitted for a castVote transaction.
+   */
+  event LogCastVote(uint indexed proposalId, address indexed sender, bytes32 secret, uint prevTime);
+
+  /**
+   * Event emitted for a revealVote transaction.
+   */
+  event LogRevealVote(uint indexed proposalId, uint8 indexed optId, uint revealingStart, uint revealingEnd);
+
+  /**
+   * Event emitted for a claimVoterWinnings transaction.
+   */
+  event LogClaimVoterWinnings(uint indexed proposalId);
+
+  /**
+   * Event emitted for a endProposal transaction.
+   */
+  event LogEndProposal(uint indexed proposalId, uint votesFor, uint votesAgainst, uint revealingEnd);
+
+  /**
+   * Event emitted for a createEventChallenge transaction.
+   */
+  event LogCreateEventChallenge(uint indexed eventId, uint indexed proposalId, string supportingUrl, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd);
+
+  /**
    * @return the deposit value in AVT - with 18 digits precision - for a corporate
    * governance proposal.
    */
@@ -39,7 +69,7 @@ interface IProposalsManager {
 
   /**
   * Reveal a vote on a proposal
-  * NOTE: Votes only count if the caller has AVT locked in their stake fund when they reveal their
+  * NOTE: Votes only count if the caller has AVT in their stake fund when they reveal their
   * vote (see IAVTManager.sol)
   * @param _signedMessage a signed message
   * @param _proposalId Proposal ID

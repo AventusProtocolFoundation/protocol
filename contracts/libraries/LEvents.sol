@@ -8,6 +8,22 @@ import "./LEventsEnact.sol";
 import "./zeppelin/LECRecovery.sol";
 
 library LEvents {
+
+  /// See IEventsManager interface for events description
+  event LogEventCreated(uint indexed eventId, string eventDesc, uint ticketSaleStartTime, uint eventTime, uint averageTicketPriceInUSCents);
+  event LogSignedEventCreated(uint indexed eventId, string eventDesc, uint ticketSaleStartTime, uint eventTime, uint averageTicketPriceInUSCents);
+  event LogEventCancellation(uint indexed eventId);
+  event LogSignedEventCancellation(uint indexed eventId);
+  event LogUnlockEventDeposit(uint indexed eventId);
+  event LogTicketSale(uint indexed eventId, uint indexed ticketId, address indexed buyer);
+  event LogSignedTicketSale(uint indexed eventId, uint indexed ticketId, address indexed buyer);
+  event LogTicketRefund(uint indexed eventId, uint indexed ticketId);
+  event LogSignedTicketRefund(uint indexed eventId, uint indexed ticketId);
+  event LogTicketResale(uint indexed eventId, uint indexed ticketId, address indexed newBuyer);
+  event LogSignedTicketResale(uint indexed eventId, uint indexed ticketId, address indexed newBuyer);
+  event LogRegisterDelegate(uint indexed eventId, string role, address indexed delegate);
+  event LogDeregisterDelegate(uint indexed eventId, string role, address indexed delegate);
+
   modifier onlyEventOwner(IAventusStorage _storage, uint _eventId) {
     require(
       LEventsCommon.addressIsOwner(_storage, _eventId, msg.sender),
@@ -57,6 +73,8 @@ library LEvents {
   {
     eventId_ = LEventsEnact.doCreateEvent(_storage, _eventDesc, _eventTime, _capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime,
       _eventSupportURL, msg.sender);
+
+    emit LogEventCreated(eventId_, _eventDesc, _ticketSaleStartTime, _eventTime, _averageTicketPriceInUSCents);
   }
 
   function cancelEvent(IAventusStorage _storage, uint _eventId)
@@ -64,6 +82,7 @@ library LEvents {
     onlyEventOwner(_storage, _eventId)
   {
     LEventsEnact.doCancelEvent(_storage, _eventId);
+    emit LogEventCancellation(_eventId);
   }
 
   function signedCancelEvent(IAventusStorage _storage, bytes _signedMessage, uint _eventId)
@@ -79,39 +98,42 @@ library LEvents {
       "Only the owner can sign a message to cancel an event"
     );
     LEventsEnact.doCancelEvent(_storage, _eventId);
+    emit LogSignedEventCancellation(_eventId);
   }
 
   function unlockEventDeposit(IAventusStorage _storage, uint _eventId)
     external
   {
     LEventsEnact.doUnlockEventDeposit(_storage, _eventId);
+    emit LogUnlockEventDeposit(_eventId);
   }
 
   function sellTicket(IAventusStorage _storage, uint _eventId, string _ticketDetails, address _buyer)
     external
-    returns (uint ticketId_)
   {
-    ticketId_ = LEventsEnact.doSellTicket(_storage, _eventId, _ticketDetails, _buyer, msg.sender);
+    uint ticketId = LEventsEnact.doSellTicket(_storage, _eventId, _ticketDetails, _buyer, msg.sender);
+    emit LogTicketSale(_eventId, ticketId, _buyer);
   }
 
   function signedSellTicket(IAventusStorage _storage, bytes _signedMessage, uint _eventId,
       string _ticketDetails, address _buyer)
     external
     addressIsWhitelisted(_storage, msg.sender)
-    returns (uint ticketId_)
   {
     bytes32 msgHash = keccak256(abi.encodePacked(_eventId, _ticketDetails, _buyer));
     msgHash = LECRecovery.toEthSignedMessageHash(msgHash);
     address signer = LECRecovery.recover(msgHash, _signedMessage);
     checkNotMsgSender(signer);
 
-    ticketId_ = LEventsEnact.doSellTicket(_storage, _eventId, _ticketDetails, _buyer, signer);
+    uint ticketId = LEventsEnact.doSellTicket(_storage, _eventId, _ticketDetails, _buyer, signer);
+    emit LogSignedTicketSale(_eventId, ticketId, _buyer);
   }
 
   function refundTicket(IAventusStorage _storage, uint _eventId, uint _ticketId)
     external
   {
     LEventsEnact.doRefundTicket(_storage, _eventId, _ticketId, msg.sender);
+    emit LogTicketRefund(_eventId, _ticketId);
   }
 
   function signedRefundTicket(IAventusStorage _storage, bytes _signedMessage, uint _eventId, uint _ticketId)
@@ -124,6 +146,7 @@ library LEvents {
     checkNotMsgSender(signer);
 
     LEventsEnact.doRefundTicket(_storage, _eventId, _ticketId, signer);
+    emit LogSignedTicketRefund(_eventId, _ticketId);
   }
 
   function resellTicket(IAventusStorage _storage, uint _eventId, uint _ticketId, bytes _ownerPermission, address _newBuyer)
@@ -131,6 +154,7 @@ library LEvents {
   {
     ownerPermissionCheck(_storage, _eventId, _ticketId, _ownerPermission);
     LEventsEnact.doResellTicket(_storage, _eventId, _ticketId, _newBuyer, msg.sender);
+    emit LogTicketResale(_eventId, _ticketId, _newBuyer);
   }
 
   function signedResellTicket(IAventusStorage _storage, bytes _signedMessage, uint _eventId,
@@ -145,6 +169,7 @@ library LEvents {
 
     ownerPermissionCheck(_storage, _eventId, _ticketId, _ownerPermission);
     LEventsEnact.doResellTicket(_storage, _eventId, _ticketId, _newBuyer, signer);
+    emit LogSignedTicketResale(_eventId, _ticketId, _newBuyer);
   }
 
    function ownerPermissionCheck(IAventusStorage _storage, uint _eventId, uint _ticketId, bytes _ownerPermission) private view {
@@ -176,6 +201,7 @@ library LEvents {
     validDelegateRole(_storage, _role)
   {
     _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "role", _role, "delegate", _delegate)), true);
+    emit LogRegisterDelegate(_eventId, _role, _delegate);
   }
 
   /**
@@ -190,8 +216,10 @@ library LEvents {
     onlyEventOwner(_storage, _eventId)
     validDelegateRole(_storage, _role)
   {
-    if (addressIsDelegate(_storage, _eventId, _role, _delegate))
+    if (addressIsDelegate(_storage, _eventId, _role, _delegate)) {
       _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "role", _role, "delegate", _delegate)), false);
+      emit LogDeregisterDelegate(_eventId, _role, _delegate);
+    }
   }
 
   function setEventAsChallenged(IAventusStorage _storage, uint _eventId, uint _challengeProposalId)
@@ -244,6 +272,7 @@ library LEvents {
       _storage, _eventDesc, _eventTime, _capacity, _averageTicketPriceInUSCents,
       _ticketSaleStartTime, _eventSupportURL, _owner
     );
+    emit LogSignedEventCreated(eventId_, _eventDesc, _ticketSaleStartTime, _eventTime, _averageTicketPriceInUSCents);
   }
 
   function eventIsNotUnderChallenge(IAventusStorage _storage, uint _eventId) public view returns (bool notUnderChallenge_) {
