@@ -4,16 +4,20 @@ import '../interfaces/IAventusStorage.sol';
 import '../interfaces/IERC20.sol';
 import "./LAventusTime.sol";
 
-// Library for adding functionality for locking AVT stake for voting
-library LLock {
+// Library for adding functionality for handling AVT funds.
+library LAVTManager  {
   bytes32 constant stakeFundHash = keccak256(abi.encodePacked("stake"));
   bytes32 constant depositFundHash = keccak256(abi.encodePacked("deposit"));
-  bytes32 constant avtContractAddressKey = keccak256(abi.encodePacked("AVT"));
+  bytes32 constant avtContractAddressKey = keccak256(abi.encodePacked("AVTERC20Instance"));
   bytes32 constant oneAVTInUSCentsKey = keccak256(abi.encodePacked("OneAVTInUSCents"));
-  bytes32 constant lockBalanceKey = keccak256(abi.encodePacked("LockBalance"));
+  bytes32 constant totalAVTFundsKey = keccak256(abi.encodePacked("TotalAVTFunds"));
+
+  /// See IAVTManager interface for events description
+  event LogWithdraw(address indexed sender, string fund, uint amount);
+  event LogDeposit(address indexed sender, string fund, uint amount);
 
   function decreaseFund(IAventusStorage _storage, address _fromAddress, string _fund, uint _amount) public {
-    bytes32 key = keccak256(abi.encodePacked("Lock", _fromAddress, _fund));
+    bytes32 key = keccak256(abi.encodePacked("AVTFund", _fromAddress, _fund));
     uint currDeposit = _storage.getUInt(key);
     require (
       _amount <= currDeposit,
@@ -51,10 +55,11 @@ library LLock {
     );
 
     updateBalance(_storage, _amount, false);
+    emit LogWithdraw(msg.sender, _fund, _amount);
   }
 
   function increaseFund(IAventusStorage _storage,  address _toAddress, string _fund, uint _amount) public {
-    bytes32 key = keccak256(abi.encodePacked("Lock", _toAddress, _fund));
+    bytes32 key = keccak256(abi.encodePacked("AVTFund", _toAddress, _fund));
     uint currDeposit = _storage.getUInt(key);
     require (
       _amount != 0,
@@ -88,6 +93,7 @@ library LLock {
     );
 
     updateBalance(_storage, _amount, true);
+    emit LogDeposit(msg.sender, _fund, _amount);
   }
 
   function checkedTransfer(IAventusStorage _storage, uint _amount, address _fromAddress, string _fromFund, address _toAddress, string _toFund) external {
@@ -123,7 +129,7 @@ library LLock {
     view
     returns (uint balance_)
   {
-    balance_ = _storage.getUInt(keccak256(abi.encodePacked("Lock", _avtHolder, _fund)));
+    balance_ = _storage.getUInt(keccak256(abi.encodePacked("AVTFund", _avtHolder, _fund)));
   }
 
   function getAVTDecimals(IAventusStorage _storage, uint _usCents) external view returns (uint avtDecimals_) {
@@ -140,7 +146,7 @@ library LLock {
     );
 
     // Take AVT from the "from" fund...
-    bytes32 fromKey = keccak256(abi.encodePacked("Lock", _fromAddress, _fromFund));
+    bytes32 fromKey = keccak256(abi.encodePacked("AVTFund", _fromAddress, _fromFund));
     uint currentFromBalance = _storage.getUInt(fromKey);
     require(
       currentFromBalance >= _amount,
@@ -149,25 +155,25 @@ library LLock {
     _storage.setUInt(fromKey, currentFromBalance - _amount);
 
     // ...and give it to the "to" _fund.
-    bytes32 toKey = keccak256(abi.encodePacked("Lock", _toAddress, _toFund));
+    bytes32 toKey = keccak256(abi.encodePacked("AVTFund", _toAddress, _toFund));
     _storage.setUInt(toKey, _storage.getUInt(toKey) + _amount);
   }
 
   /**
-  * Keep track of the total locked in the contract.
+  * Keep track of the total AVT funds in the contract.
   * @param _storage Storage contract
   * @param _amount amount to update the balance by
   * @param _increment True if incrementing balance
   */
   function updateBalance(IAventusStorage _storage, uint _amount, bool _increment) private {
-    uint balance = _storage.getUInt(lockBalanceKey);
+    uint balance = _storage.getUInt(totalAVTFundsKey);
 
     if (_increment)
       balance += _amount;
     else
       balance -= _amount;
 
-    _storage.setUInt(lockBalanceKey, balance);
+    _storage.setUInt(totalAVTFundsKey, balance);
   }
 
   /**
@@ -196,7 +202,7 @@ library LLock {
     returns (bool blocked_)
   {
       uint expectedDeposits = _storage.getUInt(keccak256(abi.encodePacked("ExpectedDeposits", _depositHolder)));
-      uint actualDeposits = _storage.getUInt(keccak256(abi.encodePacked("Lock", _depositHolder, "deposit")));
+      uint actualDeposits = _storage.getUInt(keccak256(abi.encodePacked("AVTFund", _depositHolder, "deposit")));
       require(
         actualDeposits >= _amount,
         "Withdrawn amount must not exceed the deposit"

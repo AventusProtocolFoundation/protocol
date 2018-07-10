@@ -36,7 +36,7 @@ module.exports = function(deployer, network, accounts) {
   }).then((storage) => {
     const avtAddress = network === "rinkeby" ? rinkebyAvtAddress : mainNetAvtAddress;
     console.log("Saving AVT address:", avtAddress);
-    return storage.setAddress(web3.sha3("AVT"), eip55.encode(avtAddress));
+    return storage.setAddress(web3.sha3("AVTERC20Instance"), eip55.encode(avtAddress));
   }).then(() => {
     console.log("*** SETUP COMPLETE");
   });

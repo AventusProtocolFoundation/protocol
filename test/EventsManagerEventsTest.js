@@ -72,15 +72,15 @@ contract('EventsManager - event management', function () {
     const eventPreTitle = (eventIsSigned ? "Signed" : "Unsigned") + " event ";
 
     context(eventPreTitle, async () => {
-      async function createEventFails(_eventTime, _eventTicketSaleStartTime, _eventSupportURL) {
-        await testHelper.expectRevert(() => eventsTestHelper.doCreateEvent(eventIsSigned, _eventTime, _eventTicketSaleStartTime, _eventSupportURL))
+      async function createEventFails(_eventTime, _ticketSaleStartTime, _eventSupportURL) {
+        await testHelper.expectRevert(() => eventsTestHelper.doCreateEvent(eventIsSigned, _eventTime, _ticketSaleStartTime, _eventSupportURL))
       }
 
       async function createEventFailsDueToPreconditions() {
         // Pass in valid values.
         await createEventFails(
           eventsTestHelper.getEventTime(),
-          eventsTestHelper.getEventTicketSaleStartTime(),
+          eventsTestHelper.getTicketSaleStartTime(),
           eventsTestHelper.getEventSupportURL());
       }
 
@@ -109,9 +109,9 @@ contract('EventsManager - event management', function () {
           });
         }
 
-        async function makeEventDepositAndCreateFailingEvent(_eventTime, _eventTicketSaleStartTime, _eventSupportURL) {
+        async function makeEventDepositAndCreateFailingEvent(_eventTime, _ticketSaleStartTime, _eventSupportURL) {
           await eventsTestHelper.makeEventDeposit();
-          await eventsTestHelper.doCreateEvent(eventIsSigned, _eventTime, _eventTicketSaleStartTime, _eventSupportURL);
+          await eventsTestHelper.doCreateEvent(eventIsSigned, _eventTime, _ticketSaleStartTime, _eventSupportURL);
         }
 
         context(eventPreTitle + "create and end", async () => {
@@ -152,25 +152,25 @@ contract('EventsManager - event management', function () {
               eventsTestHelper.setupUniqueEventParameters(); // Set up the event parameters that are always good.
               await eventsTestHelper.makeEventDeposit();
               goodEventTime = eventsTestHelper.getEventTime();
-              goodTicketSaleTime = eventsTestHelper.getEventTicketSaleStartTime();
+              goodTicketSaleTime = eventsTestHelper.getTicketSaleStartTime();
               goodSupportingUrl = eventsTestHelper.getEventSupportURL();
             });
 
             it("if ticketSaleStartTime is too soon", async function() {
-              let badEventTicketSaleStartTime = eventsTestHelper.getEventTicketSaleStartTime().minus(1);
-              await createEventFails(goodEventTime, badEventTicketSaleStartTime, goodSupportingUrl);
+              let badTicketSaleStartTime = eventsTestHelper.getTicketSaleStartTime().minus(1);
+              await createEventFails(goodEventTime, badTicketSaleStartTime, goodSupportingUrl);
               await eventsTestHelper.withdrawEventDeposit();
             });
 
             it("if eventTime is before ticketSaleStartTime", async function() {
-              let badEventTime = eventsTestHelper.getEventTicketSaleStartTime().minus(1);
+              let badEventTime = eventsTestHelper.getTicketSaleStartTime().minus(1);
               await createEventFails(badEventTime, goodTicketSaleTime, eventsTestHelper.getEventSupportURL());
               await eventsTestHelper.withdrawEventDeposit();
             });
 
             it("if event supportingURL is not provided", async function() {
               let badEventSupportURL = "";
-              await createEventFails(eventsTestHelper.getEventTime(), eventsTestHelper.getEventTicketSaleStartTime(), badEventSupportURL);
+              await createEventFails(eventsTestHelper.getEventTime(), eventsTestHelper.getTicketSaleStartTime(), badEventSupportURL);
               await eventsTestHelper.withdrawEventDeposit();
             });
 

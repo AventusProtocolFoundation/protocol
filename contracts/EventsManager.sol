@@ -4,21 +4,9 @@ import './interfaces/IAventusStorage.sol';
 import './interfaces/IEventsManager.sol';
 import './libraries/LEvents.sol';
 import './Owned.sol';
+import './Versioned.sol';
 
-contract EventsManager is IEventsManager, Owned {
-  event LogEventCreated(uint eventId, string eventDesc);
-  event LogSignedEventCreated(uint eventId, string eventDesc);
-  event LogUnlockEventDeposit(uint eventId);
-  event LogEventCancellation(uint eventId);
-  event LogSignedEventCancellation(uint eventId);
-  event LogTicketSale(uint eventId, uint ticketId, address buyer);
-  event LogSignedTicketSale(uint eventId, uint ticketId, address buyer);
-  event LogTicketResale(uint eventId, uint ticketId, address newBuyer);
-  event LogSignedTicketResale(uint eventId, uint ticketId, address newBuyer);
-  event LogTicketRefund(uint eventId, uint ticketId);
-  event LogSignedTicketRefund(uint eventId, uint ticketId);
-  event LogRegisterDelegate(uint eventId, string role, address delegate);
-  event LogDeregisterDelegate(uint eventId, string role, address delegate);
+contract EventsManager is IEventsManager, Owned, Versioned {
 
   IAventusStorage public s;
 
@@ -37,75 +25,62 @@ contract EventsManager is IEventsManager, Owned {
   {
     eventId_ = LEvents.createEvent(s, _eventDesc, _eventTime, _capacity,
       _averageTicketPriceInUSCents, _ticketSaleStartTime, _eventSupportURL);
-    emit LogEventCreated(eventId_, _eventDesc);
   }
 
   function signedCreateEvent(bytes _signedMessage, string _eventDesc, uint _eventTime,
     uint _capacity, uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime, string _eventSupportURL, address _owner)
     external
-    returns (uint eventId)
+    returns (uint eventId_)
   {
-    eventId = LEvents.signedCreateEvent(s, _signedMessage, _eventDesc, _eventTime, _capacity,
+    eventId_ = LEvents.signedCreateEvent(s, _signedMessage, _eventDesc, _eventTime, _capacity,
       _averageTicketPriceInUSCents, _ticketSaleStartTime, _eventSupportURL, _owner);
-    emit LogSignedEventCreated(eventId, _eventDesc);
   }
 
   function cancelEvent(uint _eventId) external {
     LEvents.cancelEvent(s, _eventId);
-    emit LogEventCancellation(_eventId);
   }
 
   function signedCancelEvent(bytes _signedMessage, uint _eventId) external {
     LEvents.signedCancelEvent(s, _signedMessage, _eventId);
-    emit LogSignedEventCancellation(_eventId);
   }
 
   function unlockEventDeposit(uint _eventId) external {
     LEvents.unlockEventDeposit(s, _eventId);
-    emit LogUnlockEventDeposit(_eventId);
   }
 
   function sellTicket(uint _eventId, string _ticketDetails, address _buyer) external {
-    uint ticketId = LEvents.sellTicket(s, _eventId, _ticketDetails, _buyer);
-    emit LogTicketSale(_eventId, ticketId, _buyer);
+    LEvents.sellTicket(s, _eventId, _ticketDetails, _buyer);
   }
 
   function signedSellTicket(bytes _signedMessage, uint _eventId, string _ticketDetails, address _buyer) external {
-    uint ticketId = LEvents.signedSellTicket(s, _signedMessage, _eventId, _ticketDetails, _buyer);
-    emit LogSignedTicketSale(_eventId, ticketId, _buyer);
+    LEvents.signedSellTicket(s, _signedMessage, _eventId, _ticketDetails, _buyer);
   }
 
   function refundTicket(uint _eventId, uint _ticketId) external {
     LEvents.refundTicket(s, _eventId, _ticketId);
-    emit LogTicketRefund(_eventId, _ticketId);
   }
 
   function signedRefundTicket(bytes _signedMessage, uint _eventId, uint _ticketId) external {
     LEvents.signedRefundTicket(s, _signedMessage, _eventId, _ticketId);
-    emit LogSignedTicketRefund(_eventId, _ticketId);
   }
 
   function resellTicket(uint _eventId, uint _ticketId, bytes _ownerPermission, address _newBuyer)
     external {
       LEvents.resellTicket(s, _eventId, _ticketId, _ownerPermission, _newBuyer);
-      emit LogTicketResale(_eventId, _ticketId, _newBuyer);
   }
 
   function signedResellTicket(bytes _signedMessage, uint _eventId, uint _ticketId,
     bytes _ownerPermission, address _newBuyer)
     external {
     LEvents.signedResellTicket(s, _signedMessage, _eventId, _ticketId, _ownerPermission, _newBuyer);
-    emit LogSignedTicketResale(_eventId, _ticketId, _newBuyer);
   }
 
   function registerDelegate(uint _eventId, string _role, address _delegate) external {
     LEvents.registerDelegate(s, _eventId, _role, _delegate);
-    emit LogRegisterDelegate(_eventId, _role, _delegate);
   }
 
   function deregisterDelegate(uint _eventId, string _role, address _delegate) external {
     LEvents.deregisterDelegate(s, _eventId, _role, _delegate);
-    emit LogDeregisterDelegate(_eventId, _role, _delegate);
   }
 
   function addressIsDelegate(uint _eventId, string _role, address _delegate)

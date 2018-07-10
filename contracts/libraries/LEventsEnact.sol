@@ -1,7 +1,5 @@
 pragma solidity ^0.4.24;
 
-import "../interfaces/IAventusStorage.sol";
-import "./LAventusTime.sol";
 import "./LEventsCommon.sol";
 
 library LEventsEnact {
@@ -171,7 +169,7 @@ library LEventsEnact {
     bytes32 key = keccak256(abi.encodePacked("ExpectedDeposits", _owner));
     _storage.setUInt(key, _storage.getUInt(key) + depositInAVTDecimals);
     require(
-      _storage.getUInt(key) <= LLock.getBalance(_storage, _owner, "deposit"),
+      _storage.getUInt(key) <= LAVTManager.getBalance(_storage, _owner, "deposit"),
       "Insufficient deposit funds to create event"
     );
 

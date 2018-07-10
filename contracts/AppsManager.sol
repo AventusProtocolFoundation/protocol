@@ -4,10 +4,9 @@ import './interfaces/IAppsManager.sol';
 import './interfaces/IAventusStorage.sol';
 import './libraries/LApps.sol';
 import './Owned.sol';
+import './Versioned.sol';
 
-contract AppsManager is IAppsManager, Owned {
-    event LogAppRegistered(address indexed appAddress);
-    event LogAppDeregistered(address indexed appAddress);
+contract AppsManager is IAppsManager, Owned, Versioned {
 
     IAventusStorage public s;
 
@@ -24,7 +23,6 @@ contract AppsManager is IAppsManager, Owned {
       onlyOwner
     {
       LApps.registerApp(s, _appAddress);
-      emit LogAppRegistered(_appAddress);
     }
 
     function deregisterApp(address _appAddress)
@@ -32,7 +30,6 @@ contract AppsManager is IAppsManager, Owned {
       onlyOwner
     {
       LApps.deregisterApp(s, _appAddress);
-      emit LogAppDeregistered(_appAddress);
     }
 
     function challengeApp(address /*_appAddress*/)

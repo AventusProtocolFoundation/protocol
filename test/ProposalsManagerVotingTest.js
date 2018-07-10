@@ -1,14 +1,14 @@
-// Specifically request an abstraction for AventusVote
+// Specifically request an abstraction for ProposalsManager
 const testHelper = require("./helpers/testHelper");
 const votingTestHelper = require("./helpers/votingTestHelper");
 
-contract('AventusVote - Voting:', function () {
+contract('ProposalsManager - Voting:', function () {
     // Freeze time so we can use the mock time library in solidity. Make sure we
     // keep time on the solidity side and the java side in sync.
     const oneDay = new web3.BigNumber(86400);  // seconds in one day. Solidity uses uint256.
     const oneWeek = oneDay.times(7);
     const minimumVotingPeriod = oneWeek;
-    let aventusVote, avt;
+    let proposalsManager, avtManager, avt;
     let deposit;
     const BIGZERO = new web3.BigNumber(0);
     let expectedStake = [BIGZERO, BIGZERO, BIGZERO]; // Keep a balance for three stake funds.
@@ -17,9 +17,11 @@ contract('AventusVote - Voting:', function () {
     before(async function () {
       await votingTestHelper.before();
 
-      aventusVote = testHelper.getAventusVote();
+      proposalsManager = testHelper.getProposalsManager();
+      avtManager = testHelper.getAVTManager();
+
       avt = testHelper.getAVTContract();
-      deposit = await aventusVote.getGovernanceProposalDeposit();
+      deposit = await proposalsManager.getGovernanceProposalDeposit();
     });
 
     afterEach(async function() {
@@ -43,9 +45,9 @@ contract('AventusVote - Voting:', function () {
 
     async function createGovernanceProposal(desc) {
       await depositDeposit(deposit);
-      await aventusVote.createGovernanceProposal(desc);
+      await proposalsManager.createGovernanceProposal(desc);
 
-      const eventArgs = await testHelper.getEventArgs(aventusVote.LogCreateProposal);
+      const eventArgs = await testHelper.getEventArgs(proposalsManager.LogCreateProposal);
       proposalId = eventArgs.proposalId;
 
       return proposalId.toNumber();
@@ -71,8 +73,8 @@ contract('AventusVote - Voting:', function () {
             // Any other account will not have any AVT: give them what they need.
             await avt.transfer(account, amount);
         }
-        await avt.approve(aventusVote.address, amount, {from: account});
-        await aventusVote.deposit(fund, amount, {from: account});
+        await avt.approve(avtManager.address, amount, {from: account});
+        await avtManager.deposit(fund, amount, {from: account});
     }
 
     async function withdrawStake(amount, accountNum) {
@@ -92,7 +94,7 @@ contract('AventusVote - Voting:', function () {
     async function withdrawAmount(fund, amount, accountNum) {
         let _accountNum = accountNum || 0;
         let account = testHelper.getAccount(_accountNum);
-        await aventusVote.withdraw(fund, amount, {from: account});
+        await avtManager.withdraw(fund, amount, {from: account});
     }
 
     context("Tests for voting on governance proposals", function() {
@@ -101,7 +103,7 @@ contract('AventusVote - Voting:', function () {
           await testHelper.expectRevert(() => votingTestHelper.castVote(proposalId, 2));
 
           await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await aventusVote.endProposal(proposalId);
+          await proposalsManager.endProposal(proposalId);
       });
 
       it("can vote on a governance proposal which is in the voting period", async function() {
@@ -112,7 +114,7 @@ contract('AventusVote - Voting:', function () {
 
           // Clear up before the next test.
           await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await aventusVote.endProposal(proposalId)
+          await proposalsManager.endProposal(proposalId)
           // Must reveal any cast votes so that the stake can be withdran before the next test.
           await votingTestHelper.revealVote(signedMessage, proposalId, 2);
       });
@@ -124,7 +126,7 @@ contract('AventusVote - Voting:', function () {
           await testHelper.expectRevert(() => votingTestHelper.castVote(proposalId, 2));
 
           await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await aventusVote.endProposal(proposalId);
+          await proposalsManager.endProposal(proposalId);
       });
 
       it("cannot reveal vote before the revealing period.", async function() {
@@ -140,7 +142,7 @@ contract('AventusVote - Voting:', function () {
           await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
 
           await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await aventusVote.endProposal(proposalId);
+          await proposalsManager.endProposal(proposalId);
       });
 
       it("can reveal vote in the revealing period.", async function() {
@@ -153,7 +155,7 @@ contract('AventusVote - Voting:', function () {
           await testHelper.advanceTimeToRevealingStart(proposalId);
           await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
           await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await aventusVote.endProposal(proposalId);
+          await proposalsManager.endProposal(proposalId);
       });
 
       it("cannot reveal vote with the wrong optionId or signature.", async function() {
@@ -172,7 +174,7 @@ contract('AventusVote - Voting:', function () {
           await votingTestHelper.revealVote(signedMessage, proposalId, 1);
 
           await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await aventusVote.endProposal(proposalId);
+          await proposalsManager.endProposal(proposalId);
       });
 
       it("can reveal vote after the revealing period.", async function() {
@@ -186,7 +188,7 @@ contract('AventusVote - Voting:', function () {
           await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
 
           await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await aventusVote.endProposal(proposalId);
+          await proposalsManager.endProposal(proposalId);
       });
 
       it("can deposit and withdraw tokens within any period, without any votes.", async function() {
@@ -204,7 +206,7 @@ contract('AventusVote - Voting:', function () {
           await withdrawStake(5);
 
           await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await aventusVote.endProposal(proposalId);
+          await proposalsManager.endProposal(proposalId);
       });
 
       it("can deposit and withdraw tokens in the voting period.", async function() {
@@ -221,7 +223,7 @@ contract('AventusVote - Voting:', function () {
           await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
 
           await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await aventusVote.endProposal(proposalId);
+          await proposalsManager.endProposal(proposalId);
       });
 
       it("cannot deposit or withdraw stake until your vote is revealed.", async function() {
@@ -244,7 +246,7 @@ contract('AventusVote - Voting:', function () {
           await withdrawStake(1);
 
           await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await aventusVote.endProposal(proposalId);
+          await proposalsManager.endProposal(proposalId);
       });
 
       it("can deposit or withdraw tokens after a proposal is ended, if not within a revealing period of another proposal.", async function() {
@@ -279,9 +281,9 @@ contract('AventusVote - Voting:', function () {
           await withdrawStake(10);
 
           await testHelper.advanceTimeToEndOfProposal(thirdProposal);
-          await aventusVote.endProposal(firstProposal);
-          await aventusVote.endProposal(secondProposal);
-          await aventusVote.endProposal(thirdProposal);
+          await proposalsManager.endProposal(firstProposal);
+          await proposalsManager.endProposal(secondProposal);
+          await proposalsManager.endProposal(thirdProposal);
       });
 
       it("can vote on, deposit stake to and withdraw from, a few proposals with overlapping periods.", async function() {
@@ -376,7 +378,7 @@ contract('AventusVote - Voting:', function () {
 
           // Finally done! Close 'em all down.
           for (i = 0; i < 4; ++i) {
-            await aventusVote.endProposal(proposalIds[i]);
+            await proposalsManager.endProposal(proposalIds[i]);
           }
       });
 
@@ -388,7 +390,7 @@ contract('AventusVote - Voting:', function () {
       });
 
       it("cannot get prevTime for proposal that does not exist", async function() {
-        await testHelper.expectRevert(() => aventusVote.getPrevTimeParamForCastVote(99));
+        await testHelper.expectRevert(() => proposalsManager.getPrevTimeParamForCastVote(99));
       });
 
       it("can only vote with the correct proposalId and prevTime", async function() {
@@ -403,21 +405,21 @@ contract('AventusVote - Voting:', function () {
         // Skip to the voting period of all three proposals.
         await testHelper.advanceTimeToVotingStart(proposalId3);
         // Vote on the first two.
-        const prevTime1 = await aventusVote.getPrevTimeParamForCastVote(proposalId1);
-        await aventusVote.castVote(proposalId1, votingTestHelper.getSignatureSecret(signedMessage1), prevTime1);
-        const prevTime2 = await aventusVote.getPrevTimeParamForCastVote(proposalId2);
-        await aventusVote.castVote(proposalId2, votingTestHelper.getSignatureSecret(signedMessage2), prevTime2);
+        const prevTime1 = await proposalsManager.getPrevTimeParamForCastVote(proposalId1);
+        await proposalsManager.castVote(proposalId1, votingTestHelper.getSignatureSecret(signedMessage1), prevTime1);
+        const prevTime2 = await proposalsManager.getPrevTimeParamForCastVote(proposalId2);
+        await proposalsManager.castVote(proposalId2, votingTestHelper.getSignatureSecret(signedMessage2), prevTime2);
 
         // Wrong prevTime.
-        await testHelper.expectRevert(() => aventusVote.castVote(proposalId3, votingTestHelper.getSignatureSecret(signedMessage3), 0));
-        await testHelper.expectRevert(() => aventusVote.castVote(proposalId3, votingTestHelper.getSignatureSecret(signedMessage3), prevTime1));
-        await testHelper.expectRevert(() => aventusVote.castVote(proposalId3, votingTestHelper.getSignatureSecret(signedMessage3), 12345));
+        await testHelper.expectRevert(() => proposalsManager.castVote(proposalId3, votingTestHelper.getSignatureSecret(signedMessage3), 0));
+        await testHelper.expectRevert(() => proposalsManager.castVote(proposalId3, votingTestHelper.getSignatureSecret(signedMessage3), prevTime1));
+        await testHelper.expectRevert(() => proposalsManager.castVote(proposalId3, votingTestHelper.getSignatureSecret(signedMessage3), 12345));
 
         // Invalid proposal.
-        await testHelper.expectRevert(() => aventusVote.castVote(99, votingTestHelper.getSignatureSecret(signedMessage2), prevTime2));
+        await testHelper.expectRevert(() => proposalsManager.castVote(99, votingTestHelper.getSignatureSecret(signedMessage2), prevTime2));
         // Correct values work.
-        const prevTime3 = await aventusVote.getPrevTimeParamForCastVote(proposalId3);
-        await aventusVote.castVote(proposalId3, votingTestHelper.getSignatureSecret(signedMessage3), prevTime3);
+        const prevTime3 = await proposalsManager.getPrevTimeParamForCastVote(proposalId3);
+        await proposalsManager.castVote(proposalId3, votingTestHelper.getSignatureSecret(signedMessage3), prevTime3);
 
         await testHelper.advanceTimeToRevealingStart(proposalId3);
         await votingTestHelper.revealVote(signedMessage1, proposalId1, 1);
@@ -425,9 +427,9 @@ contract('AventusVote - Voting:', function () {
         await votingTestHelper.revealVote(signedMessage3, proposalId3, 1);
 
         await testHelper.advanceTimeToEndOfProposal(proposalId3);
-        await aventusVote.endProposal(proposalId1);
-        await aventusVote.endProposal(proposalId2);
-        await aventusVote.endProposal(proposalId3);
+        await proposalsManager.endProposal(proposalId1);
+        await proposalsManager.endProposal(proposalId2);
+        await proposalsManager.endProposal(proposalId3);
       });
 
       it("cannot vote if we have already voted", async function() {
@@ -440,14 +442,14 @@ contract('AventusVote - Voting:', function () {
         await votingTestHelper.revealVote(signedMessage, proposalId, 1);
 
         await testHelper.advanceTimeToEndOfProposal(proposalId);
-        await aventusVote.endProposal(proposalId);
+        await proposalsManager.endProposal(proposalId);
       });
 
       it("cannot endProposal more than once for the same proposal", async function() {
         const proposalId = await createGovernanceProposal("A proposal");
         await testHelper.advanceTimeToEndOfProposal(proposalId);
-        await aventusVote.endProposal(proposalId);
-        await testHelper.expectRevert(() => aventusVote.endProposal(proposalId));
+        await proposalsManager.endProposal(proposalId);
+        await testHelper.expectRevert(() => proposalsManager.endProposal(proposalId));
       });
     });
 });

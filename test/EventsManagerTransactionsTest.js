@@ -1,5 +1,4 @@
 const EventsManager = artifacts.require("EventsManager");
-const AventusVote = artifacts.require("AventusVote");
 const AventusStorage = artifacts.require("AventusStorage");
 const LAventusTime = artifacts.require("LAventusTime");
 const LAventusTimeMock = artifacts.require("LAventusTimeMock");

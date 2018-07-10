@@ -3,6 +3,16 @@ pragma solidity ^0.4.24;
 interface IAppsManager {
 
   /**
+   * Event emitted for a registerApp transaction.
+   */
+  event LogAppRegistered(address indexed appAddress);
+
+  /**
+   * Event emitted for a deregisterApp transaction.
+   */
+  event LogAppDeregistered(address indexed appAddress);
+
+  /**
    * Register the given app address to use the Aventus Protocol.
    * NOTE: requires a deposit to be made. See getAppDeposit().
    */

@@ -1,6 +1,7 @@
-const AventusVote = artifacts.require("AventusVote.sol");
+const ProposalsManager = artifacts.require("ProposalsManager.sol");
 const AventusStorage = artifacts.require("AventusStorage.sol");
 const IERC20 = artifacts.require("IERC20");
+const Versioned = artifacts.require("Versioned");
 const LProposalForTesting = artifacts.require("LProposalForTesting.sol");
 const testHelper = require("./helpers/testHelper");
 
@@ -9,17 +10,22 @@ contract('Proxy testing', function () {
   const oneWeek = 7 * oneDay;
   const minimumVotingPeriod = oneWeek;
 
-  let aventusVote, aventusStorage, avt;
+  let proposalsManager, aventusStorage, avt;
   let newLibraryAddress, oldLibraryAddress;
   let proposalDeposit;
+
+  let libraryKey;
 
   before(async function () {
     await testHelper.before();
 
+    const versionMajorMinor = await (await Versioned.deployed()).getVersionMajorMinor();
+    libraryKey = web3.sha3("LProposalInstance" + "-" + versionMajorMinor);
+
     aventusStorage = testHelper.getStorage();
-    aventusVote = testHelper.getAventusVote();
+    proposalsManager = testHelper.getProposalsManager();
     newLibraryAddress = (await LProposalForTesting.deployed()).address;
-    oldLibraryAddress = await aventusStorage.getAddress(web3.sha3("LProposalInstance"));
+    oldLibraryAddress = await aventusStorage.getAddress(libraryKey);
 
     avt = testHelper.getAVTContract();
   });
@@ -27,12 +33,12 @@ contract('Proxy testing', function () {
   after(async () => await testHelper.checkFundsEmpty());
 
   async function createProposal(desc) {
-    proposalDeposit = await aventusVote.getGovernanceProposalDeposit();
-    await avt.approve(aventusVote.address, proposalDeposit);
-    await aventusVote.deposit("deposit", proposalDeposit);
+    proposalDeposit = await proposalsManager.getGovernanceProposalDeposit();
+    await avt.approve(avtManager.address, proposalDeposit);
+    await avtManager.deposit("deposit", proposalDeposit);
 
-    await aventusVote.createGovernanceProposal(desc);
-    const eventArgs = await testHelper.getEventArgs(aventusVote.LogCreateProposal);
+    await proposalsManager.createGovernanceProposal(desc);
+    const eventArgs = await testHelper.getEventArgs(proposalsManager.LogCreateProposal);
     return eventArgs.proposalId.toNumber();
   }
 
@@ -45,13 +51,13 @@ contract('Proxy testing', function () {
   }
 
   async function setLProposalInstance(instanceAddr) {
-    await aventusStorage.setAddress(web3.sha3("LProposalInstance"), instanceAddr);
+    await aventusStorage.setAddress(libraryKey, instanceAddr);
   }
 
   async function endProposalAndWithdrawDeposit(_proposalId) {
     await testHelper.advanceTimeToEndOfProposal(_proposalId);
-    await aventusVote.endProposal(_proposalId);
-    await aventusVote.withdraw("deposit", proposalDeposit);
+    await proposalsManager.endProposal(_proposalId);
+    await avtManager.withdraw("deposit", proposalDeposit);
   }
 
   it("can call new version of a method with the same signature", async function() {
@@ -65,7 +71,7 @@ contract('Proxy testing', function () {
     // ...then calling the method again should give different behaviour.
     proposalId = await createProposal("What will the new library print?");
     assert.equal(proposalId, 2018);
-    await aventusVote.withdraw("deposit", proposalDeposit);
+    await avtManager.withdraw("deposit", proposalDeposit);
 
     // Put the old library back...
     await useOldLibrary();
@@ -81,12 +87,12 @@ contract('Proxy testing', function () {
 
     // Using the updated library should fail.
     await useNewLibrary();
-    await testHelper.expectRevert(() => aventusVote.endProposal(proposalId));
+    await testHelper.expectRevert(() => proposalsManager.endProposal(proposalId));
 
     // Put the old library back...
     await useOldLibrary();
     // ...and the correct behaviour is restored.
-    await aventusVote.endProposal(proposalId);
-    await aventusVote.withdraw("deposit", proposalDeposit);
+    await proposalsManager.endProposal(proposalId);
+    await avtManager.withdraw("deposit", proposalDeposit);
   });
 });

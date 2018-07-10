@@ -2,10 +2,10 @@ pragma solidity ^0.4.24;
 
 import "./PLibraryDelegate.sol";
 
-contract PLock is PLibraryDelegate {
+contract PAVTManager is PLibraryDelegate {
 
   function () payable public {
-    libraryDelegateFwd("LLockInstance");
+    libraryDelegateFwd("LAVTManagerInstance");
   }
 
 }

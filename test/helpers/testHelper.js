@@ -1,5 +1,6 @@
 const AventusStorage = artifacts.require("AventusStorage.sol");
-const AventusVote = artifacts.require("AventusVote.sol");
+const ProposalsManager = artifacts.require("ProposalsManager.sol");
+const AVTManager = artifacts.require("AVTManager.sol");
 const LAventusTime = artifacts.require("LAventusTime");
 const LAventusTimeMock = artifacts.require("LAventusTimeMock");
 const IERC20 = artifacts.require("IERC20");
@@ -10,13 +11,14 @@ const oneWeek = 7 * oneDay;
 const mockTimeKey = web3.sha3("MockCurrentTime");
 
 let blockChainTime = new web3.BigNumber(0);
-let aventusStorage, avtAddress, aventusVote;
+let aventusStorage, avtAddress, proposalsManager;
 let lastEventBlockNumber = -1;
 
 async function before() {
   aventusStorage = await AventusStorage.deployed();
-  avtAddress = await aventusStorage.getAddress(web3.sha3("AVT"));
-  aventusVote = await AventusVote.deployed();
+  avtAddress = await aventusStorage.getAddress(web3.sha3("AVTERC20Instance"));
+  proposalsManager = await ProposalsManager.deployed();
+  avtManager = await AVTManager.deployed();
 
   blockChainTime = new web3.BigNumber(web3.eth.getBlock(web3.eth.blockNumber).timestamp);
   await useMockTime();
@@ -29,12 +31,12 @@ async function checkFundsEmpty(alsoCheckStakes) {
     checkFundIsEmpty('deposit', i);
     if (alsoCheckStakes) checkFundIsEmpty('stake', i);
   }
-  let lockBalance = await aventusStorage.getUInt(web3.sha3("LockBalance"));
-  assert.equal(lockBalance.toNumber(), 0, "Total balance not cleared");
+  let totalAVTFunds = await aventusStorage.getUInt(web3.sha3("TotalAVTFunds"));
+  assert.equal(totalAVTFunds.toNumber(), 0, "Total balance not cleared");
 }
 
 async function checkFundIsEmpty(fund, accountNum) {
-  const depositBalance = (await aventusVote.getBalance(fund, getAccount(accountNum))).toNumber();
+  const depositBalance = (await avtManager.getBalance(fund, getAccount(accountNum))).toNumber();
   assert.equal(0, depositBalance, (fund + " account " + accountNum + " has AVT"));
 }
 
@@ -121,7 +123,8 @@ module.exports = {
 
     now: () => blockChainTime,
     getStorage: () => aventusStorage,
-    getAventusVote: () => aventusVote,
+    getProposalsManager: () => proposalsManager,
+    getAVTManager: () => avtManager,
     getAVTContract: () => IERC20.at(avtAddress),
 
     before,

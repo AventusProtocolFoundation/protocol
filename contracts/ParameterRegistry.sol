@@ -2,8 +2,9 @@ pragma solidity ^0.4.24;
 
 import './interfaces/IAventusStorage.sol';
 import './Owned.sol';
+import './Versioned.sol';
 
-contract ParameterRegistry is Owned {
+contract ParameterRegistry is Owned, Versioned {
 
   // Proposal default values.
   uint private constant GOVERNANCE_PROPOSAL_LOBBYING_PERIOD_DAYS = 14;

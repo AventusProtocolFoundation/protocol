@@ -1,6 +1,72 @@
 pragma solidity ^0.4.24;
 
 interface IEventsManager {
+
+  /**
+   * Event emitted for a createEvent transaction.
+   */
+  event LogEventCreated(uint indexed eventId, string eventDesc, uint ticketSaleStartTime, uint eventTime, uint averageTicketPriceInUSCents);
+
+  /**
+   * Event emitted for a signedCreateEvent transaction.
+   */
+  event LogSignedEventCreated(uint indexed eventId, string eventDesc, uint ticketSaleStartTime, uint eventTime, uint averageTicketPriceInUSCents);
+
+  /**
+   * Event emitted for a unlockEventDeposit transaction.
+   */
+  event LogUnlockEventDeposit(uint indexed eventId);
+
+  /**
+   * Event emitted for a cancelEvent transaction.
+   */
+  event LogEventCancellation(uint indexed eventId);
+
+  /**
+   * Event emitted for a signedCancelEvent transaction.
+   */
+  event LogSignedEventCancellation(uint indexed eventId);
+
+  /**
+   * Event emitted for a sellTicket transaction.
+   */
+  event LogTicketSale(uint indexed eventId, uint indexed ticketId, address indexed buyer);
+
+  /**
+   * Event emitted for a signedSellTicket transaction.
+   */
+  event LogSignedTicketSale(uint indexed eventId, uint indexed ticketId, address indexed buyer);
+
+  /**
+   * Event emitted for a resellTicket transaction.
+   */
+  event LogTicketResale(uint indexed eventId, uint indexed ticketId, address indexed newBuyer);
+
+  /**
+   * Event emitted for a signedResellTicket transaction.
+   */
+  event LogSignedTicketResale(uint indexed eventId, uint indexed ticketId, address indexed newBuyer);
+
+  /**
+   * Event emitted for a refundTicket transaction.
+   */
+  event LogTicketRefund(uint indexed eventId, uint indexed ticketId);
+
+  /**
+   * Event emitted for a signedRefundTicket transaction.
+   */
+  event LogSignedTicketRefund(uint indexed eventId, uint indexed ticketId);
+
+  /**
+   * Event emitted for a registerDelegate transaction.
+   */
+  event LogRegisterDelegate(uint indexed eventId, string role, address indexed delegate);
+
+  /**
+   * Event emitted for a deregisterDelegate transaction.
+   */
+  event LogDeregisterDelegate(uint indexed eventId, string role, address indexed delegate);
+
   /**
   * @dev Create an event
   * @param _eventDesc description or title of the event
