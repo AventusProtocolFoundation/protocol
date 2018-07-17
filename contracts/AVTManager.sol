@@ -26,6 +26,10 @@ contract AVTManager is IAVTManager, Owned, Versioned {
     LAVTManager.deposit(s, _fund, _amount);
   }
 
+  function transfer(string _fund, uint _amount, address _toAddress, string _toFund) external {
+    LAVTManager.transfer(s, _fund, _amount, _toAddress, _toFund);
+  }
+
   function getBalance(string _fund, address _avtHolder)
     external
     view

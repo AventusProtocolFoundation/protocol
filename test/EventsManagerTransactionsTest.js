@@ -2,7 +2,6 @@ const EventsManager = artifacts.require("EventsManager");
 const AventusStorage = artifacts.require("AventusStorage");
 const LAventusTime = artifacts.require("LAventusTime");
 const LAventusTimeMock = artifacts.require("LAventusTimeMock");
-const AppsManager = artifacts.require("AppsManager");
 const IERC20 = artifacts.require("IERC20");
 const testHelper = require("./helpers/testHelper");
 const eventsTestHelper = require("./helpers/eventsTestHelper");
@@ -302,6 +301,13 @@ contract('EventsManager - transactions', function () {
                     await testHelper.expectRevert(() => doSellTicket(eventId, setupUniqueTicketParameters(), buyer1, buyer1));
                   });
 
+                  it("the ticket seller is a deregistered primary delegate still registered on the event", async function () {
+                    await eventsTestHelper.depositAndWhitelistApp(primaryDelegate);
+                    await eventsManager.registerDelegate(eventId, "primary", primaryDelegate, {from: eventOwner});
+                    await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(primaryDelegate);
+                    await testHelper.expectRevert(() => doSellTicket(eventId, setupUniqueTicketParameters(), buyer1, primaryDelegate));
+                  });
+
                   it("the seller is a secondary delegate", async function () {
                     await eventsTestHelper.depositAndWhitelistApp(secondaryDelegate);
                     await testHelper.expectRevert(() => doSellTicket(eventId, setupUniqueTicketParameters(), buyer1, secondaryDelegate));
@@ -422,13 +428,21 @@ contract('EventsManager - transactions', function () {
                     await resellTicketFails(eventId, soldTicketId, buyer2, newBuyer1, eventOwner);
                   });
 
-                  it("secondary delegate is not registered", async function() {
+                  it("secondary delegate is not registered on the event", async function() {
                     await eventsTestHelper.depositAndWhitelistApp(secondaryDelegate);
                     await eventsManager.registerDelegate(eventId, "secondary", secondaryDelegate, {from: eventOwner});
                     await resellTicketSucceeds(eventId, soldTicketId, currentOwner, newBuyer1, secondaryDelegate);
                     await eventsManager.deregisterDelegate(eventId, "secondary", secondaryDelegate, {from: eventOwner});
                     await resellTicketFails(eventId, soldTicketId, currentOwner, newBuyer1, secondaryDelegate, eventOwner);
                     await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(secondaryDelegate);
+                  });
+
+                  it("secondary delegate is registered on the event but not as an app", async function() {
+                    await eventsTestHelper.depositAndWhitelistApp(secondaryDelegate);
+                    await eventsManager.registerDelegate(eventId, "secondary", secondaryDelegate, {from: eventOwner});
+                    await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(secondaryDelegate);
+                    await resellTicketFails(eventId, soldTicketId, currentOwner, newBuyer1, secondaryDelegate);
+                    await eventsManager.deregisterDelegate(eventId, "secondary", secondaryDelegate, {from: eventOwner});
                   });
                 });
 
@@ -504,6 +518,13 @@ contract('EventsManager - transactions', function () {
                 await eventsManager.registerDelegate(eventId, "primary", primaryDelegate, {from: eventOwner});
                 await doRefundTicket(eventId, ticketId, primaryDelegate);
                 await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(primaryDelegate);
+              });
+
+              it("cannot refund a ticket if primary delegate is registered on the event but not as an app", async function () {
+                await eventsTestHelper.depositAndWhitelistApp(primaryDelegate);
+                await eventsManager.registerDelegate(eventId, "primary", primaryDelegate, {from: eventOwner});
+                await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(primaryDelegate);
+                await testHelper.expectRevert(() => doRefundTicket(eventId, ticketId, primaryDelegate));
               });
 
               if (transactionIsSigned) {

@@ -177,6 +177,42 @@ contract('ProposalsManager - Voting:', function () {
           await proposalsManager.endProposal(proposalId);
       });
 
+      it("cannot reveal vote with short signature.", async function() {
+          let proposalId = await createGovernanceProposal("A governance proposal");
+
+          await testHelper.advanceTimeToVotingStart(proposalId);
+          const signedMessage = await votingTestHelper.castVote(proposalId, 1);
+
+          await testHelper.advanceTimeToRevealingStart(proposalId);
+
+          const corruptSignedMessage = signedMessage.slice(0,40); // curtail signature
+          await testHelper.expectRevert(() => votingTestHelper.revealVote(corruptSignedMessage, proposalId, 1));
+
+          await votingTestHelper.revealVote(signedMessage, proposalId, 1);
+
+          await testHelper.advanceTimeToEndOfProposal(proposalId);
+          await proposalsManager.endProposal(proposalId);
+      });
+
+      it("cannot reveal vote with an invalid signature version.", async function() {
+          let proposalId = await createGovernanceProposal("A governance proposal");
+
+          await testHelper.advanceTimeToVotingStart(proposalId);
+          const signedMessage = await votingTestHelper.castVote(proposalId, 1);
+
+          await testHelper.advanceTimeToRevealingStart(proposalId);
+
+          let corruptSignedMessage = signedMessage.split('');
+          corruptSignedMessage[130] = 2; //changes signature version to 32 - LECRecovery only accepts 0, 1, 27 or 28 as valid
+          corruptSignedMessage = corruptSignedMessage.join('');
+          await testHelper.expectRevert(() => votingTestHelper.revealVote(corruptSignedMessage, proposalId, 1));
+
+          await votingTestHelper.revealVote(signedMessage, proposalId, 1);
+
+          await testHelper.advanceTimeToEndOfProposal(proposalId);
+          await proposalsManager.endProposal(proposalId);
+      });
+
       it("can reveal vote after the revealing period.", async function() {
           let proposalId = await createGovernanceProposal("A governance proposal");
 

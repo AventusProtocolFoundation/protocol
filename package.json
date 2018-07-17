@@ -14,6 +14,8 @@
   "homepage": "https://github.com/AventusProtocolFoundation/protocol#readme",
   "dependencies": {
     "eip55": "^1.0.3",
+    "ethereumjs-testrpc-sc": "^6.1.2",
+    "solidity-coverage": "^0.5.5",
     "web3": "^0.20.4",
     "web3-utils": "^1.0.0-beta.30"
   }

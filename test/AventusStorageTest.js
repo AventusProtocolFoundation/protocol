@@ -84,29 +84,6 @@ contract('AventusStorage', function() {
       await avtStorage.setUInt8(key, defaultValue);
       assert.equal(await avtStorage.getUInt8(key), defaultValue);
     });
-
-    it('can store and retrieve UInt8 from AventusStorage with a permitted address', async function() {
-      const defaultValue = 0;
-      const testValue = 5;
-      let account1 = testHelper.getAccount(1);
-
-      await testHelper.expectRevert(() => avtStorage.setUInt8(key, testValue, {from: account1}));
-      await avtStorage.setUInt8(key, testValue);
-      assert.equal(await avtStorage.getUInt8(key), testValue);
-
-      await testHelper.expectRevert(() => avtStorage.setUInt8(key, defaultValue, {from: account1}));
-      await avtStorage.setUInt8(key, defaultValue);
-      assert.equal(await avtStorage.getUInt8(key), defaultValue);
-
-      await avtStorage.allowAccess(account1);
-
-      // Now account1 should have access right to update storage
-      await avtStorage.setUInt8(key, testValue, {from: account1});
-      assert.equal(await avtStorage.getUInt8(key), testValue);
-
-      await avtStorage.setUInt8(key, defaultValue, {from: account1});
-      assert.equal(await avtStorage.getUInt8(key), defaultValue);
-    });
   });
 
   it('can store and retrieve Address from AventusStorage', async function() {
@@ -275,5 +252,55 @@ contract('AventusStorage', function() {
 
     await avtStorage.setBoolean(key, defaultValue);
     assert.equal(await avtStorage.getBoolean(key), defaultValue);
+  });
+
+  context('Ownership and access rights - ', async () => {
+    const owner = testHelper.getAccount(0);
+    const newOwner = testHelper.getAccount(1);
+    const account1 = testHelper.getAccount(2);
+
+    it('can set a new storage contract owner', async function() {
+      assert.equal(await avtStorage.owner(), owner);
+      await avtStorage.setOwner(newOwner);
+      assert.equal(await avtStorage.owner(), newOwner);
+      await avtStorage.setOwner(owner, {from: newOwner});
+    });
+
+    it('can allow access', async function() {
+      const defaultValue = 0;
+      const testValue = 5;
+
+      await testHelper.expectRevert(() => avtStorage.setUInt8(key, testValue, {from: account1}));
+      await avtStorage.setUInt8(key, testValue);
+      assert.equal(await avtStorage.getUInt8(key), testValue);
+
+      await testHelper.expectRevert(() => avtStorage.setUInt8(key, defaultValue, {from: account1}));
+      await avtStorage.setUInt8(key, defaultValue);
+      assert.equal(await avtStorage.getUInt8(key), defaultValue);
+
+      await avtStorage.allowAccess(account1);
+
+      // Now account1 should have access right to update storage
+      await avtStorage.setUInt8(key, testValue, {from: account1});
+      assert.equal(await avtStorage.getUInt8(key), testValue);
+
+      await avtStorage.setUInt8(key, defaultValue, {from: account1});
+      assert.equal(await avtStorage.getUInt8(key), defaultValue);
+    });
+
+    it('can deny access', async function() {
+      const defaultValue = 0;
+      const testValue = 23;
+
+      await avtStorage.setUInt8(key, defaultValue);
+      assert.equal(await avtStorage.getUInt8(key), defaultValue);
+
+      // Now deny account1 its access rights
+      await avtStorage.denyAccess(account1);
+
+      // And it should no longer be able to change the value from default
+      await testHelper.expectRevert(() => avtStorage.setUInt8(key, testValue, {from: account1}));
+      assert.equal(await avtStorage.getUInt8(key), defaultValue);
+    });
   });
 });

@@ -78,7 +78,6 @@ library LProposalVoting {
       bytes32 revealedVotersCountKey = keccak256(abi.encodePacked("Proposal", _proposalId, "revealedVotersCount", _optId));
       uint revealedVotersCount = _storage.getUInt(revealedVotersCountKey) + 1;
       _storage.setUInt(revealedVotersCountKey, revealedVotersCount);
-      _storage.setAddress(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedVoter", _optId, revealedVotersCount)), voter);
       _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedVoter", _optId, voter, "stake")), stake);
     }
 

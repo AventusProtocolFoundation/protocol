@@ -22,9 +22,17 @@ interface IAVTManager {
   /**
   * @dev Deposit AVT for app/event/proposal deposits and stake weighted votes
   * @param _fund Fund to deposit into (must be "deposit" or "stake")
-  * @param _amount Amount to withdraw.
+  * @param _amount Amount to deposit.
   */
   function deposit(string _fund, uint _amount) external;
+
+  /**
+  * @param _fund Fund to withdraw from (must be "deposit" or "stake")
+  * @param _amount Amount to withdraw.
+  * @param _toAddress Address to be credited.
+  * @param _toFund Fund to be credited (must be "deposit" or "stake")
+  */
+  function transfer(string _fund, uint _amount, address _toAddress, string _toFund) external;
 
   /**
    * @return the current amount of AVT stored for the given address in the given fund.

@@ -29,26 +29,6 @@ library LProposal {
     _;
   }
 
-  // TODO: Change all modifiers to be of "only..." format. Functions that
-  // return a boolean should be named like this, not modifiers, ie a statement
-  // that can be answered with true or false.
-  // TODO: Consider returning true also if all votes have been revealed before
-  // the end of the revealing period
-  modifier onlyWhenProposalRevealIsComplete(IAventusStorage _storage, uint _proposalId) {
-    require(LAventusTime.getCurrentTime(_storage) >= _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "end"))),
-      "Proposal reveal is not complete yet"
-    );
-    _;
-  }
-
-  modifier proposalHasDeposit(IAventusStorage _storage, uint _proposalId) {
-    require(
-      getProposalDeposit(_storage, _proposalId) != 0,
-      "Proposal does not have a deposit"
-    );
-    _;
-  }
-
   // Verify a proposal's status (see getProposalStatus for values)
   modifier isStatus(IAventusStorage _storage, uint _proposalId, uint _status) {
     require(
@@ -70,7 +50,7 @@ library LProposal {
     external
     returns (uint proposalId_)
   {
-    proposalId_ = createProposal(_storage, _desc, getGovernanceProposalDeposit(_storage));
+    proposalId_ = createProposal(_storage, getGovernanceProposalDeposit(_storage));
 
     uint votingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", proposalId_, "votingStart")));
     uint revealingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", proposalId_, "revealingStart")));
@@ -114,7 +94,7 @@ library LProposal {
     returns (uint challengeProposalId_)
   {
     uint deposit = LEvents.getExistingEventDeposit(_storage, _eventId);
-    challengeProposalId_ = createProposal(_storage, "", deposit);
+    challengeProposalId_ = createProposal(_storage, deposit);
     _storage.setUInt(keccak256(abi.encodePacked("Proposal", challengeProposalId_, "ChallengeEvent")), _eventId);
     LEvents.setEventAsChallenged(_storage, _eventId, challengeProposalId_);
 
@@ -169,11 +149,10 @@ library LProposal {
   /**
   * @dev Create a proposal to be voted on
   * @param _storage Storage contract
-  * @param _desc Either just a title or a pointer to IPFS details
   * @param _deposit Deposit that has to have been paid for this proposal
   * @return uint proposalId_ of newly created proposal
   */
-  function createProposal(IAventusStorage _storage, string _desc, uint _deposit)
+  function createProposal(IAventusStorage _storage, uint _deposit)
     private
     returns (uint proposalId_)
   {
@@ -191,8 +170,6 @@ library LProposal {
 
     uint proposalCount = _storage.getUInt(proposalCountKey);
     proposalId_ = proposalCount + 1;
-
-    _storage.setString(keccak256(abi.encodePacked("Proposal", proposalId_, "description")), _desc);
     _storage.setAddress(keccak256(abi.encodePacked("Proposal", proposalId_, "owner")), owner);
     _storage.setUInt(keccak256(abi.encodePacked("Proposal", proposalId_, "deposit")), _deposit);
     _storage.setUInt(proposalCountKey, proposalId_);

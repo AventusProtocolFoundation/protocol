@@ -32,27 +32,10 @@ library LEvents {
     _;
   }
 
-  modifier inReportingPeriod(IAventusStorage _storage, uint _eventId) {
-    uint ticketSaleStart = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "ticketSaleStartTime")));
-    require(
-      LAventusTime.getCurrentTime(_storage) < ticketSaleStart,
-      "Current date must be in reporting period"
-    );
-    _;
-  }
-
   modifier addressIsWhitelisted(IAventusStorage _storage, address _delegate) {
     require(
       LApps.appIsRegistered(_storage, _delegate),
       "App must have been registered as a delegate"
-    );
-    _;
-  }
-
-  modifier isNotUnderChallenge(IAventusStorage _storage, uint _eventId) {
-    require(
-      eventIsNotUnderChallenge(_storage, _eventId),
-      "Event must not be under challenge"
     );
     _;
   }
