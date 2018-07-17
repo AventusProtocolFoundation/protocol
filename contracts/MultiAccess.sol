@@ -3,8 +3,8 @@ pragma solidity ^0.4.24;
 import "./Owned.sol";
 
 contract MultiAccess is Owned {
-  event AllowAccessEvent(address indexed _address);
-  event DenyAccessEvent(address indexed _address);
+  event AllowAccessEvent(address indexed accessAddress);
+  event DenyAccessEvent(address indexed accessAddress);
 
   mapping(address => bool) accessAllowed;
 

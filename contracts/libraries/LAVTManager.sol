@@ -96,19 +96,19 @@ library LAVTManager  {
     emit LogDeposit(msg.sender, _fund, _amount);
   }
 
-  function checkedTransfer(IAventusStorage _storage, uint _amount, address _fromAddress, string _fromFund, address _toAddress, string _toFund) external {
-    if (keccak256(abi.encodePacked(_fromFund)) == stakeFundHash) {
+  function transfer(IAventusStorage _storage, string _fund, uint _amount, address _toAddress, string _toFund) external {
+    if (keccak256(abi.encodePacked(_fund)) == stakeFundHash) {
       require (
-        !stakeChangeIsBlocked(_storage, _fromAddress),
+        !stakeChangeIsBlocked(_storage, msg.sender),
         "A blocked stake cannot be transferred"
       );
     } else {
       require(
-        keccak256(abi.encodePacked(_fromFund)) == depositFundHash,
+        keccak256(abi.encodePacked(_fund)) == depositFundHash,
         "checkedTransfer must be called for 'stake' or 'deposit' only"
       );
       require(
-        !depositWithdrawlIsBlocked(_storage, _amount, _fromAddress),
+        !depositWithdrawlIsBlocked(_storage, _amount, msg.sender),
         "A blocked deposit cannot be transferred"
       );
     }
@@ -120,7 +120,7 @@ library LAVTManager  {
       );
     }
 
-    transfer(_storage, _amount, _fromAddress, _fromFund, _toAddress, _toFund);
+    doTransfer(_storage, _amount, msg.sender, _fund, _toAddress, _toFund);
   }
 
   // See IAVTManager.getBalance for details.
@@ -137,9 +137,9 @@ library LAVTManager  {
     avtDecimals_ = (_usCents * (10**18)) / oneAvtInUsCents;
   }
 
-  // NOTE: This version has NO CHECKS on whether the transfer should blocked so should only be
-  // used internally. Consider checkedTransfer() instead.
-  function transfer(IAventusStorage _storage, uint _amount, address _fromAddress, string _fromFund, address _toAddress, string _toFund) public {
+  // NOTE: This version has NO CHECKS on whether the transfer should be blocked so should only be
+  // used internally. Consider transfer() instead.
+  function doTransfer(IAventusStorage _storage, uint _amount, address _fromAddress, string _fromFund, address _toAddress, string _toFund) private {
     require (
       _amount != 0,
       "The amount of a transfer must be positive"

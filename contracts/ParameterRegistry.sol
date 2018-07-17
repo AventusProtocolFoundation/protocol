@@ -59,8 +59,4 @@ contract ParameterRegistry is Owned, Versioned {
     s.setUInt(keccak256(abi.encodePacked("Applications", "fixedDepositAmount")), APPLICATION_DEPOSIT);
     s.setUInt(keccak256(abi.encodePacked("OneAVTInUSCents")), AVT_IN_US_CENTS);
   }
-
-  function to18SigFig(uint _avtValue) internal pure returns (uint value_) {
-    value_ = _avtValue * 10**18;
-  }
 }

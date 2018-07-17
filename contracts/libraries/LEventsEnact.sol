@@ -175,9 +175,7 @@ library LEventsEnact {
 
     _storage.setUInt(LEventsCommon.getEventCountKey(), eventId_);
     _storage.setAddress(keccak256(abi.encodePacked("Event", eventId_, "owner")), _owner);
-    _storage.setString(keccak256(abi.encodePacked("Event", eventId_, "description")), _eventDesc);
     _storage.setUInt(keccak256(abi.encodePacked("Event", eventId_, "capacity")), _capacity);
-    _storage.setUInt(keccak256(abi.encodePacked("Event", eventId_, "averageTicketPriceInUSCents")), _averageTicketPriceInUSCents);
     _storage.setUInt(keccak256(abi.encodePacked("Event", eventId_, "ticketSaleStartTime")), _ticketSaleStartTime);
     _storage.setString(keccak256(abi.encodePacked("Event", eventId_, "eventSupportURL")), _eventSupportURL);
     _storage.setUInt(keccak256(abi.encodePacked("Event", eventId_, "deposit")), depositInAVTDecimals);
@@ -225,7 +223,6 @@ library LEventsEnact {
     setTicketHashOwned(_storage, ticketHash);
 
     _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "TicketCount")), ticketId_);
-    _storage.setString(keccak256(abi.encodePacked("Event", _eventId, "Ticket", ticketId_, "ticketDetails")), _ticketDetails);
     _storage.setBytes32(keccak256(abi.encodePacked("Event", _eventId, "Ticket", ticketId_, "ticketHash")), ticketHash);
     _storage.setAddress(keccak256(abi.encodePacked("Event", _eventId, "Ticket", ticketId_, "buyer")), _buyer);
   }

@@ -60,6 +60,10 @@ contract('Proxy testing', function () {
     await avtManager.withdraw("deposit", proposalDeposit);
   }
 
+  it("can access the current version number", async function() {
+    const currentVersion = await (await Versioned.deployed()).getVersion();
+  });
+
   it("can call new version of a method with the same signature", async function() {
     // Calling a method with the original LProposal library results in normal behaviour.
     let proposalId = await createProposal("Shall we use the original library?");
