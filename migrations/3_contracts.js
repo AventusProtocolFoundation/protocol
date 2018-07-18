@@ -38,7 +38,7 @@ let version;
 function deployContracts(deployer, network) {
   console.log("Deploying Contracts...");
 
-  const developmentMode = network === "development";
+  const developmentMode = network === "development" || network === "coverage";
 
   // ALWAYS deploy to development, NEVER to another network unless hard coded.
   deployAVTManager = developmentMode;

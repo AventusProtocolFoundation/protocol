@@ -21,5 +21,12 @@ module.exports = {
       gas: 7654321, // See https://ethstats.net/ to make sure this is not over the network limit
       gasPrice: 10e9  // 10 GWEi: see https://ethgasstation.info/ for recommended prices
     },
+    coverage: {
+      host: "localhost",
+      network_id: "*",
+      port: 8555, // If you change this, also set the port option in .solcover.js.
+      gas: 17592186044415, // Max out the gas limit
+      gasPrice: 10e9
+    }
   }
 };
