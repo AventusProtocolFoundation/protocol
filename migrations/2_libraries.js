@@ -44,7 +44,7 @@ let deployLAventusTimeMock;
 let version;
 
 function deployLibraries(deployer, network) {
-  const developmentMode = network === "development";
+  const developmentMode = network === "development" || network === "coverage";
   const notLiveMode = network != "live";
 
   deployLAventusTime = developmentMode;

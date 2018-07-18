@@ -79,7 +79,7 @@ function exitOnOversizeBinary() {
 }
 
 module.exports = function(deployer, network, accounts) {
-  exitOnOversizeBinary();
+  if (network !== "coverage") exitOnOversizeBinary();
 
   if (network === "live" || network === "rinkeby") {
     return deployer;
