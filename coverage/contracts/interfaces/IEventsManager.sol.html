@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts\interfaces\IEventsManager.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../index.html">all files</a> / <a href="index.html">contracts/interfaces/</a> IEventsManager.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>0/0</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>0/0</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>0/0</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>0/0</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line high'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.4.24;
+&nbsp;
+interface IEventsManager {
+&nbsp;
+  /**
+   * Event emitted for a createEvent transaction.
+   */
+  event LogEventCreated(uint indexed eventId, string eventDesc, uint ticketSaleStartTime, uint eventTime, uint averageTicketPriceInUSCents);
+&nbsp;
+  /**
+   * Event emitted for a signedCreateEvent transaction.
+   */
+  event LogSignedEventCreated(uint indexed eventId, string eventDesc, uint ticketSaleStartTime, uint eventTime, uint averageTicketPriceInUSCents);
+&nbsp;
+  /**
+   * Event emitted for a unlockEventDeposit transaction.
+   */
+  event LogUnlockEventDeposit(uint indexed eventId);
+&nbsp;
+  /**
+   * Event emitted for a cancelEvent transaction.
+   */
+  event LogEventCancellation(uint indexed eventId);
+&nbsp;
+  /**
+   * Event emitted for a signedCancelEvent transaction.
+   */
+  event LogSignedEventCancellation(uint indexed eventId);
+&nbsp;
+  /**
+   * Event emitted for a sellTicket transaction.
+   */
+  event LogTicketSale(uint indexed eventId, uint indexed ticketId, address indexed buyer);
+&nbsp;
+  /**
+   * Event emitted for a signedSellTicket transaction.
+   */
+  event LogSignedTicketSale(uint indexed eventId, uint indexed ticketId, address indexed buyer);
+&nbsp;
+  /**
+   * Event emitted for a resellTicket transaction.
+   */
+  event LogTicketResale(uint indexed eventId, uint indexed ticketId, address indexed newBuyer);
+&nbsp;
+  /**
+   * Event emitted for a signedResellTicket transaction.
+   */
+  event LogSignedTicketResale(uint indexed eventId, uint indexed ticketId, address indexed newBuyer);
+&nbsp;
+  /**
+   * Event emitted for a refundTicket transaction.
+   */
+  event LogTicketRefund(uint indexed eventId, uint indexed ticketId);
+&nbsp;
+  /**
+   * Event emitted for a signedRefundTicket transaction.
+   */
+  event LogSignedTicketRefund(uint indexed eventId, uint indexed ticketId);
+&nbsp;
+  /**
+   * Event emitted for a registerDelegate transaction.
+   */
+  event LogRegisterDelegate(uint indexed eventId, string role, address indexed delegate);
+&nbsp;
+  /**
+   * Event emitted for a deregisterDelegate transaction.
+   */
+  event LogDeregisterDelegate(uint indexed eventId, string role, address indexed delegate);
+&nbsp;
+  /**
+  * @dev Create an event
+  * @param _eventDesc description or title of the event
+  * @param _eventTime - the actual event time
+  * @param _capacity - number of tickets (capacity) for the event
+  * @param _averageTicketPriceInUSCents  - average ticket price in US Cents
+  * @param _ticketSaleStartTime - expected ticket sale start time
+  * @param _eventSupportURL - verifiable official supporting url for the event
+  * @return eventId_ - id of newly created event
+  */
+  function createEvent(
+      string _eventDesc, uint _eventTime, uint _capacity,
+      uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime, string _eventSupportURL)
+    external
+    returns (uint eventId_);
+&nbsp;
+  /**
+  * @dev Create an event on behalf of a signer
+  * @param _signedMessage a signed message
+  * @param _eventDesc description or title of the event
+  * @param _eventTime - the actual event time
+  * @param _capacity - number of tickets (capacity) for the event
+  * @param _averageTicketPriceInUSCents  - average ticket price in US Cents
+  * @param _ticketSaleStartTime - expected ticket sale start time
+  * @param _eventSupportURL - verifiable official supporting url for the event
+  * @param _owner - address of the event owner
+  * @return uint eventId_ of newly created event
+  */
+  function signedCreateEvent(
+      bytes _signedMessage,
+      string _eventDesc, uint _eventTime,  uint _capacity,
+      uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime, string _eventSupportURL,
+      address _owner)
+    external
+    returns (uint eventId_);
+&nbsp;
+  /**
+  * @dev Cancel an event
+  * @param _eventId - event id for the event to end
+  */
+  function cancelEvent(uint _eventId) external;
+&nbsp;
+  /**
+  * @dev Cancel an event on behalf of a signer
+  * @param _signedMessage a signed message
+  * @param _eventId - event id for the event to end
+  */
+  function signedCancelEvent(bytes _signedMessage, uint _eventId) external;
+&nbsp;
+  /**
+  * @dev Complete the process of event ending to balance the deposits
+  * @param _eventId - event id for the event to end
+  */
+  function unlockEventDeposit(uint _eventId) external;
+&nbsp;
+  /**
+  * @dev Sell ticket
+  * @param _eventId - event id for the event to end
+  * @param _ticketDetails - ticket details
+  * @param _buyer - address of the ticket buyer
+  */
+  function sellTicket(uint _eventId, string _ticketDetails, address _buyer) external;
+&nbsp;
+  /**
+  * @dev Sell ticket on behalf of a signer
+  * @param _signedMessage a signed message
+  * @param _eventId - event id for the event to end
+  * @param _ticketDetails - ticket details
+  * @param _buyer - address of the ticket buyer
+  */
+  function signedSellTicket(bytes _signedMessage, uint _eventId, string _ticketDetails, address _buyer) external;
+&nbsp;
+  /**
+  * @dev Refund sale of a ticket
+  * @param _eventId - event id for the event in context
+  * @param _ticketId - ticket Id for the ticket to be refunded
+  */
+  function refundTicket(uint _eventId, uint _ticketId) external;
+&nbsp;
+  /**
+  * @dev Refund sale of a ticket on behalf of a signer
+  * @param _signedMessage a signed message
+  * @param _eventId - event id for the event in context
+  * @param _ticketId - ticket Id for the ticket to be refunded
+  */
+  function signedRefundTicket(bytes _signedMessage, uint _eventId, uint _ticketId) external;
+&nbsp;
+  /**
+  * @dev Register a delegate for an event
+  * @param _eventId - ID of the event
+  * @param _role - type of delegate (must be "primary" or "secondary")
+  * @param _delegate - delegate address
+  */
+  function registerDelegate(uint _eventId, string _role, address _delegate) external;
+&nbsp;
+  /**
+  * @dev Deregister a delegate to an event
+  * @param _eventId - ID of the event
+  * @param _role - type of delegate (must be "primary" or "secondary")
+  * @param _delegate - delegate of the event
+  */
+  function deregisterDelegate(uint _eventId, string _role, address _delegate) external;
+&nbsp;
+  /**
+   * Sell a ticket on the secondary market.
+   * @param _eventId - ID of the event
+   * @param _ticketId identifier for the ticket: unique to this event.
+   * @param _ownerPermission - signed by the owner
+   * @param _newBuyer address of the new buyer of the ticket.
+   */
+  function resellTicket(uint _eventId, uint _ticketId, bytes _ownerPermission, address _newBuyer)
+    external;
+&nbsp;
+  /**
+   * Sell a ticket on the secondary market on behalf of a signer.
+   * @param _signedMessage a signed message
+   * @param _eventId - ID of the event
+   * @param _ticketId identifier for the ticket: unique to this event.
+   * @param _ownerPermission - signed by the owner
+   * @param _newBuyer address of the new buyer of the ticket.
+   */
+  function signedResellTicket(bytes _signedMessage, uint _eventId, uint _ticketId, bytes _ownerPermission, address _newBuyer)
+    external;
+&nbsp;
+  /**
+  * @dev Check if a delegate is registered for an event
+  * @param _eventId - ID of the event
+  * @param _role - type of delegate (must be "primary" or "secondary")
+  * @param _delegate - Delegate to check
+  * @return _registered - returns true if the supplied delegate is registered
+  */
+  function addressIsDelegate(uint _eventId, string _role, address _delegate)
+    external
+    view
+    returns (bool registered_);
+&nbsp;
+  /**
+  * @dev Calculate the appropriate event deposit In USCents and in AVT
+  * @param _capacity - number of tickets (capacity) for the event
+  * @param _averageTicketPriceInUSCents  - average ticket price in US Cents
+  * @param _ticketSaleStartTime - expected ticket sale start time
+  * @return uint depositInUSCents_ calculated deposit in US cents
+  * @return uint depositInAVTDecimals_ calculated deposit in AVT Decimals
+  */
+  function getEventDeposit(uint _capacity, uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime)
+    external
+    view
+    returns (uint depositInUSCents_, uint depositInAVT_);
+}</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Wed Jul 18 2018 15:18:55 GMT+0100 (GMT Daylight Time)
+</div>
+</div>
+<script src="../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../sorter.js"></script>
+</body>
+</html>

@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts\libraries\LAVTManager.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../index.html">all files</a> / <a href="index.html">contracts/libraries/</a> LAVTManager.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">76.92% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>40/52</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">54.35% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>25/46</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">81.82% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>9/11</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">73.58% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>39/53</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line medium'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">527×</span>
+<span class="cline-any cline-yes">527×</span>
+<span class="cline-any cline-yes">527×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">526×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">529×</span>
+<span class="cline-any cline-yes">37×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">492×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">492×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">517×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">516×</span>
+<span class="cline-any cline-yes">516×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">516×</span>
+<span class="cline-any cline-yes">516×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">529×</span>
+<span class="cline-any cline-yes">529×</span>
+<span class="cline-any cline-yes">529×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">529×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">507×</span>
+<span class="cline-any cline-yes">34×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">473×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">501×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">501×</span>
+<span class="cline-any cline-yes">501×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">501×</span>
+<span class="cline-any cline-yes">501×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">725×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1121×</span>
+<span class="cline-any cline-yes">1121×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1017×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1017×</span>
+<span class="cline-any cline-yes">501×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">516×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1017×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">71×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">71×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">492×</span>
+<span class="cline-any cline-yes">492×</span>
+<span class="cline-any cline-yes">492×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">491×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.4.24;
+&nbsp;
+import '../interfaces/IAventusStorage.sol';
+import '../interfaces/IERC20.sol';
+import "./LAventusTime.sol";
+&nbsp;
+// Library for adding functionality for handling AVT funds.
+library LAVTManager  {
+  bytes32 constant stakeFundHash = keccak256(abi.encodePacked("stake"));
+  bytes32 constant depositFundHash = keccak256(abi.encodePacked("deposit"));
+  bytes32 constant avtContractAddressKey = keccak256(abi.encodePacked("AVTERC20Instance"));
+  bytes32 constant oneAVTInUSCentsKey = keccak256(abi.encodePacked("OneAVTInUSCents"));
+  bytes32 constant totalAVTFundsKey = keccak256(abi.encodePacked("TotalAVTFunds"));
+&nbsp;
+  /// See IAVTManager interface for events description
+  event LogWithdraw(address indexed sender, string fund, uint amount);
+  event LogDeposit(address indexed sender, string fund, uint amount);
+&nbsp;
+  function decreaseFund(IAventusStorage _storage, address _fromAddress, string _fund, uint _amount) public {
+    bytes32 key = keccak256(abi.encodePacked("AVTFund", _fromAddress, _fund));
+    uint currDeposit = _storage.getUInt(key);
+    require (
+      _amount &lt;= currDeposit,
+      "Amount taken must be less than current deposit"
+    );
+    _storage.setUInt(key, currDeposit - _amount);
+  }
+&nbsp;
+  // See IAVTManager.withdraw for details.
+  function withdraw(IAventusStorage _storage, string _fund, uint _amount)
+    external
+  {
+    if (keccak256(abi.encodePacked(_fund)) == stakeFundHash) {
+      require (
+        !stakeChangeIsBlocked(_storage, msg.sender),
+        "A blocked stake cannot be withdrawn"
+      );
+    } else {
+      <span class="missing-if-branch" title="else path not taken" >E</span>require(
+        keccak256(abi.encodePacked(_fund)) == depositFundHash,
+        "withdraw must be called for 'stake' or 'deposit' only"
+      );
+      require(
+        !depositWithdrawlIsBlocked(_storage, _amount, msg.sender),
+        "A blocked deposit cannot be withdrawn"
+      );
+    }
+&nbsp;
+    decreaseFund(_storage, msg.sender, _fund, _amount);
+&nbsp;
+    IERC20 avt = IERC20(_storage.getAddress(avtContractAddressKey));
+    <span class="missing-if-branch" title="else path not taken" >E</span>require (
+      avt.transfer(msg.sender, _amount),
+      "Transfer of funds in withdraw must succeed before continuing"
+    );
+&nbsp;
+    updateBalance(_storage, _amount, false);
+    emit LogWithdraw(msg.sender, _fund, _amount);
+  }
+&nbsp;
+  function increaseFund(IAventusStorage _storage,  address _toAddress, string _fund, uint _amount) public {
+    bytes32 key = keccak256(abi.encodePacked("AVTFund", _toAddress, _fund));
+    uint currDeposit = _storage.getUInt(key);
+    <span class="missing-if-branch" title="else path not taken" >E</span>require (
+      _amount != 0,
+      "Added amount must be greater than zero"
+    );
+    _storage.setUInt(key, currDeposit + _amount);
+  }
+&nbsp;
+  // See IAVTManager.deposit for details.
+  function deposit(IAventusStorage _storage, string _fund, uint _amount)
+    external
+  {
+    if (keccak256(abi.encodePacked(_fund)) == stakeFundHash) {
+      require (
+        !stakeChangeIsBlocked(_storage, msg.sender),
+        "It is not possible to deposit into a blocked stake"
+      );
+    } else {
+      <span class="missing-if-branch" title="else path not taken" >E</span>require(
+        keccak256(abi.encodePacked(_fund)) == depositFundHash,
+        "deposit must be called for 'stake' or 'deposit' only"
+      );
+    }
+&nbsp;
+    increaseFund(_storage, msg.sender, _fund, _amount);
+&nbsp;
+    IERC20 avt = IERC20(_storage.getAddress(avtContractAddressKey));
+    <span class="missing-if-branch" title="else path not taken" >E</span>require (
+      avt.transferFrom(msg.sender, this, _amount),
+      "Transfer of funds in 'deposit' must succeed before continuing"
+    );
+&nbsp;
+    updateBalance(_storage, _amount, true);
+    emit LogDeposit(msg.sender, _fund, _amount);
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  function transfer(IAventusStorage _storage, string _fund, uint _amount, address _toAddress, string _toFund) external </span>{
+<span class="cstat-no" title="statement not covered" >    if (keccak256(abi.encodePacked(_fund)) == stakeFundHash) {</span>
+<span class="cstat-no" title="statement not covered" >      require (</span>
+        !stakeChangeIsBlocked(_storage, msg.sender),
+        "A blocked stake cannot be transferred"
+      );
+    } else {
+<span class="cstat-no" title="statement not covered" >      require(</span>
+        keccak256(abi.encodePacked(_fund)) == depositFundHash,
+        "checkedTransfer must be called for 'stake' or 'deposit' only"
+      );
+<span class="cstat-no" title="statement not covered" >      require(</span>
+        !depositWithdrawlIsBlocked(_storage, _amount, msg.sender),
+        "A blocked deposit cannot be transferred"
+      );
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (keccak256(abi.encodePacked(_toFund)) == stakeFundHash) {</span>
+<span class="cstat-no" title="statement not covered" >      require (</span>
+        !stakeChangeIsBlocked(_storage, _toAddress),
+        "A blocked stake cannot receive transfers"
+      );
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    doTransfer(_storage, _amount, msg.sender, _fund, _toAddress, _toFund)</span>;
+  }
+&nbsp;
+  // See IAVTManager.getBalance for details.
+  function getBalance(IAventusStorage _storage, address _avtHolder, string _fund)
+    external
+    view
+    returns (uint balance_)
+  {
+    balance_ = _storage.getUInt(keccak256(abi.encodePacked("AVTFund", _avtHolder, _fund)));
+  }
+&nbsp;
+  function getAVTDecimals(IAventusStorage _storage, uint _usCents) external view returns (uint avtDecimals_) {
+    uint oneAvtInUsCents = _storage.getUInt(oneAVTInUSCentsKey);
+    avtDecimals_ = (_usCents * (10**18)) / oneAvtInUsCents;
+  }
+&nbsp;
+  // NOTE: This version has NO CHECKS on whether the transfer should be blocked so should only be
+  // used internally. Consider transfer() instead.
+<span class="fstat-no" title="function not covered" >  function doTransfer(IAventusStorage _storage, uint _amount, address _fromAddress, string _fromFund, address _toAddress, string _toFund) private </span>{
+<span class="cstat-no" title="statement not covered" >    require (</span>
+      _amount != 0,
+      "The amount of a transfer must be positive"
+    );
+&nbsp;
+    // Take AVT from the "from" fund...
+<span class="cstat-no" title="statement not covered" >    bytes32 fromKey = keccak256(abi.encodePacked("AVTFund", _fromAddress, _fromFund))</span>;
+<span class="cstat-no" title="statement not covered" >    uint currentFromBalance = _storage.getUInt(fromKey)</span>;
+<span class="cstat-no" title="statement not covered" >    require(</span>
+      currentFromBalance &gt;= _amount,
+      "The transfer amount must not exceed the source fund balance"
+    );
+    _storage.setUInt(fromKey, currentFromBalance - _amount);
+&nbsp;
+    // ...and give it to the "to" _fund.
+<span class="cstat-no" title="statement not covered" >    bytes32 toKey = keccak256(abi.encodePacked("AVTFund", _toAddress, _toFund))</span>;
+    _storage.setUInt(toKey, _storage.getUInt(toKey) + _amount);
+  }
+&nbsp;
+  /**
+  * Keep track of the total AVT funds in the contract.
+  * @param _storage Storage contract
+  * @param _amount amount to update the balance by
+  * @param _increment True if incrementing balance
+  */
+  function updateBalance(IAventusStorage _storage, uint _amount, bool _increment) private {
+    uint balance = _storage.getUInt(totalAVTFundsKey);
+&nbsp;
+    if (_increment)
+      balance += _amount;
+    else
+      balance -= _amount;
+&nbsp;
+    _storage.setUInt(totalAVTFundsKey, balance);
+  }
+&nbsp;
+  /**
+  * Check if the sender can withdraw/deposit AVT stake.
+  * @param _storage Storage contract
+  * @return True if the sender's funds are blocked, False if not.
+  */
+  function stakeChangeIsBlocked(IAventusStorage _storage, address _stakeHolder)
+    private
+    view
+    returns (bool blocked_)
+  {
+    uint blockedUntil = _storage.getUInt(keccak256(abi.encodePacked("Voting", _stakeHolder, uint(0), "nextTime")));
+&nbsp;
+    if (blockedUntil == 0)
+      blocked_ = false; // No unrevealed votes
+    else if (LAventusTime.getCurrentTime(_storage) &lt; blockedUntil)
+      blocked_ = false; // Voting still ongoing
+    else
+      blocked_ = true; // Reveal period active (even if reveal is over tokens are blocked until reveal)
+  }
+&nbsp;
+  function depositWithdrawlIsBlocked(IAventusStorage _storage, uint _amount, address _depositHolder)
+    private
+    view
+    returns (bool blocked_)
+  {
+      uint expectedDeposits = _storage.getUInt(keccak256(abi.encodePacked("ExpectedDeposits", _depositHolder)));
+      uint actualDeposits = _storage.getUInt(keccak256(abi.encodePacked("AVTFund", _depositHolder, "deposit")));
+      require(
+        actualDeposits &gt;= _amount,
+        "Withdrawn amount must not exceed the deposit"
+      );
+      // If taking this amount of AVT out will mean we don't have enough deposits
+      // then block the withdrawl.
+      blocked_ = actualDeposits - _amount &lt; expectedDeposits;
+  }
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Wed Jul 18 2018 15:18:55 GMT+0100 (GMT Daylight Time)
+</div>
+</div>
+<script src="../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../sorter.js"></script>
+</body>
+</html>

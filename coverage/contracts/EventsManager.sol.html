@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts\EventsManager.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../index.html">all files</a> / <a href="index.html">contracts/</a> EventsManager.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>5/5</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>0/0</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>16/16</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>16/16</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line high'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">120×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">92×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">39×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">32×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">175×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">87×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">92×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">28×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">30×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">60×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">18×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">229×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.4.24;
+&nbsp;
+import './interfaces/IAventusStorage.sol';
+import './interfaces/IEventsManager.sol';
+import './libraries/LEvents.sol';
+import './Owned.sol';
+import './Versioned.sol';
+&nbsp;
+contract EventsManager is IEventsManager, Owned, Versioned {
+&nbsp;
+  IAventusStorage public s;
+&nbsp;
+  /**
+  * @dev Constructor
+  * @param _s Persistent storage contract
+  */
+  constructor(IAventusStorage _s) public {
+    s = _s;
+  }
+&nbsp;
+  function createEvent(string _eventDesc, uint _eventTime, uint _capacity,
+    uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime, string _eventSupportURL)
+    external
+    returns (uint eventId_)
+  {
+    eventId_ = LEvents.createEvent(s, _eventDesc, _eventTime, _capacity,
+      _averageTicketPriceInUSCents, _ticketSaleStartTime, _eventSupportURL);
+  }
+&nbsp;
+  function signedCreateEvent(bytes _signedMessage, string _eventDesc, uint _eventTime,
+    uint _capacity, uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime, string _eventSupportURL, address _owner)
+    external
+    returns (uint eventId_)
+  {
+    eventId_ = LEvents.signedCreateEvent(s, _signedMessage, _eventDesc, _eventTime, _capacity,
+      _averageTicketPriceInUSCents, _ticketSaleStartTime, _eventSupportURL, _owner);
+  }
+&nbsp;
+  function cancelEvent(uint _eventId) external {
+    LEvents.cancelEvent(s, _eventId);
+  }
+&nbsp;
+  function signedCancelEvent(bytes _signedMessage, uint _eventId) external {
+    LEvents.signedCancelEvent(s, _signedMessage, _eventId);
+  }
+&nbsp;
+  function unlockEventDeposit(uint _eventId) external {
+    LEvents.unlockEventDeposit(s, _eventId);
+  }
+&nbsp;
+  function sellTicket(uint _eventId, string _ticketDetails, address _buyer) external {
+    LEvents.sellTicket(s, _eventId, _ticketDetails, _buyer);
+  }
+&nbsp;
+  function signedSellTicket(bytes _signedMessage, uint _eventId, string _ticketDetails, address _buyer) external {
+    LEvents.signedSellTicket(s, _signedMessage, _eventId, _ticketDetails, _buyer);
+  }
+&nbsp;
+  function refundTicket(uint _eventId, uint _ticketId) external {
+    LEvents.refundTicket(s, _eventId, _ticketId);
+  }
+&nbsp;
+  function signedRefundTicket(bytes _signedMessage, uint _eventId, uint _ticketId) external {
+    LEvents.signedRefundTicket(s, _signedMessage, _eventId, _ticketId);
+  }
+&nbsp;
+  function resellTicket(uint _eventId, uint _ticketId, bytes _ownerPermission, address _newBuyer)
+    external {
+      LEvents.resellTicket(s, _eventId, _ticketId, _ownerPermission, _newBuyer);
+  }
+&nbsp;
+  function signedResellTicket(bytes _signedMessage, uint _eventId, uint _ticketId,
+    bytes _ownerPermission, address _newBuyer)
+    external {
+    LEvents.signedResellTicket(s, _signedMessage, _eventId, _ticketId, _ownerPermission, _newBuyer);
+  }
+&nbsp;
+  function registerDelegate(uint _eventId, string _role, address _delegate) external {
+    LEvents.registerDelegate(s, _eventId, _role, _delegate);
+  }
+&nbsp;
+  function deregisterDelegate(uint _eventId, string _role, address _delegate) external {
+    LEvents.deregisterDelegate(s, _eventId, _role, _delegate);
+  }
+&nbsp;
+  function addressIsDelegate(uint _eventId, string _role, address _delegate)
+    external
+    view
+    returns (bool registered_)
+  {
+    registered_ = LEvents.addressIsDelegate(s, _eventId, _role, _delegate);
+  }
+&nbsp;
+  function getEventDeposit(uint _capacity, uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime)
+    external
+    view
+    returns (uint depositInUSCents_, uint depositInAVT_)
+  {
+    (depositInUSCents_, depositInAVT_) = LEvents.getEventDeposit(s, _capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime);
+  }
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Wed Jul 18 2018 15:18:55 GMT+0100 (GMT Daylight Time)
+</div>
+</div>
+<script src="../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../sorter.js"></script>
+</body>
+</html>

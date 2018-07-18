@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts\libraries\LProposalWinnings.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../index.html">all files</a> / <a href="index.html">contracts/libraries/</a> LProposalWinnings.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>24/24</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">60% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>6/10</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>5/5</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>30/30</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line high'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">28×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.4.24;
+&nbsp;
+import "../interfaces/IAventusStorage.sol";
+import "./LAVTManager.sol";
+&nbsp;
+/**
+ * Library for dealing with the winnings of a challenge.
+ *
+ * This only used by, and is separate to, LProposals because of size limitations when deploying.
+ * There is no proxy for this library.
+ *
+ * NOTE: Do NOT put anything in here specific to events as this will also be used for app challenges.
+ */
+library LProposalWinnings {
+  bytes32 constant winningsForChallengeWinnerPercentageKey =
+      keccak256(abi.encodePacked("Events", "winningsForChallengeWinnerPercentage"));
+  bytes32 constant winningsForChallengeEnderPercentageKey =
+      keccak256(abi.encodePacked("Events", "winningsForChallengeEnderPercentage"));
+&nbsp;
+    function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) external {
+      address voter = msg.sender;
+      uint8 winningOption = _storage.getUInt8(keccak256(abi.encodePacked("Proposal", _proposalId, "winningOption")));
+      bytes32 voterStakeKey = keccak256(abi.encodePacked("Proposal", _proposalId, "revealedVoter", winningOption, voter, "stake"));
+      uint voterStake = _storage.getUInt(voterStakeKey);
+      <span class="missing-if-branch" title="else path not taken" >E</span>require(
+        voterStake != 0,
+        "Voter has no stake in this proposal"
+      );
+&nbsp;
+      uint totalWinnings = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "totalWinningsToVoters")));
+      <span class="missing-if-branch" title="else path not taken" >E</span>assert(totalWinnings != 0);
+      uint totalWinningStake = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "totalWinningStake")));
+      <span class="missing-if-branch" title="else path not taken" >E</span>assert(totalWinningStake != 0);
+&nbsp;
+      uint voterReward = (totalWinnings * voterStake) / totalWinningStake;
+      giveWinnings(_storage, voterReward, voter);
+&nbsp;
+      // Update how much is left in the voters winnings pot.
+      bytes32 winningsToVotersRemainingKey = keccak256(abi.encodePacked("Proposal", _proposalId, "winningsToVotersRemaining"));
+      uint winningsToVotersRemaining = _storage.getUInt(winningsToVotersRemainingKey);
+      <span class="missing-if-branch" title="else path not taken" >E</span>assert(winningsToVotersRemaining &gt;= voterReward);
+      _storage.setUInt(winningsToVotersRemainingKey, winningsToVotersRemaining - voterReward);
+&nbsp;
+      // Stop the voter from claiming again.
+      _storage.setUInt(voterStakeKey, 0);
+    }
+&nbsp;
+    function doEventWinningsDistribution(
+        IAventusStorage _storage,
+        uint _proposalId,
+        uint8 _winningOption,
+        bool _challengeWon,
+        uint _deposit,
+        address _challenger,
+        address _eventOwner)
+      external
+    {
+      distributeChallengeWinnings(
+          _storage,
+          _proposalId,
+          _challengeWon ? _challenger : _eventOwner, // winner
+          _challengeWon ? _eventOwner : _challenger, // loser
+          _deposit,
+          0 ==_storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedVotersCount", _winningOption))), // challengeHasNoRevealedVotes
+          _storage.getUInt8(winningsForChallengeWinnerPercentageKey),
+          _storage.getUInt8(winningsForChallengeEnderPercentageKey)
+      );
+    }
+&nbsp;
+  function distributeChallengeWinnings(
+      IAventusStorage _storage,
+      uint _proposalId,
+      address _winner,
+      address _loser,
+      uint _winnings,
+      bool _challengeHasNoRevealedVotes,
+      uint8 _winningsForChallengeWinnerPercentage,
+      uint8 _winningsToChallengeEnderPercentage)
+    private
+  {
+    takeAllWinningsFromProposalLoser(_storage, _winnings, _loser);
+&nbsp;
+    uint winningsToProposalWinnerAVT = (_winnings * _winningsForChallengeWinnerPercentage) / 100;
+    giveWinnings(_storage, winningsToProposalWinnerAVT, _winner);
+&nbsp;
+    address challengeEnder = msg.sender;
+    uint winningsToChallengeEnderAVT = (_winnings * _winningsToChallengeEnderPercentage) / 100;
+&nbsp;
+    _winnings -= winningsToProposalWinnerAVT + winningsToChallengeEnderAVT;
+&nbsp;
+    if (_challengeHasNoRevealedVotes) {
+      // If no one voted, the challenge ender gets the rest of the winnings.
+      winningsToChallengeEnderAVT += _winnings;
+    } else {
+      // Otherwise, the rest of the winnings is distributed to the voters as they claim it.
+      _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "totalWinningsToVoters")), _winnings);
+      _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "winningsToVotersRemaining")), _winnings);
+    }
+    giveWinnings(_storage, winningsToChallengeEnderAVT, challengeEnder);
+  }
+&nbsp;
+  function takeAllWinningsFromProposalLoser(
+      IAventusStorage _storage,
+      uint _winnings,
+      address _loser)
+    private
+  {
+    LAVTManager.decreaseFund(_storage, _loser, "deposit", _winnings);
+  }
+&nbsp;
+  function giveWinnings(
+      IAventusStorage _storage,
+      uint _winnings,
+      address _payee)
+    private
+  {
+    LAVTManager.increaseFund(_storage, _payee, "deposit", _winnings);
+  }
+&nbsp;
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Wed Jul 18 2018 15:18:55 GMT+0100 (GMT Daylight Time)
+</div>
+</div>
+<script src="../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../sorter.js"></script>
+</body>
+</html>
