@@ -89,8 +89,8 @@ async function endEventAndWithdrawDeposit() {
 }
 
 
-async function doCreateEvent(_eventIsSigned, _eventTime, _ticketSaleStartTime, _eventSupportURL) {
-  if (_eventIsSigned) {
+async function doCreateEvent(_useSignedCreateEvent, _eventTime, _ticketSaleStartTime, _eventSupportURL) {
+  if (_useSignedCreateEvent) {
     // Hash the variable length parameters to create fixed length parameters.
     // See: http://solidity.readthedocs.io/en/v0.4.21/abi-spec.html#abi-packed-mode
     let keccak256Msg = await web3Utils.soliditySha3(await web3Utils.soliditySha3(eventDesc), _eventTime, eventCapacity,
@@ -104,10 +104,10 @@ async function doCreateEvent(_eventIsSigned, _eventTime, _ticketSaleStartTime, _
   }
 }
 
-async function createValidEvent(_eventIsSigned) {
-  await doCreateEvent(_eventIsSigned, eventTime, ticketSaleStartTime, eventSupportURL);
+async function createValidEvent(_useSignedCreateEvent) {
+  await doCreateEvent(_useSignedCreateEvent, eventTime, ticketSaleStartTime, eventSupportURL);
   let eventArgs;
-  if (_eventIsSigned) {
+  if (_useSignedCreateEvent) {
     eventArgs = await testHelper.getEventArgs(eventsManager.LogSignedEventCreated);
   } else {
     eventArgs = await testHelper.getEventArgs(eventsManager.LogEventCreated);
@@ -120,10 +120,10 @@ async function createValidEvent(_eventIsSigned) {
 }
 
 
-async function makeEventDepositAndCreateValidEvent(_eventIsSigned) {
+async function makeEventDepositAndCreateValidEvent(_useSignedCreateEvent) {
   setupUniqueEventParameters();
   await makeEventDeposit();
-  await createValidEvent(_eventIsSigned);
+  await createValidEvent(_useSignedCreateEvent);
 }
 
 module.exports = {

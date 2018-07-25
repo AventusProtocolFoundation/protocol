@@ -4,12 +4,12 @@ import "./LEventsCommon.sol";
 
 library LEventsEnact {
   modifier onlyEventOwnerOrPrimaryDelegate(IAventusStorage _storage, uint _eventId, address _eventOwnerOrDelegate) {
-    LEventsCommon.checkOwnerOrDelegateByRole(_storage, _eventId, _eventOwnerOrDelegate, "primary");
+    LEventsCommon.checkOwnerOrDelegateByRole(_storage, _eventId, _eventOwnerOrDelegate, "PrimaryDelegate");
     _;
   }
 
   modifier onlyEventOwnerOrSecondaryDelegate(IAventusStorage _storage, uint _eventId, address _eventOwnerOrDelegate) {
-    LEventsCommon.checkOwnerOrDelegateByRole(_storage, _eventId, _eventOwnerOrDelegate, "secondary");
+    LEventsCommon.checkOwnerOrDelegateByRole(_storage, _eventId, _eventOwnerOrDelegate, "SecondaryDelegate");
     _;
   }
 
@@ -149,25 +149,25 @@ library LEventsEnact {
   * @param _eventSupportURL - verifiable official supporting url for the event
   * @param _owner - address of the event owner
   * @return uint eventId_ of newly created event
+  * @return uint depositInAVTDecimals_ AVT deposit locked to create event
   *
   * TODO: Could be external but too many variables for stack unless public
   */
   function doCreateEvent(IAventusStorage _storage, string _eventDesc, uint _eventTime, uint _capacity,
     uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime, string _eventSupportURL, address _owner)
     public
-    returns (uint eventId_)
+    returns (uint eventId_, uint depositInAVTDecimals_)
   {
     LEventsCommon.validateEventCreation(_storage, _eventDesc, _eventTime, _capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime, _eventSupportURL, _owner);
 
     eventId_ = _storage.getUInt(LEventsCommon.getEventCountKey()) + 1;
 
-    uint depositInUSCents = 0;
-    uint depositInAVTDecimals = 0;
-    (depositInUSCents, depositInAVTDecimals) =
+    uint depositInUSCents;
+    (depositInUSCents, depositInAVTDecimals_) =
       LEventsCommon.getEventDeposit(_storage, _capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime);
 
     bytes32 key = keccak256(abi.encodePacked("ExpectedDeposits", _owner));
-    _storage.setUInt(key, _storage.getUInt(key) + depositInAVTDecimals);
+    _storage.setUInt(key, _storage.getUInt(key) + depositInAVTDecimals_);
     require(
       _storage.getUInt(key) <= LAVTManager.getBalance(_storage, _owner, "deposit"),
       "Insufficient deposit funds to create event"
@@ -178,7 +178,7 @@ library LEventsEnact {
     _storage.setUInt(keccak256(abi.encodePacked("Event", eventId_, "capacity")), _capacity);
     _storage.setUInt(keccak256(abi.encodePacked("Event", eventId_, "ticketSaleStartTime")), _ticketSaleStartTime);
     _storage.setString(keccak256(abi.encodePacked("Event", eventId_, "eventSupportURL")), _eventSupportURL);
-    _storage.setUInt(keccak256(abi.encodePacked("Event", eventId_, "deposit")), depositInAVTDecimals);
+    _storage.setUInt(keccak256(abi.encodePacked("Event", eventId_, "deposit")), depositInAVTDecimals_);
     _storage.setUInt(keccak256(abi.encodePacked("Event", eventId_, "eventTime")), _eventTime);
   }
 

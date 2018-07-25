@@ -9,7 +9,7 @@ import "./LAVTManager.sol";
  * This only used by, and is separate to, LProposals because of size limitations when deploying.
  * There is no proxy for this library.
  *
- * NOTE: Do NOT put anything in here specific to events as this will also be used for app challenges.
+ * NOTE: Do NOT put anything in here specific to events as this will also be used for other challenges.
  */
 library LProposalWinnings {
   bytes32 constant winningsForChallengeWinnerPercentageKey =
@@ -45,21 +45,21 @@ library LProposalWinnings {
       _storage.setUInt(voterStakeKey, 0);
     }
 
-    function doEventWinningsDistribution(
+    function doWinningsDistribution(
         IAventusStorage _storage,
         uint _proposalId,
         uint8 _winningOption,
         bool _challengeWon,
         uint _deposit,
         address _challenger,
-        address _eventOwner)
+        address _challengee)
       external
     {
       distributeChallengeWinnings(
           _storage,
           _proposalId,
-          _challengeWon ? _challenger : _eventOwner, // winner
-          _challengeWon ? _eventOwner : _challenger, // loser
+          _challengeWon ? _challenger : _challengee, // winner
+          _challengeWon ? _challengee : _challenger, // loser
           _deposit,
           0 ==_storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedVotersCount", _winningOption))), // challengeHasNoRevealedVotes
           _storage.getUInt8(winningsForChallengeWinnerPercentageKey),

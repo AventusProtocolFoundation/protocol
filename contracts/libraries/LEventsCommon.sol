@@ -86,7 +86,7 @@ library LEventsCommon {
   * @dev Check if an address is registered as a delegate for an event
   * @param _storage Storage contract
   * @param _eventId - ID of the event
-  * @param _role - "primary" or "secondary" delegate role
+  * @param _role - role must be either "PrimaryDelegate" or "SecondaryDelegate"
   * @param _delegate - address to check
   * @return registered_ - returns true if the supplied delegate is registered
   */
@@ -154,5 +154,4 @@ library LEventsCommon {
       _storage.getUInt(minimumDepositAmountUsCentsKey):
       _storage.getUInt(fixedDepositAmountUsCentsKey);
   }
-
 }
