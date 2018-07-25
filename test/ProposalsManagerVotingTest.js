@@ -158,6 +158,20 @@ contract('ProposalsManager - Voting:', function () {
           await proposalsManager.endProposal(proposalId);
       });
 
+      it("cannot reveal vote with an invalid option id.", async function() {
+          let proposalId = await createGovernanceProposal("A governance proposal");
+
+          await testHelper.advanceTimeToVotingStart(proposalId);
+          let optionId = 2;
+          const signedMessage = await votingTestHelper.castVote(proposalId, optionId);
+
+          await testHelper.advanceTimeToRevealingStart(proposalId);
+          await testHelper.expectRevert(() => votingTestHelper.revealVote(signedMessage, proposalId, 3));
+          await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
+          await testHelper.advanceTimeToEndOfProposal(proposalId);
+          await proposalsManager.endProposal(proposalId);
+      });
+
       it("cannot reveal vote with the wrong optionId or signature.", async function() {
           let proposalId = await createGovernanceProposal("A governance proposal");
 

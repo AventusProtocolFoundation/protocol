@@ -1,7 +1,6 @@
 const ProposalsManager = artifacts.require("ProposalsManager.sol");
 const AventusStorage = artifacts.require("AventusStorage.sol");
 const IERC20 = artifacts.require("IERC20");
-const Versioned = artifacts.require("Versioned");
 const LProposalForTesting = artifacts.require("LProposalForTesting.sol");
 const testHelper = require("./helpers/testHelper");
 
@@ -19,7 +18,7 @@ contract('Proxy testing', function () {
   before(async function () {
     await testHelper.before();
 
-    const versionMajorMinor = await (await Versioned.deployed()).getVersionMajorMinor();
+    const versionMajorMinor = await testHelper.getVersionMajorMinor();
     libraryKey = web3.sha3("LProposalInstance" + "-" + versionMajorMinor);
 
     aventusStorage = testHelper.getStorage();
@@ -61,7 +60,7 @@ contract('Proxy testing', function () {
   }
 
   it("can access the current version number", async function() {
-    const currentVersion = await (await Versioned.deployed()).getVersion();
+    const currentVersion = testHelper.getVersion();
   });
 
   it("can call new version of a method with the same signature", async function() {

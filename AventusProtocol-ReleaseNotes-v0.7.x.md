@@ -1,8 +1,23 @@
 # Aventus Protocol 0.7.x Release Notes
 
-This set of releases (see v0.6.x for the previous) is for minor refactors of contracts and interfaces.
+This set of releases (see v0.6.x for the previous) is for minor refactors of contracts and
+interfaces, as well as code coverage.
 
-The release notes for version 0.6.x follow, listed by sub-release and category.
+The release notes for this version follow, listed by sub-release and category.
+
+## Release 0.7.2 - 2018-07-25
+
+Breaking changes:
+* Use "PrimaryDelegate" instead of "primary" for event role (similar for secondary)
+
+Minor changes:
+* Add AVT deposit to event log for event creation
+* Refactor of LProposal into LProposalEnact due to binary size overflow
+* More tests to increase test coverage
+* Clarity on signed/unsigned event testing
+
+Bug fixes:
+* Use SPDX version of GPL license
 
 ## Release 0.7.1 - 2018-07-17
 

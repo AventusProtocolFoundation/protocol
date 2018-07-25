@@ -5,12 +5,12 @@ interface IEventsManager {
   /**
    * Event emitted for a createEvent transaction.
    */
-  event LogEventCreated(uint indexed eventId, string eventDesc, uint ticketSaleStartTime, uint eventTime, uint averageTicketPriceInUSCents);
+  event LogEventCreated(uint indexed eventId, string eventDesc, uint ticketSaleStartTime, uint eventTime, uint averageTicketPriceInUSCents, uint depositInAVTDecimals);
 
   /**
    * Event emitted for a signedCreateEvent transaction.
    */
-  event LogSignedEventCreated(uint indexed eventId, string eventDesc, uint ticketSaleStartTime, uint eventTime, uint averageTicketPriceInUSCents);
+  event LogSignedEventCreated(uint indexed eventId, string eventDesc, uint ticketSaleStartTime, uint eventTime, uint averageTicketPriceInUSCents, uint depositInAVTDecimals);
 
   /**
    * Event emitted for a unlockEventDeposit transaction.
@@ -157,7 +157,7 @@ interface IEventsManager {
   /**
   * @dev Register a delegate for an event
   * @param _eventId - ID of the event
-  * @param _role - type of delegate (must be "primary" or "secondary")
+  * @param _role - role must be either "PrimaryDelegate" or "SecondaryDelegate"
   * @param _delegate - delegate address
   */
   function registerDelegate(uint _eventId, string _role, address _delegate) external;
@@ -165,7 +165,7 @@ interface IEventsManager {
   /**
   * @dev Deregister a delegate to an event
   * @param _eventId - ID of the event
-  * @param _role - type of delegate (must be "primary" or "secondary")
+  * @param _role - role must be either "PrimaryDelegate" or "SecondaryDelegate"
   * @param _delegate - delegate of the event
   */
   function deregisterDelegate(uint _eventId, string _role, address _delegate) external;
@@ -194,7 +194,7 @@ interface IEventsManager {
   /**
   * @dev Check if a delegate is registered for an event
   * @param _eventId - ID of the event
-  * @param _role - type of delegate (must be "primary" or "secondary")
+  * @param _role - role must be either "PrimaryDelegate" or "SecondaryDelegate"
   * @param _delegate - Delegate to check
   * @return _registered - returns true if the supplied delegate is registered
   */

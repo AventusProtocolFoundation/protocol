@@ -10,8 +10,8 @@ import "./zeppelin/LECRecovery.sol";
 library LEvents {
 
   /// See IEventsManager interface for events description
-  event LogEventCreated(uint indexed eventId, string eventDesc, uint ticketSaleStartTime, uint eventTime, uint averageTicketPriceInUSCents);
-  event LogSignedEventCreated(uint indexed eventId, string eventDesc, uint ticketSaleStartTime, uint eventTime, uint averageTicketPriceInUSCents);
+  event LogEventCreated(uint indexed eventId, string eventDesc, uint ticketSaleStartTime, uint eventTime, uint averageTicketPriceInUSCents, uint depositInAVTDecimals);
+  event LogSignedEventCreated(uint indexed eventId, string eventDesc, uint ticketSaleStartTime, uint eventTime, uint averageTicketPriceInUSCents, uint depositInAVTDecimals);
   event LogEventCancellation(uint indexed eventId);
   event LogSignedEventCancellation(uint indexed eventId);
   event LogUnlockEventDeposit(uint indexed eventId);
@@ -32,9 +32,9 @@ library LEvents {
     _;
   }
 
-  modifier addressIsWhitelisted(IAventusStorage _storage, address _delegate) {
+  modifier addressIsWhitelistedApp(IAventusStorage _storage, address _appAddress) {
     require(
-      LApps.appIsRegistered(_storage, _delegate),
+      LApps.appIsRegistered(_storage, _appAddress),
       "App must have been registered as a delegate"
     );
     _;
@@ -42,9 +42,9 @@ library LEvents {
 
   modifier validDelegateRole(IAventusStorage _storage, string _role) {
     require(
-      keccak256(abi.encodePacked(_role)) == keccak256("primary") ||
-      keccak256(abi.encodePacked(_role)) == keccak256("secondary"),
-      "Delegate role must be primary or secondary"
+      keccak256(abi.encodePacked(_role)) == keccak256("PrimaryDelegate") ||
+      keccak256(abi.encodePacked(_role)) == keccak256("SecondaryDelegate"),
+      "Delegate role must be PrimaryDelegate or SecondaryDelegate"
     );
     _;
   }
@@ -54,10 +54,11 @@ library LEvents {
     external
     returns (uint eventId_)
   {
-    eventId_ = LEventsEnact.doCreateEvent(_storage, _eventDesc, _eventTime, _capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime,
-      _eventSupportURL, msg.sender);
-
-    emit LogEventCreated(eventId_, _eventDesc, _ticketSaleStartTime, _eventTime, _averageTicketPriceInUSCents);
+    uint depositInAVTDecimals;
+    (eventId_, depositInAVTDecimals) = LEventsEnact.doCreateEvent(_storage, _eventDesc, _eventTime,
+        _capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime, _eventSupportURL, msg.sender);
+    emit LogEventCreated(eventId_, _eventDesc, _ticketSaleStartTime, _eventTime,
+        _averageTicketPriceInUSCents, depositInAVTDecimals);
   }
 
   function cancelEvent(IAventusStorage _storage, uint _eventId)
@@ -70,16 +71,11 @@ library LEvents {
 
   function signedCancelEvent(IAventusStorage _storage, bytes _signedMessage, uint _eventId)
     external
-    addressIsWhitelisted(_storage, msg.sender)
+    addressIsWhitelistedApp(_storage, msg.sender)
   {
     bytes32 msgHash = keccak256(abi.encodePacked(_eventId));
-    msgHash = LECRecovery.toEthSignedMessageHash(msgHash);
-    address signer = LECRecovery.recover(msgHash, _signedMessage);
-    checkNotMsgSender(signer);
-    require(
-      signer == getEventOwner(_storage, _eventId),
-      "Only the owner can sign a message to cancel an event"
-    );
+    address signer = getSignerAndCheckNotSender(msgHash, _signedMessage);
+    require(signer == getEventOwner(_storage, _eventId), "Signer must be event owner");
     LEventsEnact.doCancelEvent(_storage, _eventId);
     emit LogSignedEventCancellation(_eventId);
   }
@@ -101,13 +97,10 @@ library LEvents {
   function signedSellTicket(IAventusStorage _storage, bytes _signedMessage, uint _eventId,
       string _ticketDetails, address _buyer)
     external
-    addressIsWhitelisted(_storage, msg.sender)
+    addressIsWhitelistedApp(_storage, msg.sender)
   {
     bytes32 msgHash = keccak256(abi.encodePacked(_eventId, _ticketDetails, _buyer));
-    msgHash = LECRecovery.toEthSignedMessageHash(msgHash);
-    address signer = LECRecovery.recover(msgHash, _signedMessage);
-    checkNotMsgSender(signer);
-
+    address signer = getSignerAndCheckNotSender(msgHash, _signedMessage);
     uint ticketId = LEventsEnact.doSellTicket(_storage, _eventId, _ticketDetails, _buyer, signer);
     emit LogSignedTicketSale(_eventId, ticketId, _buyer);
   }
@@ -121,13 +114,10 @@ library LEvents {
 
   function signedRefundTicket(IAventusStorage _storage, bytes _signedMessage, uint _eventId, uint _ticketId)
     external
-    addressIsWhitelisted(_storage, msg.sender)
+    addressIsWhitelistedApp(_storage, msg.sender)
   {
     bytes32 msgHash = keccak256(abi.encodePacked(_eventId, _ticketId));
-    msgHash = LECRecovery.toEthSignedMessageHash(msgHash);
-    address signer = LECRecovery.recover(msgHash, _signedMessage);
-    checkNotMsgSender(signer);
-
+    address signer = getSignerAndCheckNotSender(msgHash, _signedMessage);
     LEventsEnact.doRefundTicket(_storage, _eventId, _ticketId, signer);
     emit LogSignedTicketRefund(_eventId, _ticketId);
   }
@@ -135,7 +125,7 @@ library LEvents {
   function resellTicket(IAventusStorage _storage, uint _eventId, uint _ticketId, bytes _ownerPermission, address _newBuyer)
   external
   {
-    ownerPermissionCheck(_storage, _eventId, _ticketId, _ownerPermission);
+    resellTicketOwnerPermissionCheck(_storage, _eventId, _ticketId, _ownerPermission);
     LEventsEnact.doResellTicket(_storage, _eventId, _ticketId, _newBuyer, msg.sender);
     emit LogTicketResale(_eventId, _ticketId, _newBuyer);
   }
@@ -143,44 +133,34 @@ library LEvents {
   function signedResellTicket(IAventusStorage _storage, bytes _signedMessage, uint _eventId,
     uint _ticketId, bytes _ownerPermission, address _newBuyer)
     external
-    addressIsWhitelisted(_storage, msg.sender)
+    addressIsWhitelistedApp(_storage, msg.sender)
   {
     bytes32 msgHash = keccak256(abi.encodePacked(_eventId, _ticketId, _ownerPermission, _newBuyer));
-    msgHash = LECRecovery.toEthSignedMessageHash(msgHash);
-    address signer = LECRecovery.recover(msgHash, _signedMessage);
-    checkNotMsgSender(signer);
-
-    ownerPermissionCheck(_storage, _eventId, _ticketId, _ownerPermission);
+    address signer = getSignerAndCheckNotSender(msgHash, _signedMessage);
+    resellTicketOwnerPermissionCheck(_storage, _eventId, _ticketId, _ownerPermission);
     LEventsEnact.doResellTicket(_storage, _eventId, _ticketId, _newBuyer, signer);
     emit LogSignedTicketResale(_eventId, _ticketId, _newBuyer);
   }
 
-   function ownerPermissionCheck(IAventusStorage _storage, uint _eventId, uint _ticketId, bytes _ownerPermission) private view {
+   function resellTicketOwnerPermissionCheck(IAventusStorage _storage, uint _eventId, uint _ticketId, bytes _ownerPermission) private view {
      address currentOwner = _storage.getAddress(keccak256(abi.encodePacked("Event", _eventId, "Ticket", _ticketId, "buyer")));
      bytes32 msgHash = keccak256(abi.encodePacked(_eventId, _ticketId, currentOwner));
      msgHash = LECRecovery.toEthSignedMessageHash(msgHash);
      address signer = LECRecovery.recover(msgHash, _ownerPermission);
-     addressMatch(signer, currentOwner);
-   }
-
-   function addressMatch(address _addrA, address _addrB) private pure  {
-     require(
-       _addrA == _addrB,
-       "Addresses do not match"
-     );
+     require(signer == currentOwner, "resale must be signed by current owner");
    }
 
   /**
   * @dev Register a delegate for an existing event
   * @param _storage Storage contract
   * @param _eventId - ID of the event
-  * @param _role - type of delegate (must be "primary" or "secondary")
+  * @param _role - role must be either "PrimaryDelegate" or "SecondaryDelegate"
   * @param _delegate - delegate address
   */
   function registerDelegate(IAventusStorage _storage, uint _eventId, string _role, address _delegate)
     external
     onlyEventOwner(_storage, _eventId)
-    addressIsWhitelisted(_storage, _delegate)
+    addressIsWhitelistedApp(_storage, _delegate)
     validDelegateRole(_storage, _role)
   {
     _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "role", _role, "delegate", _delegate)), true);
@@ -191,7 +171,7 @@ library LEvents {
   * @dev Deregister a delegate to an existing event
   * @param _storage Storage contract
   * @param _eventId - ID of the event
-  * @param _role - type of delegate (must be "primary" or "secondary")
+  * @param _role - role must be either "PrimaryDelegate" or "SecondaryDelegate"
   * @param _delegate - delegate of the event
   */
   function deregisterDelegate(IAventusStorage _storage, uint _eventId, string _role, address _delegate)
@@ -236,26 +216,19 @@ library LEvents {
     uint _eventTime, uint _capacity, uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime,
     string _eventSupportURL, address _owner)
     public
-    addressIsWhitelisted(_storage, msg.sender)
+    addressIsWhitelistedApp(_storage, msg.sender)
     returns (uint eventId_)
   {
     bytes32 msgHash = LEventsCommon.hashEventParameters(
       _eventDesc, _eventTime,_capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime,
       _eventSupportURL, _owner
     );
-    msgHash = LECRecovery.toEthSignedMessageHash(msgHash);
-    address signer = LECRecovery.recover(msgHash, _signedMessage);
-    checkNotMsgSender(signer);
-    require (
-      signer == _owner,
-      "Sender cannot equal the event owner. Use createEvent instead"
-    );
-
-    eventId_ = LEventsEnact.doCreateEvent(
+    require(getSignerAndCheckNotSender(msgHash, _signedMessage) == _owner, "Signer must be event owner");
+    uint depositInAVTDecimals;
+    (eventId_, depositInAVTDecimals) = LEventsEnact.doCreateEvent(
       _storage, _eventDesc, _eventTime, _capacity, _averageTicketPriceInUSCents,
-      _ticketSaleStartTime, _eventSupportURL, _owner
-    );
-    emit LogSignedEventCreated(eventId_, _eventDesc, _ticketSaleStartTime, _eventTime, _averageTicketPriceInUSCents);
+      _ticketSaleStartTime, _eventSupportURL, _owner);
+    emit LogSignedEventCreated(eventId_, _eventDesc, _ticketSaleStartTime, _eventTime, _averageTicketPriceInUSCents, depositInAVTDecimals);
   }
 
   function eventIsNotUnderChallenge(IAventusStorage _storage, uint _eventId) public view returns (bool notUnderChallenge_) {
@@ -267,7 +240,7 @@ library LEvents {
   * @param _storage Storage contract
   * @param _eventId - ID of the event
   * @param _delegate - address to check
-  * @param _role - type of delegate (must be "primary" or "secondary")
+  * @param _role - role must be either "PrimaryDelegate" or "SecondaryDelegate"
   * @return registered_ - returns true if the supplied delegate is registered
   */
   function addressIsDelegate(IAventusStorage _storage, uint _eventId, string _role, address _delegate)
@@ -295,10 +268,13 @@ library LEvents {
     eventOwner_ = LEventsCommon.getEventOwner(_storage, _eventId);
   }
 
-  function checkNotMsgSender(address _signer) private view  {
-    require(
-      msg.sender != _signer,
-      "Sender must not be the message signer"
-    );
+  function getSignerAndCheckNotSender(bytes32 _msgHash, bytes _signedMessage)
+    private
+    view
+    returns (address signer_)
+  {
+    _msgHash = LECRecovery.toEthSignedMessageHash(_msgHash);
+    signer_ = LECRecovery.recover(_msgHash, _signedMessage);
+    require(msg.sender != signer_, "Sender is signer: use unsigned methods for this case");
   }
 }

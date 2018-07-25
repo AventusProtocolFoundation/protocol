@@ -9,12 +9,12 @@ interface IProposalsManager {
   /**
    * Event emitted for a castVote transaction.
    */
-  event LogCastVote(uint indexed proposalId, address indexed sender, bytes32 secret, uint prevTime);
+  event LogCastVote(address indexed sender, uint indexed proposalId, bytes32 secret, uint prevTime);
 
   /**
    * Event emitted for a revealVote transaction.
    */
-  event LogRevealVote(uint indexed proposalId, uint8 indexed optId, uint revealingStart, uint revealingEnd);
+  event LogRevealVote(address indexed sender, uint indexed proposalId, uint8 indexed optId, uint revealingStart, uint revealingEnd);
 
   /**
    * Event emitted for a claimVoterWinnings transaction.

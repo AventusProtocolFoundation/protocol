@@ -3,6 +3,7 @@ const ProposalsManager = artifacts.require("ProposalsManager.sol");
 const AVTManager = artifacts.require("AVTManager.sol");
 const LAventusTime = artifacts.require("LAventusTime");
 const LAventusTimeMock = artifacts.require("LAventusTimeMock");
+const Versioned = artifacts.require("Versioned");
 const IERC20 = artifacts.require("IERC20");
 const web3Utils = require('web3-utils');
 
@@ -11,17 +12,20 @@ const oneWeek = 7 * oneDay;
 const mockTimeKey = web3.sha3("MockCurrentTime");
 
 let blockChainTime = new web3.BigNumber(0);
-let aventusStorage, avtAddress, proposalsManager;
+let aventusStorage, avtAddress, proposalsManager, realTimeInstance, mockTimeInstance;
 let lastEventBlockNumber = -1;
 
 async function before() {
   aventusStorage = await AventusStorage.deployed();
+  versioned = await Versioned.deployed();
   avtAddress = await aventusStorage.getAddress(web3.sha3("AVTERC20Instance"));
   proposalsManager = await ProposalsManager.deployed();
   avtManager = await AVTManager.deployed();
+  realTimeInstance = await LAventusTime.deployed();
+  mockTimeInstance = await LAventusTimeMock.deployed();
 
   blockChainTime = new web3.BigNumber(web3.eth.getBlock(web3.eth.blockNumber).timestamp);
-  await useMockTime();
+  await initMockTime();
   lastEventBlockNumber = -1;
 }
 
@@ -44,9 +48,21 @@ function getAccount(id) {
   return web3.eth.accounts[id];
 }
 
+async function getTimeKey() {
+  const versionMajorMinor = await getVersionMajorMinor();
+  return web3.sha3("LAventusTimeInstance" + "-" + versionMajorMinor);
+}
+
+async function useRealTime() {
+  await aventusStorage.setAddress(await getTimeKey(), realTimeInstance.address);
+}
+
 async function useMockTime() {
-  let mockTimeInstance = await LAventusTimeMock.deployed();
-  await aventusStorage.setAddress(web3.sha3("LAventusTimeInstance"), mockTimeInstance.address);
+  await aventusStorage.setAddress(await getTimeKey(), mockTimeInstance.address);
+}
+
+async function initMockTime() {
+  await useMockTime();
   await aventusStorage.setUInt(mockTimeKey, blockChainTime);
 }
 
@@ -105,6 +121,20 @@ function createSignedMessage(_signer, _keccak256Msg) {
   return signedMessage;
 }
 
+async function getVersion() {
+  let v = await versioned.getVersion();
+  return v;
+}
+
+async function getVersionMajorMinor() {
+  let v = await versioned.getVersionMajorMinor();
+  return v;
+}
+
+function convertToAVTDecimal(_oneAvtInUsCents, _amount) {
+  return (_amount * (10**18)) / _oneAvtInUsCents;
+}
+
 const ganacheRevert = 'Error: VM Exception while processing transaction: revert';
 const gethRevert = 'exited with an error (status 0)';
 
@@ -120,16 +150,16 @@ module.exports = {
               "Was not expecting: " + error.toString());
         }
     },
-
     now: () => blockChainTime,
     getStorage: () => aventusStorage,
     getProposalsManager: () => proposalsManager,
     getAVTManager: () => avtManager,
     getAVTContract: () => IERC20.at(avtAddress),
-
     before,
     checkFundsEmpty,
     getAccount,
+    useRealTime,
+    useMockTime,
     getEventArgs,
     advanceByDays,
     advanceTimeToVotingStart,
@@ -138,5 +168,7 @@ module.exports = {
     advanceTimeToEventTicketSaleStart,
     advanceTimeToEventEnd,
     createSignedMessage,
-
+    getVersion,
+    getVersionMajorMinor,
+    convertToAVTDecimal
 }

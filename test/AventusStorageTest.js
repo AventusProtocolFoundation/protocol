@@ -1,5 +1,6 @@
 // Specifically request an abstraction for AventusStorage
 const AventusStorage = artifacts.require('AventusStorage.sol');
+const AventusStorageForTesting = artifacts.require('AventusStorageForTesting');
 const testHelper = require('./helpers/testHelper');
 
 contract('AventusStorage', function() {
@@ -263,7 +264,17 @@ contract('AventusStorage', function() {
       assert.equal(await avtStorage.owner(), owner);
       await avtStorage.setOwner(newOwner);
       assert.equal(await avtStorage.owner(), newOwner);
+
+      // And the original owner should no longer be able to set it back to themselves
+      await testHelper.expectRevert(() => avtStorage.setOwner(owner, {from: owner}));
+
       await avtStorage.setOwner(owner, {from: newOwner});
+    });
+
+    it('cannot set a storage contract without an owner', async function() {
+      assert.equal(await avtStorage.owner(), owner);
+      await testHelper.expectRevert(() => avtStorage.setOwner(0));
+      assert.equal(await avtStorage.owner(), owner);
     });
 
     it('can allow access', async function() {
@@ -301,6 +312,24 @@ contract('AventusStorage', function() {
       // And it should no longer be able to change the value from default
       await testHelper.expectRevert(() => avtStorage.setUInt8(key, testValue, {from: account1}));
       assert.equal(await avtStorage.getUInt8(key), defaultValue);
+    });
+
+    it('can delegate new functionality', async function() {
+      let avtStorageForTesting = await AventusStorageForTesting.new();
+      // create instance pointing to storage address in order to access methods
+      let avtStorageForTestingAsDelegate = await AventusStorageForTesting.at(avtStorage.address);
+      assert.ok(avtStorageForTesting);
+      assert.ok(avtStorageForTestingAsDelegate);
+
+      const testValue = 111;
+
+      await testHelper.expectRevert(() => avtStorageForTestingAsDelegate.setTestValue(testValue));
+
+      keccak256Msg = web3.sha3("StorageInstance");
+      await avtStorage.setAddress(keccak256Msg, avtStorageForTesting.address);
+
+      await avtStorageForTestingAsDelegate.setTestValue(testValue);
+      assert.equal((await avtStorageForTestingAsDelegate.getTestValue()).toNumber(), testValue);
     });
   });
 });
