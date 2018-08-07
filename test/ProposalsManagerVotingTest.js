@@ -2,7 +2,7 @@
 const testHelper = require("./helpers/testHelper");
 const votingTestHelper = require("./helpers/votingTestHelper");
 
-contract('ProposalsManager - Voting:', function () {
+contract('ProposalsManager - Voting:', async () => {
     // Freeze time so we can use the mock time library in solidity. Make sure we
     // keep time on the solidity side and the java side in sync.
     const oneDay = new web3.BigNumber(86400);  // seconds in one day. Solidity uses uint256.
@@ -24,7 +24,7 @@ contract('ProposalsManager - Voting:', function () {
       deposit = await proposalsManager.getGovernanceProposalDeposit();
     });
 
-    afterEach(async function() {
+    afterEach(async () => {
       // Withdraw the rest of the deposits and stakes so we know that all
       // proposal have been closed, all votes have been revealed and that all
       // AVT has been cleared out before the next test.
@@ -97,8 +97,8 @@ contract('ProposalsManager - Voting:', function () {
         await avtManager.withdraw(fund, amount, {from: account});
     }
 
-    context("Tests for voting on governance proposals", function() {
-      it("cannot vote on a governance proposal which is not in the voting period.", async function() {
+    context("Tests for voting on governance proposals", async () => {
+      it("cannot vote on a governance proposal which is not in the voting period.", async () => {
           let proposalId = await createGovernanceProposal("A governance proposal");
           await testHelper.expectRevert(() => votingTestHelper.castVote(proposalId, 2));
 
@@ -106,7 +106,7 @@ contract('ProposalsManager - Voting:', function () {
           await proposalsManager.endProposal(proposalId);
       });
 
-      it("can vote on a governance proposal which is in the voting period", async function() {
+      it("can vote on a governance proposal which is in the voting period", async () => {
           let proposalId = await createGovernanceProposal("A governance proposal");
 
           await testHelper.advanceTimeToVotingStart(proposalId);
@@ -119,7 +119,7 @@ contract('ProposalsManager - Voting:', function () {
           await votingTestHelper.revealVote(signedMessage, proposalId, 2);
       });
 
-      it("cannot vote on a governance proposal at the revealing stage", async function() {
+      it("cannot vote on a governance proposal at the revealing stage", async () => {
           let proposalId = await createGovernanceProposal("A governance proposal");
 
           await testHelper.advanceTimeToRevealingStart(proposalId);
@@ -129,7 +129,7 @@ contract('ProposalsManager - Voting:', function () {
           await proposalsManager.endProposal(proposalId);
       });
 
-      it("cannot reveal vote before the revealing period.", async function() {
+      it("cannot reveal vote before the revealing period.", async () => {
           let proposalId = await createGovernanceProposal("A governance proposal");
 
           await testHelper.advanceTimeToVotingStart(proposalId);
@@ -145,7 +145,7 @@ contract('ProposalsManager - Voting:', function () {
           await proposalsManager.endProposal(proposalId);
       });
 
-      it("can reveal vote in the revealing period.", async function() {
+      it("can reveal vote in the revealing period.", async () => {
           let proposalId = await createGovernanceProposal("A governance proposal");
 
           await testHelper.advanceTimeToVotingStart(proposalId);
@@ -158,7 +158,7 @@ contract('ProposalsManager - Voting:', function () {
           await proposalsManager.endProposal(proposalId);
       });
 
-      it("cannot reveal vote with an invalid option id.", async function() {
+      it("cannot reveal vote with an invalid option id.", async () => {
           let proposalId = await createGovernanceProposal("A governance proposal");
 
           await testHelper.advanceTimeToVotingStart(proposalId);
@@ -172,7 +172,7 @@ contract('ProposalsManager - Voting:', function () {
           await proposalsManager.endProposal(proposalId);
       });
 
-      it("cannot reveal vote with the wrong optionId or signature.", async function() {
+      it("cannot reveal vote with the wrong optionId or signature.", async () => {
           let proposalId = await createGovernanceProposal("A governance proposal");
 
           await testHelper.advanceTimeToVotingStart(proposalId);
@@ -191,7 +191,7 @@ contract('ProposalsManager - Voting:', function () {
           await proposalsManager.endProposal(proposalId);
       });
 
-      it("cannot reveal vote with short signature.", async function() {
+      it("cannot reveal vote with short signature.", async () => {
           let proposalId = await createGovernanceProposal("A governance proposal");
 
           await testHelper.advanceTimeToVotingStart(proposalId);
@@ -208,7 +208,7 @@ contract('ProposalsManager - Voting:', function () {
           await proposalsManager.endProposal(proposalId);
       });
 
-      it("cannot reveal vote with an invalid signature version.", async function() {
+      it("cannot reveal vote with an invalid signature version.", async () => {
           let proposalId = await createGovernanceProposal("A governance proposal");
 
           await testHelper.advanceTimeToVotingStart(proposalId);
@@ -227,7 +227,7 @@ contract('ProposalsManager - Voting:', function () {
           await proposalsManager.endProposal(proposalId);
       });
 
-      it("can reveal vote after the revealing period.", async function() {
+      it("can reveal vote after the revealing period.", async () => {
           let proposalId = await createGovernanceProposal("A governance proposal");
 
           await testHelper.advanceTimeToVotingStart(proposalId);
@@ -241,7 +241,7 @@ contract('ProposalsManager - Voting:', function () {
           await proposalsManager.endProposal(proposalId);
       });
 
-      it("can deposit and withdraw tokens within any period, without any votes.", async function() {
+      it("can deposit and withdraw tokens within any period, without any votes.", async () => {
           let proposalId = await createGovernanceProposal("A governance proposal");
 
           await depositStake(10);
@@ -259,7 +259,7 @@ contract('ProposalsManager - Voting:', function () {
           await proposalsManager.endProposal(proposalId);
       });
 
-      it("can deposit and withdraw tokens in the voting period.", async function() {
+      it("can deposit and withdraw tokens in the voting period.", async () => {
           let proposalId = await createGovernanceProposal("A governance proposal");
 
           await testHelper.advanceTimeToVotingStart(proposalId);
@@ -276,7 +276,7 @@ contract('ProposalsManager - Voting:', function () {
           await proposalsManager.endProposal(proposalId);
       });
 
-      it("cannot deposit or withdraw stake until your vote is revealed.", async function() {
+      it("cannot deposit or withdraw stake until your vote is revealed.", async () => {
           let proposalId = await createGovernanceProposal("A governance proposal");
 
           await depositStake(10);
@@ -299,7 +299,7 @@ contract('ProposalsManager - Voting:', function () {
           await proposalsManager.endProposal(proposalId);
       });
 
-      it("can deposit or withdraw tokens after a proposal is ended, if not within a revealing period of another proposal.", async function() {
+      it("can deposit or withdraw tokens after a proposal is ended, if not within a revealing period of another proposal.", async () => {
           let firstProposal = await createGovernanceProposal("First proposal to be voted on");
           let secondProposal = await createGovernanceProposal("Second proposal to be voted on at the same time");
           await testHelper.advanceByDays(1);
@@ -336,7 +336,7 @@ contract('ProposalsManager - Voting:', function () {
           await proposalsManager.endProposal(thirdProposal);
       });
 
-      it("can vote on, deposit stake to and withdraw from, a few proposals with overlapping periods.", async function() {
+      it("can vote on, deposit stake to and withdraw from, a few proposals with overlapping periods.", async () => {
           let proposalIds = [];
           let signedMessages = [];
 
@@ -432,18 +432,18 @@ contract('ProposalsManager - Voting:', function () {
           }
       });
 
-      it("cannot withdraw more than what is deposited.", async function() {
+      it("cannot withdraw more than what is deposited.", async () => {
           await depositStake(5);
           await depositDeposit(5);
           await testHelper.expectRevert(() => withdrawStake(10));
           await testHelper.expectRevert(() => withdrawDeposit(10));
       });
 
-      it("cannot get prevTime for proposal that does not exist", async function() {
+      it("cannot get prevTime for proposal that does not exist", async () => {
         await testHelper.expectRevert(() => proposalsManager.getPrevTimeParamForCastVote(99));
       });
 
-      it("can only vote with the correct proposalId and prevTime", async function() {
+      it("can only vote with the correct proposalId and prevTime", async () => {
         const proposalId1 = await createGovernanceProposal("A proposal");
         await testHelper.advanceByDays(1);
         const proposalId2 = await createGovernanceProposal("Another proposal");
@@ -482,7 +482,7 @@ contract('ProposalsManager - Voting:', function () {
         await proposalsManager.endProposal(proposalId3);
       });
 
-      it("cannot vote if we have already voted", async function() {
+      it("cannot vote if we have already voted", async () => {
         const proposalId = await createGovernanceProposal("A proposal");
         await testHelper.advanceTimeToVotingStart(proposalId);
         let signedMessage = await votingTestHelper.castVote(proposalId, 1);
@@ -495,7 +495,7 @@ contract('ProposalsManager - Voting:', function () {
         await proposalsManager.endProposal(proposalId);
       });
 
-      it("cannot endProposal more than once for the same proposal", async function() {
+      it("cannot endProposal more than once for the same proposal", async () => {
         const proposalId = await createGovernanceProposal("A proposal");
         await testHelper.advanceTimeToEndOfProposal(proposalId);
         await proposalsManager.endProposal(proposalId);

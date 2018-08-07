@@ -1,6 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "./LEventsCommon.sol";
+import "./LAventities.sol";
 
 library LEventsEnact {
   modifier onlyEventOwnerOrPrimaryDelegate(IAventusStorage _storage, uint _eventId, address _eventOwnerOrDelegate) {
@@ -15,7 +16,7 @@ library LEventsEnact {
 
   modifier ticketIsRefundableOrResellable(IAventusStorage _storage, uint _eventId, uint _ticketId) {
     require(
-      eventActive(_storage, _eventId),
+      LEventsCommon.eventActive(_storage, _eventId),
       "Event must be active"
     );
     require(
@@ -31,7 +32,7 @@ library LEventsEnact {
 
   modifier isActiveEvent(IAventusStorage _storage, uint _eventId) {
     require(
-      eventActive(_storage, _eventId),
+      LEventsCommon.eventActive(_storage, _eventId),
       "Event must be active"
     );
     _;
@@ -39,16 +40,8 @@ library LEventsEnact {
 
   modifier isInactiveEvent(IAventusStorage _storage, uint _eventId) {
     require(
-      !eventActive(_storage, _eventId),
+      !LEventsCommon.eventActive(_storage, _eventId),
       "Event must be inactive"
-    );
-    _;
-  }
-
-  modifier isValidEvent(IAventusStorage _storage, uint _eventId) {
-    require(
-      LEventsCommon.eventValid(_storage, _eventId),
-      "Event must be valid"
     );
     _;
   }
@@ -75,11 +68,11 @@ library LEventsEnact {
     );
     _;
   }
-
-  modifier isNotUnderChallenge(IAventusStorage _storage, uint _eventId) {
+  
+  modifier onlyNotUnderChallenge(IAventusStorage _storage, uint _aventityId) {
     require(
-      LEventsCommon.eventIsNotUnderChallenge(_storage, _eventId),
-      "Event must not be under challenge"
+      LAventities.aventityIsNotUnderChallenge(_storage, _aventityId),
+      "Aventity must be clear of challenges"
     );
     _;
   }
@@ -112,11 +105,12 @@ library LEventsEnact {
   function doCancelEvent(IAventusStorage _storage, uint _eventId)
     external
     isActiveEvent(_storage, _eventId)
-    isNotUnderChallenge(_storage, _eventId)
+    onlyNotUnderChallenge(_storage, _eventId)
     ticketSaleNotInProgress(_storage, _eventId)
   {
     setEventStatusCancelled(_storage, _eventId);
-    doUnlockEventDeposit(_storage, _eventId);
+    uint aventityId = LAventities.getAventityIdFromEventId(_storage, _eventId, "Event");
+    LAventities.deregisterEventAventity(_storage, aventityId);
   }
 
   /**
@@ -166,12 +160,7 @@ library LEventsEnact {
     (depositInUSCents, depositInAVTDecimals_) =
       LEventsCommon.getEventDeposit(_storage, _capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime);
 
-    bytes32 key = keccak256(abi.encodePacked("ExpectedDeposits", _owner));
-    _storage.setUInt(key, _storage.getUInt(key) + depositInAVTDecimals_);
-    require(
-      _storage.getUInt(key) <= LAVTManager.getBalance(_storage, _owner, "deposit"),
-      "Insufficient deposit funds to create event"
-    );
+    LAventities.registerEventAventity(_storage, _owner, eventId_, "Event", _eventSupportURL, _eventDesc, depositInAVTDecimals_);
 
     _storage.setUInt(LEventsCommon.getEventCountKey(), eventId_);
     _storage.setAddress(keccak256(abi.encodePacked("Event", eventId_, "owner")), _owner);
@@ -180,22 +169,6 @@ library LEventsEnact {
     _storage.setString(keccak256(abi.encodePacked("Event", eventId_, "eventSupportURL")), _eventSupportURL);
     _storage.setUInt(keccak256(abi.encodePacked("Event", eventId_, "deposit")), depositInAVTDecimals_);
     _storage.setUInt(keccak256(abi.encodePacked("Event", eventId_, "eventTime")), _eventTime);
-  }
-
-  function doUnlockEventDeposit(IAventusStorage _storage, uint _eventId)
-    public
-    isInactiveEvent(_storage, _eventId)
-  {
-    address owner = LEventsCommon.getEventOwner(_storage, _eventId);
-    bytes32 key = keccak256(abi.encodePacked("ExpectedDeposits", owner));
-    uint depositInAVT = LEventsCommon.getExistingEventDeposit(_storage, _eventId);
-    require(
-      depositInAVT != 0,
-      "Unlocked event must have a positive deposit"
-    );
-    assert(_storage.getUInt(key) >= depositInAVT);
-    _storage.setUInt(key, _storage.getUInt(key) - depositInAVT);
-    _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "deposit")), 0);
   }
 
   /**
@@ -227,6 +200,15 @@ library LEventsEnact {
     _storage.setAddress(keccak256(abi.encodePacked("Event", _eventId, "Ticket", ticketId_, "buyer")), _buyer);
   }
 
+  function doUnlockEventDeposit(IAventusStorage _storage, uint _eventId)
+    public
+    isInactiveEvent(_storage, _eventId)
+  {
+    uint aventityId = LAventities.getAventityIdFromEventId(_storage, _eventId, "Event");
+    LAventities.unlockAventityDeposit(_storage, aventityId);
+    _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "deposit")), 0);
+  }
+
   function setTicketStatusRefunded(IAventusStorage _storage, uint _eventId, uint _ticketId) private {
     _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "Ticket", _ticketId, "status")), 1);
   }
@@ -249,18 +231,6 @@ library LEventsEnact {
 
   function setEventStatusCancelled(IAventusStorage _storage, uint _eventId) private {
     _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "status")), 1);
-  }
-
-  function eventActive(IAventusStorage _storage, uint _eventId)
-    private
-    view
-    isValidEvent(_storage, _eventId)
-    returns (bool active_)
-  {
-    bool eventHasHappened = LAventusTime.getCurrentTime(_storage) >=  _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "eventTime")));
-    bool eventIsCancelled = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "status"))) == 1;
-    bool eventIsFraudulent = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "status"))) == 2;
-    active_ = !eventHasHappened && !eventIsCancelled && !eventIsFraudulent;
   }
 
   function isTicketRefunded(IAventusStorage _storage, uint _eventId, uint _ticketId) private view returns (bool refunded_) {

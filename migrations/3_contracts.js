@@ -11,8 +11,8 @@ const AVTManagerInterface = artifacts.require("IAVTManager");
 const ProposalsManager = artifacts.require("ProposalsManager");
 const ProposalsManagerInterface = artifacts.require("IProposalsManager");
 
-const AppsManager = artifacts.require("AppsManager");
-const AppsManagerInterface = artifacts.require("IAppsManager");
+const AventitiesManager = artifacts.require("AventitiesManager");
+const AventitiesManagerInterface = artifacts.require("IAventitiesManager");
 
 const EventsManager = artifacts.require("EventsManager");
 const EventsManagerInterface = artifacts.require("IEventsManager");
@@ -29,7 +29,7 @@ module.exports = function(deployer, network, accounts) {
 
 let deployAVTManager;
 let deployProposalsManager;
-let deployAppsManager;
+let deployAventitiesManager;
 let deployEventsManager;
 let deployParameterRegistry;
 
@@ -43,7 +43,7 @@ function deployContracts(deployer, network) {
   // ALWAYS deploy to development, NEVER to another network unless hard coded.
   deployAVTManager = developmentMode;
   deployProposalsManager = developmentMode;
-  deployAppsManager = developmentMode;
+  deployAventitiesManager = developmentMode;
   deployEventsManager = developmentMode;
   deployParameterRegistry = developmentMode;
 
@@ -57,7 +57,7 @@ function deployContracts(deployer, network) {
     return doDeployProposalsManager(deployer, storage)
   })
   .then(() => doDeployAVTManager(deployer, storage))
-  .then(() => doDeployAppsManager(deployer, storage))
+  .then(() => doDeployAventitiesManager(deployer, storage))
   .then(() => doDeployEventsManager(deployer, storage))
   .then(() => doDeployParameterRegistry(deployer, storage));
 }
@@ -88,12 +88,12 @@ function doDeployAVTManager(_deployer, _storage) {
   .then(() => _storage.allowAccess(AVTManager.address))
 }
 
-function doDeployAppsManager(_deployer, _storage) {
-  if (!deployAppsManager) return _deployer;
+function doDeployAventitiesManager(_deployer, _storage) {
+  if (!deployAventitiesManager) return _deployer;
 
-  return _deployer.deploy(AppsManager, _storage.address)
-  .then(() => saveInterfaceToStorage(_storage, "IAppsManager", AppsManagerInterface, AppsManager))
-  .then(() => _storage.allowAccess(AppsManager.address));
+  return _deployer.deploy(AventitiesManager, _storage.address)
+  .then(() => saveInterfaceToStorage(_storage, "IAventitiesManager", AventitiesManagerInterface, AventitiesManager))
+  .then(() => _storage.allowAccess(AventitiesManager.address));
 }
 
 function doDeployEventsManager(_deployer, _storage) {

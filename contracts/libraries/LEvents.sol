@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import '../interfaces/IAventusStorage.sol';
-import './LApps.sol';
+import './LAventities.sol';
 import "./LAventusTime.sol";
 import "./LEventsCommon.sol";
 import "./LEventsEnact.sol";
@@ -21,8 +21,8 @@ library LEvents {
   event LogSignedTicketRefund(uint indexed eventId, uint indexed ticketId);
   event LogTicketResale(uint indexed eventId, uint indexed ticketId, address indexed newBuyer);
   event LogSignedTicketResale(uint indexed eventId, uint indexed ticketId, address indexed newBuyer);
-  event LogRegisterDelegate(uint indexed eventId, string role, address indexed delegate);
-  event LogDeregisterDelegate(uint indexed eventId, string role, address indexed delegate);
+  event LogRegisterRole(uint indexed eventId, string role, address indexed delegate);
+  event LogDeregisterRole(uint indexed eventId, string role, address indexed delegate);
 
   modifier onlyEventOwner(IAventusStorage _storage, uint _eventId) {
     require(
@@ -32,10 +32,18 @@ library LEvents {
     _;
   }
 
-  modifier addressIsWhitelistedApp(IAventusStorage _storage, address _appAddress) {
+  modifier onlyBroker(IAventusStorage _storage, address _brokerAddress) {
     require(
-      LApps.appIsRegistered(_storage, _appAddress),
-      "App must have been registered as a delegate"
+      LAventities.aventityIsActive(_storage, _brokerAddress, "Broker"),
+      "Aventity must have been registered as a broker"
+    );
+    _;
+  }
+
+  modifier roleAddressIsRegistered(IAventusStorage _storage, address _roleAddress, string _role) {
+    require(
+      LAventities.aventityIsActive(_storage, _roleAddress, _role),
+      "Aventity must have been registered as a role"
     );
     _;
   }
@@ -43,8 +51,9 @@ library LEvents {
   modifier validDelegateRole(IAventusStorage _storage, string _role) {
     require(
       keccak256(abi.encodePacked(_role)) == keccak256("PrimaryDelegate") ||
-      keccak256(abi.encodePacked(_role)) == keccak256("SecondaryDelegate"),
-      "Delegate role must be PrimaryDelegate or SecondaryDelegate"
+      keccak256(abi.encodePacked(_role)) == keccak256("SecondaryDelegate") ||
+      keccak256(abi.encodePacked(_role)) == keccak256("Broker"),
+      "Delegate role must be PrimaryDelegate, SecondaryDelegate or Broker"
     );
     _;
   }
@@ -71,7 +80,7 @@ library LEvents {
 
   function signedCancelEvent(IAventusStorage _storage, bytes _signedMessage, uint _eventId)
     external
-    addressIsWhitelistedApp(_storage, msg.sender)
+    onlyBroker(_storage, msg.sender)
   {
     bytes32 msgHash = keccak256(abi.encodePacked(_eventId));
     address signer = getSignerAndCheckNotSender(msgHash, _signedMessage);
@@ -97,7 +106,7 @@ library LEvents {
   function signedSellTicket(IAventusStorage _storage, bytes _signedMessage, uint _eventId,
       string _ticketDetails, address _buyer)
     external
-    addressIsWhitelistedApp(_storage, msg.sender)
+    onlyBroker(_storage, msg.sender)
   {
     bytes32 msgHash = keccak256(abi.encodePacked(_eventId, _ticketDetails, _buyer));
     address signer = getSignerAndCheckNotSender(msgHash, _signedMessage);
@@ -114,7 +123,7 @@ library LEvents {
 
   function signedRefundTicket(IAventusStorage _storage, bytes _signedMessage, uint _eventId, uint _ticketId)
     external
-    addressIsWhitelistedApp(_storage, msg.sender)
+    onlyBroker(_storage, msg.sender)
   {
     bytes32 msgHash = keccak256(abi.encodePacked(_eventId, _ticketId));
     address signer = getSignerAndCheckNotSender(msgHash, _signedMessage);
@@ -133,7 +142,7 @@ library LEvents {
   function signedResellTicket(IAventusStorage _storage, bytes _signedMessage, uint _eventId,
     uint _ticketId, bytes _ownerPermission, address _newBuyer)
     external
-    addressIsWhitelistedApp(_storage, msg.sender)
+    onlyBroker(_storage, msg.sender)
   {
     bytes32 msgHash = keccak256(abi.encodePacked(_eventId, _ticketId, _ownerPermission, _newBuyer));
     address signer = getSignerAndCheckNotSender(msgHash, _signedMessage);
@@ -154,52 +163,35 @@ library LEvents {
   * @dev Register a delegate for an existing event
   * @param _storage Storage contract
   * @param _eventId - ID of the event
-  * @param _role - role must be either "PrimaryDelegate" or "SecondaryDelegate"
+  * @param _role - role must be an aventity type of either "PrimaryDelegate", "SecondaryDelegate" or "Broker"
   * @param _delegate - delegate address
   */
-  function registerDelegate(IAventusStorage _storage, uint _eventId, string _role, address _delegate)
+  function registerRole(IAventusStorage _storage, uint _eventId, string _role, address _delegate)
     external
     onlyEventOwner(_storage, _eventId)
-    addressIsWhitelistedApp(_storage, _delegate)
     validDelegateRole(_storage, _role)
+    roleAddressIsRegistered(_storage, _delegate, _role)
   {
     _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "role", _role, "delegate", _delegate)), true);
-    emit LogRegisterDelegate(_eventId, _role, _delegate);
+    emit LogRegisterRole(_eventId, _role, _delegate);
   }
 
   /**
   * @dev Deregister a delegate to an existing event
   * @param _storage Storage contract
   * @param _eventId - ID of the event
-  * @param _role - role must be either "PrimaryDelegate" or "SecondaryDelegate"
+  * @param _role - role must be an aventity type of either "PrimaryDelegate", "SecondaryDelegate" or "Broker"
   * @param _delegate - delegate of the event
   */
-  function deregisterDelegate(IAventusStorage _storage, uint _eventId, string _role, address _delegate)
+  function deregisterRole(IAventusStorage _storage, uint _eventId, string _role, address _delegate)
     external
     onlyEventOwner(_storage, _eventId)
     validDelegateRole(_storage, _role)
   {
-    if (addressIsDelegate(_storage, _eventId, _role, _delegate)) {
+    if (LEventsCommon.addressIsDelegate(_storage, _eventId, _role, _delegate)) {
       _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "role", _role, "delegate", _delegate)), false);
-      emit LogDeregisterDelegate(_eventId, _role, _delegate);
+      emit LogDeregisterRole(_eventId, _role, _delegate);
     }
-  }
-
-  function setEventAsChallenged(IAventusStorage _storage, uint _eventId, uint _challengeProposalId)
-    external {
-    _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "challenge")), _challengeProposalId);
-  }
-
-  function setEventAsClearFromChallenge(IAventusStorage _storage, uint _eventId)
-    external {
-    _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "challenge")), 0);
-  }
-
-  function setEventStatusFraudulent(IAventusStorage _storage, uint _eventId) external {
-    _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "status")), 2);
-    // Event is no longer valid; remove the expected deposit for the event owner.
-    LEventsEnact.doUnlockEventDeposit(_storage, _eventId);
-    // TODO: Add fraudulent counter, will be required for event deposit calculation
   }
 
   /**
@@ -216,7 +208,7 @@ library LEvents {
     uint _eventTime, uint _capacity, uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime,
     string _eventSupportURL, address _owner)
     public
-    addressIsWhitelistedApp(_storage, msg.sender)
+    onlyBroker(_storage, msg.sender)
     returns (uint eventId_)
   {
     bytes32 msgHash = LEventsCommon.hashEventParameters(
@@ -231,16 +223,12 @@ library LEvents {
     emit LogSignedEventCreated(eventId_, _eventDesc, _ticketSaleStartTime, _eventTime, _averageTicketPriceInUSCents, depositInAVTDecimals);
   }
 
-  function eventIsNotUnderChallenge(IAventusStorage _storage, uint _eventId) public view returns (bool notUnderChallenge_) {
-    notUnderChallenge_ = LEventsCommon.eventIsNotUnderChallenge(_storage, _eventId);
-  }
-
   /**
   * @dev Check if an address is registered as a delegate for an event
   * @param _storage Storage contract
   * @param _eventId - ID of the event
   * @param _delegate - address to check
-  * @param _role - role must be either "PrimaryDelegate" or "SecondaryDelegate"
+  * @param _role - role must be an aventity type of either "PrimaryDelegate", "SecondaryDelegate" or "Broker"
   * @return registered_ - returns true if the supplied delegate is registered
   */
   function addressIsDelegate(IAventusStorage _storage, uint _eventId, string _role, address _delegate)

@@ -3,18 +3,18 @@ const AventusStorage = artifacts.require('AventusStorage.sol');
 const AventusStorageForTesting = artifacts.require('AventusStorageForTesting');
 const testHelper = require('./helpers/testHelper');
 
-contract('AventusStorage', function() {
+contract('AventusStorage', async () => {
   let avtStorage;
 
   const key = 'key';
 
-  before(async function() {
+  before(async () => {
     avtStorage = await AventusStorage.new();
     assert.ok(avtStorage);
   });
 
   context('Storage test for uint8/16/32/64/128 - ', async () => {
-    it('can store and retrieve UInt from AventusStorage', async function() {
+    it('can store and retrieve UInt from AventusStorage', async () => {
       const defaultValue = 0;
       const testValue = 567;
       assert.equal(await avtStorage.getUInt(key), defaultValue);
@@ -26,7 +26,7 @@ contract('AventusStorage', function() {
       assert.equal(await avtStorage.getUInt(key), defaultValue);
     });
 
-    it('can store and retrieve UInt128 from AventusStorage', async function() {
+    it('can store and retrieve UInt128 from AventusStorage', async () => {
       const defaultValue = 0;
       const testValue = 567;
       assert.equal(await avtStorage.getUInt128(key), defaultValue);
@@ -38,7 +38,7 @@ contract('AventusStorage', function() {
       assert.equal(await avtStorage.getUInt128(key), defaultValue);
     });
 
-    it('can store and retrieve UInt64 from AventusStorage', async function() {
+    it('can store and retrieve UInt64 from AventusStorage', async () => {
       const defaultValue = 0;
       const testValue = 567;
       assert.equal(await avtStorage.getUInt64(key), defaultValue);
@@ -50,7 +50,7 @@ contract('AventusStorage', function() {
       assert.equal(await avtStorage.getUInt64(key), defaultValue);
     });
 
-    it('can store and retrieve UInt32 from AventusStorage', async function() {
+    it('can store and retrieve UInt32 from AventusStorage', async () => {
       const defaultValue = 0;
       const testValue = 567;
       assert.equal(await avtStorage.getUInt32(key), defaultValue);
@@ -62,7 +62,7 @@ contract('AventusStorage', function() {
       assert.equal(await avtStorage.getUInt32(key), defaultValue);
     });
 
-    it('can store and retrieve UInt16 from AventusStorage', async function() {
+    it('can store and retrieve UInt16 from AventusStorage', async () => {
       const defaultValue = 0;
       const testValue = 567;
       assert.equal(await avtStorage.getUInt16(key), defaultValue);
@@ -74,7 +74,7 @@ contract('AventusStorage', function() {
       assert.equal(await avtStorage.getUInt16(key), defaultValue);
     });
 
-    it('can store and retrieve UInt8 from AventusStorage', async function() {
+    it('can store and retrieve UInt8 from AventusStorage', async () => {
       const defaultValue = 0;
       const testValue = 5;
       assert.equal(await avtStorage.getUInt8(key), defaultValue);
@@ -87,7 +87,7 @@ contract('AventusStorage', function() {
     });
   });
 
-  it('can store and retrieve Address from AventusStorage', async function() {
+  it('can store and retrieve Address from AventusStorage', async () => {
     const defaultValue = 0;
     const testValue = avtStorage.address;
     assert.equal(await avtStorage.getAddress(key), defaultValue);
@@ -99,7 +99,7 @@ contract('AventusStorage', function() {
     assert.equal(await avtStorage.getAddress(key), defaultValue);
   });
 
-  it('can store and retrieve String from AventusStorage', async function() {
+  it('can store and retrieve String from AventusStorage', async () => {
     const defaultValue = '';
     const testValue = 'A Value String';
     assert.equal(await avtStorage.getString(key), defaultValue);
@@ -112,7 +112,7 @@ contract('AventusStorage', function() {
   });
 
   context('Storage test for Bytes/8/16/32 - ', async () => {
-    it('can store and retrieve Bytes from AventusStorage', async function() {
+    it('can store and retrieve Bytes from AventusStorage', async () => {
       // Bytes is a dynamic type of variable length.
       // Unlike fixed-size bytes, it is returned as a string and not as a number.
       // The default value is represented by literal '0x'
@@ -129,7 +129,7 @@ contract('AventusStorage', function() {
       assert.equal(await avtStorage.getBytes(key), defaultValue);
     });
 
-    it('can store and retrieve Bytes32 from AventusStorage', async function() {
+    it('can store and retrieve Bytes32 from AventusStorage', async () => {
       const defaultValue = 0;
       const testValue = '0x1234560000000000000000000000000000000000000000000000000000000000';
 
@@ -142,7 +142,7 @@ contract('AventusStorage', function() {
       assert.equal(await avtStorage.getBytes32(key), defaultValue);
     });
 
-    it('can store and retrieve Bytes16 from AventusStorage', async function() {
+    it('can store and retrieve Bytes16 from AventusStorage', async () => {
       const defaultValue = 0;
       const testValue = '0x12345600000000000000000000000000';
 
@@ -155,7 +155,7 @@ contract('AventusStorage', function() {
       assert.equal(await avtStorage.getBytes16(key), defaultValue);
     });
 
-    it('can store and retrieve Bytes8 from AventusStorage', async function() {
+    it('can store and retrieve Bytes8 from AventusStorage', async () => {
       const defaultValue = 0;
       const testValue = '0x1234560000000000';
 
@@ -170,7 +170,7 @@ contract('AventusStorage', function() {
   });
 
   context('Storage test for Int/8/16/32/64/128 - ', async () => {
-    it('can store and retrieve Int from AventusStorage', async function() {
+    it('can store and retrieve Int from AventusStorage', async () => {
       const defaultValue = 0;
       const testValue = 1234;
       assert.equal(await avtStorage.getInt(key), defaultValue);
@@ -182,7 +182,7 @@ contract('AventusStorage', function() {
       assert.equal(await avtStorage.getInt(key), defaultValue);
     });
 
-    it('can store and retrieve Int128 from AventusStorage', async function() {
+    it('can store and retrieve Int128 from AventusStorage', async () => {
       const defaultValue = 0;
       const testValue = 567;
       assert.equal(await avtStorage.getInt128(key), defaultValue);
@@ -194,7 +194,7 @@ contract('AventusStorage', function() {
       assert.equal(await avtStorage.getInt128(key), defaultValue);
     });
 
-    it('can store and retrieve Int64 from AventusStorage', async function() {
+    it('can store and retrieve Int64 from AventusStorage', async () => {
       const defaultValue = 0;
       const testValue = 567;
       assert.equal(await avtStorage.getInt64(key), defaultValue);
@@ -206,7 +206,7 @@ contract('AventusStorage', function() {
       assert.equal(await avtStorage.getInt64(key), defaultValue);
     });
 
-    it('can store and retrieve Int32 from AventusStorage', async function() {
+    it('can store and retrieve Int32 from AventusStorage', async () => {
       const defaultValue = 0;
       const testValue = 567;
       assert.equal(await avtStorage.getInt32(key), defaultValue);
@@ -218,7 +218,7 @@ contract('AventusStorage', function() {
       assert.equal(await avtStorage.getInt32(key), defaultValue);
     });
 
-    it('can store and retrieve Int16 from AventusStorage', async function() {
+    it('can store and retrieve Int16 from AventusStorage', async () => {
       const defaultValue = 0;
       const testValue = 567;
       assert.equal(await avtStorage.getInt16(key), defaultValue);
@@ -230,7 +230,7 @@ contract('AventusStorage', function() {
       assert.equal(await avtStorage.getInt16(key), defaultValue);
     });
 
-    it('can store and retrieve Int8 from AventusStorage', async function() {
+    it('can store and retrieve Int8 from AventusStorage', async () => {
       const defaultValue = 0;
       const testValue = -7;
       assert.equal(await avtStorage.getInt8(key), defaultValue);
@@ -243,7 +243,7 @@ contract('AventusStorage', function() {
     });
   });
 
-  it('can store and retrieve Boolean from AventusStorage', async function() {
+  it('can store and retrieve Boolean from AventusStorage', async () => {
     const defaultValue = false;
     const testValue = true;
     assert.equal(await avtStorage.getBoolean(key), defaultValue);
@@ -260,7 +260,7 @@ contract('AventusStorage', function() {
     const newOwner = testHelper.getAccount(1);
     const account1 = testHelper.getAccount(2);
 
-    it('can set a new storage contract owner', async function() {
+    it('can set a new storage contract owner', async () => {
       assert.equal(await avtStorage.owner(), owner);
       await avtStorage.setOwner(newOwner);
       assert.equal(await avtStorage.owner(), newOwner);
@@ -271,13 +271,13 @@ contract('AventusStorage', function() {
       await avtStorage.setOwner(owner, {from: newOwner});
     });
 
-    it('cannot set a storage contract without an owner', async function() {
+    it('cannot set a storage contract without an owner', async () => {
       assert.equal(await avtStorage.owner(), owner);
       await testHelper.expectRevert(() => avtStorage.setOwner(0));
       assert.equal(await avtStorage.owner(), owner);
     });
 
-    it('can allow access', async function() {
+    it('can allow access', async () => {
       const defaultValue = 0;
       const testValue = 5;
 
@@ -299,7 +299,7 @@ contract('AventusStorage', function() {
       assert.equal(await avtStorage.getUInt8(key), defaultValue);
     });
 
-    it('can deny access', async function() {
+    it('can deny access', async () => {
       const defaultValue = 0;
       const testValue = 23;
 
@@ -314,7 +314,7 @@ contract('AventusStorage', function() {
       assert.equal(await avtStorage.getUInt8(key), defaultValue);
     });
 
-    it('can delegate new functionality', async function() {
+    it('can delegate new functionality', async () => {
       let avtStorageForTesting = await AventusStorageForTesting.new();
       // create instance pointing to storage address in order to access methods
       let avtStorageForTestingAsDelegate = await AventusStorageForTesting.at(avtStorage.address);

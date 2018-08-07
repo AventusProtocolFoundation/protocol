@@ -75,12 +75,12 @@ contract EventsManager is IEventsManager, Owned, Versioned {
     LEvents.signedResellTicket(s, _signedMessage, _eventId, _ticketId, _ownerPermission, _newBuyer);
   }
 
-  function registerDelegate(uint _eventId, string _role, address _delegate) external {
-    LEvents.registerDelegate(s, _eventId, _role, _delegate);
+  function registerRole(uint _eventId, string _role, address _delegate) external {
+    LEvents.registerRole(s, _eventId, _role, _delegate);
   }
 
-  function deregisterDelegate(uint _eventId, string _role, address _delegate) external {
-    LEvents.deregisterDelegate(s, _eventId, _role, _delegate);
+  function deregisterRole(uint _eventId, string _role, address _delegate) external {
+    LEvents.deregisterRole(s, _eventId, _role, _delegate);
   }
 
   function addressIsDelegate(uint _eventId, string _role, address _delegate)

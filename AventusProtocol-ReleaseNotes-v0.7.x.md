@@ -5,6 +5,12 @@ interfaces, as well as code coverage.
 
 The release notes for this version follow, listed by sub-release and category.
 
+## Release 0.7.3 - 2018-08-07
+
+* Support for Aventus entities (challengeable entities)
+* Consistently use lambdas and async in truffle tests
+* Change "whitelisted" app to "broker"
+
 ## Release 0.7.2 - 2018-07-25
 
 Breaking changes:

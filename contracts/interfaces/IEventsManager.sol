@@ -58,14 +58,14 @@ interface IEventsManager {
   event LogSignedTicketRefund(uint indexed eventId, uint indexed ticketId);
 
   /**
-   * Event emitted for a registerDelegate transaction.
+   * Event emitted for a registerRole transaction.
    */
-  event LogRegisterDelegate(uint indexed eventId, string role, address indexed delegate);
+  event LogRegisterRole(uint indexed eventId, string role, address indexed delegate);
 
   /**
-   * Event emitted for a deregisterDelegate transaction.
+   * Event emitted for a deregisterRole transaction.
    */
-  event LogDeregisterDelegate(uint indexed eventId, string role, address indexed delegate);
+  event LogDeregisterRole(uint indexed eventId, string role, address indexed delegate);
 
   /**
   * @dev Create an event
@@ -157,18 +157,18 @@ interface IEventsManager {
   /**
   * @dev Register a delegate for an event
   * @param _eventId - ID of the event
-  * @param _role - role must be either "PrimaryDelegate" or "SecondaryDelegate"
+  * @param _role - role must be an aventity type of either "PrimaryDelegate", "SecondaryDelegate" or "Broker"
   * @param _delegate - delegate address
   */
-  function registerDelegate(uint _eventId, string _role, address _delegate) external;
+  function registerRole(uint _eventId, string _role, address _delegate) external;
 
   /**
   * @dev Deregister a delegate to an event
   * @param _eventId - ID of the event
-  * @param _role - role must be either "PrimaryDelegate" or "SecondaryDelegate"
+  * @param _role - role must be an aventity type of either "PrimaryDelegate", "SecondaryDelegate" or "Broker"
   * @param _delegate - delegate of the event
   */
-  function deregisterDelegate(uint _eventId, string _role, address _delegate) external;
+  function deregisterRole(uint _eventId, string _role, address _delegate) external;
 
   /**
    * Sell a ticket on the secondary market.
@@ -194,7 +194,7 @@ interface IEventsManager {
   /**
   * @dev Check if a delegate is registered for an event
   * @param _eventId - ID of the event
-  * @param _role - role must be either "PrimaryDelegate" or "SecondaryDelegate"
+  * @param _role - role must be an aventity type of either "PrimaryDelegate", "SecondaryDelegate" or "Broker"
   * @param _delegate - Delegate to check
   * @return _registered - returns true if the supplied delegate is registered
   */

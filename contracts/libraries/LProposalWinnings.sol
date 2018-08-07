@@ -9,7 +9,7 @@ import "./LAVTManager.sol";
  * This only used by, and is separate to, LProposals because of size limitations when deploying.
  * There is no proxy for this library.
  *
- * NOTE: Do NOT put anything in here specific to events as this will also be used for other challenges.
+ * NOTE: Do NOT put anything in here specific to events as this will also be used for aventity challenges.
  */
 library LProposalWinnings {
   bytes32 constant winningsForChallengeWinnerPercentageKey =

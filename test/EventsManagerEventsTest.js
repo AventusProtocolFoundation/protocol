@@ -4,21 +4,21 @@ const eventsTestHelper = require("./helpers/eventsTestHelper");
 const web3Utils = require('web3-utils');
 
 // For unsigned transactions, only the event owner or a delegate can be the msg.sender.
-// For signed transactions, anyone can be the msg.sender IFF they have paid an app deposit.
+// For signed transactions, anyone can be the msg.sender IFF they have registered as a broker.
 // Therefore, we need two addresses for all transactions that:
 //   - create an event: a sender and an owner
 //   - affect an event: a sender and an agent
 // These two address may be the same (for unsigned transcations) or different (for signed transactions.)
-contract('EventsManager - event management', function () {
+contract('EventsManager - event management', async () => {
   let eventsManager, aventusStorage;
 
-  const appAddress = testHelper.getAccount(0);
+  const brokerAddress = testHelper.getAccount(0);
   const eventOwner = testHelper.getAccount(1);
   const primaryDelegate = testHelper.getAccount(2);
   const secondaryDelegate = testHelper.getAccount(3);
 
-  before(async function() {
-    await eventsTestHelper.before(appAddress, eventOwner);
+  before(async () => {
+    await eventsTestHelper.before(brokerAddress, eventOwner);
 
     eventsManager = await EventsManager.deployed();
     aventusStorage = testHelper.getStorage();
@@ -42,7 +42,7 @@ contract('EventsManager - event management', function () {
         depositInUsCentsBN.mul(to18SigFig).dividedToIntegerBy(oneAvtInUsCentsBN).toString());
     };
 
-    it("gets the same deposit regardless of non-zero ticket price, eventCapacity or startTime", async function() {
+    it("gets the same deposit regardless of non-zero ticket price, eventCapacity or startTime", async () => {
       const expectedUSCentsDepositBN = (await aventusStorage.getUInt(web3Utils.soliditySha3("Events", "fixedDepositAmountUsCents")));
       for (i = 1000; i != 10000; i += 1000) {
         // Create some varied values for the deposit paramaters. Shouldn't make a difference.
@@ -53,7 +53,7 @@ contract('EventsManager - event management', function () {
       }
     });
 
-    it("gets the same deposit regardless of eventCapacity or startTime if event is free", async function() {
+    it("gets the same deposit regardless of eventCapacity or startTime if event is free", async () => {
       const price = 0;
       const expectedUSCentsDepositBN = (await aventusStorage.getUInt(web3Utils.soliditySha3("Events", "minimumDepositAmountUsCents")));
       for (i = 1000; i != 10000; i += 1000) {
@@ -86,26 +86,26 @@ contract('EventsManager - event management', function () {
 
       if (useSignedCreateEvent) {
 
-        it(eventPreTitle + "creation fails unless sending address is whitelisted", async function() {
+        it(eventPreTitle + "creation fails unless sending address is a broker", async () => {
           eventsTestHelper.setupUniqueEventParameters();
           await eventsTestHelper.makeEventDeposit();
           await createEventFailsDueToPreconditions();
-          await eventsTestHelper.depositAndWhitelistApp(appAddress);
+          await eventsTestHelper.depositAndRegisterAventity(brokerAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering broker");
           await eventsTestHelper.createValidEvent(useSignedCreateEvent);
-          await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(appAddress);
+          await eventsTestHelper.deregisterAventityAndWithdrawDeposit(brokerAddress, testHelper.brokerAventityType);
           await eventsTestHelper.endEventAndWithdrawDeposit();
         });
 
       }
 
-      context(eventPreTitle + (useSignedCreateEvent ? "with whitelisted app address" : ""), async () => {
+      context(eventPreTitle + (useSignedCreateEvent ? "with broker address" : ""), async () => {
         if (useSignedCreateEvent) {
           beforeEach(async () => {
-            await eventsTestHelper.depositAndWhitelistApp(appAddress);
+            await eventsTestHelper.depositAndRegisterAventity(brokerAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering broker");
           });
 
           afterEach(async () => {
-              await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(appAddress);
+              await eventsTestHelper.deregisterAventityAndWithdrawDeposit(brokerAddress, testHelper.brokerAventityType);
           });
         }
 
@@ -121,15 +121,15 @@ contract('EventsManager - event management', function () {
                 eventsTestHelper.getValidEventId()));
             }
 
-            beforeEach(async function() {
+            beforeEach(async () => {
               await eventsTestHelper.makeEventDepositAndCreateValidEvent(useSignedCreateEvent);
             });
 
-            it("end succeeds", async function() {
+            it("end succeeds", async () => {
               await eventsTestHelper.endEventAndWithdrawDeposit();
             });
 
-            it("cannot recreate the same event", async function() {
+            it("cannot recreate the same event", async () => {
               const createdEventTime = eventsTestHelper.getEventTime();
               const createdTicketSaleStartTime = eventsTestHelper.getTicketSaleStartTime();
               const createdSupportingUrl = eventsTestHelper.getEventSupportURL();
@@ -139,13 +139,13 @@ contract('EventsManager - event management', function () {
               await eventsTestHelper.withdrawEventDeposit();
             });
 
-            context("end fails", async function () {
-              it("cannot end event twice", async function() {
+            context("end fails", async () => {
+              it("cannot end event twice", async () => {
                 await eventsTestHelper.endEventAndWithdrawDeposit();
                 await endEventFails();
               });
 
-              it("cannot withdraw event deposit or end an event if the event eventTime isn't passed", async function() {
+              it("cannot withdraw event deposit or end an event if the event eventTime isn't passed", async () => {
                 await endEventFails();
                 await testHelper.expectRevert(() => eventsTestHelper.withdrawEventDeposit());
 
@@ -158,7 +158,7 @@ contract('EventsManager - event management', function () {
 
             let goodEventTime, goodTicketSaleTime, goodSupportingUrl;
 
-            beforeEach(async function() {
+            beforeEach(async () => {
               eventsTestHelper.setupUniqueEventParameters(); // Set up the event parameters that are always good.
               await eventsTestHelper.makeEventDeposit();
               goodEventTime = eventsTestHelper.getEventTime();
@@ -166,25 +166,25 @@ contract('EventsManager - event management', function () {
               goodSupportingUrl = eventsTestHelper.getEventSupportURL();
             });
 
-            it("if ticketSaleStartTime is too soon", async function() {
+            it("if ticketSaleStartTime is too soon", async () => {
               let badTicketSaleStartTime = eventsTestHelper.getTicketSaleStartTime().minus(1);
               await createEventFails(goodEventTime, badTicketSaleStartTime, goodSupportingUrl);
               await eventsTestHelper.withdrawEventDeposit();
             });
 
-            it("if eventTime is before ticketSaleStartTime", async function() {
+            it("if eventTime is before ticketSaleStartTime", async () => {
               let badEventTime = eventsTestHelper.getTicketSaleStartTime().minus(1);
               await createEventFails(badEventTime, goodTicketSaleTime, eventsTestHelper.getEventSupportURL());
               await eventsTestHelper.withdrawEventDeposit();
             });
 
-            it("if event supportingURL is not provided", async function() {
+            it("if event supportingURL is not provided", async () => {
               let badEventSupportURL = "";
               await createEventFails(eventsTestHelper.getEventTime(), eventsTestHelper.getTicketSaleStartTime(), badEventSupportURL);
               await eventsTestHelper.withdrawEventDeposit();
             });
 
-            it("if not enough deposit was made", async function() {
+            it("if not enough deposit was made", async () => {
               await eventsTestHelper.withdrawDeposit(1, eventOwner);
               await createEventFailsDueToPreconditions();
               await eventsTestHelper.withdrawDeposit(eventsTestHelper.getEventDeposit().minus(1), eventOwner);
@@ -204,78 +204,78 @@ contract('EventsManager - event management', function () {
           });
 
           async function registerPrimaryDelegateSucceeds() {
-            await eventsManager.registerDelegate(eventId, "PrimaryDelegate", primaryDelegate, {from: eventOwner});
+            await eventsManager.registerRole(eventId, testHelper.primaryDelegateAventityType, primaryDelegate, {from: eventOwner});
           }
 
           async function registerPrimaryDelegateFails(_delegate) {
-            await testHelper.expectRevert(() => eventsManager.registerDelegate(eventId, "PrimaryDelegate", primaryDelegate, {from: _delegate}));
+            await testHelper.expectRevert(() => eventsManager.registerRole(eventId, testHelper.primaryDelegateAventityType, primaryDelegate, {from: _delegate}));
           }
 
           async function deregisterPrimaryDelegateSucceeds() {
-            await eventsManager.deregisterDelegate(eventId, "PrimaryDelegate", primaryDelegate, {from: eventOwner});
+            await eventsManager.deregisterRole(eventId, testHelper.primaryDelegateAventityType, primaryDelegate, {from: eventOwner});
           }
 
           async function registerUnknownDelegateRoleFails(_delegate) {
-            await testHelper.expectRevert(() => eventsManager.registerDelegate(eventId, "unknown_role", _delegate, {from: eventOwner}));
+            await testHelper.expectRevert(() => eventsManager.registerRole(eventId, "unknownAventityType", _delegate, {from: eventOwner}));
           }
 
-          it("can register/deregister a primary delegate for an event", async function() {
-            await eventsTestHelper.depositAndWhitelistApp(primaryDelegate);
+          it("can register/deregister a primary delegate for an event", async () => {
+            await eventsTestHelper.depositAndRegisterAventity(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
 
-            let registered = await eventsManager.addressIsDelegate(eventId, "PrimaryDelegate", primaryDelegate);
+            let registered = await eventsManager.addressIsDelegate(eventId, testHelper.primaryDelegateAventityType, primaryDelegate);
             assert.ok(!registered);
 
             await registerPrimaryDelegateSucceeds();
-            registered = await eventsManager.addressIsDelegate(eventId, "PrimaryDelegate", primaryDelegate);
+            registered = await eventsManager.addressIsDelegate(eventId, testHelper.primaryDelegateAventityType, primaryDelegate);
             assert.ok(registered);
 
             await deregisterPrimaryDelegateSucceeds()
-            registered = await eventsManager.addressIsDelegate(eventId, "PrimaryDelegate", primaryDelegate);
+            registered = await eventsManager.addressIsDelegate(eventId, testHelper.primaryDelegateAventityType, primaryDelegate);
             assert.ok(!registered);
 
-            await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(primaryDelegate);
+            await eventsTestHelper.deregisterAventityAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateAventityType);
           });
 
-          it("can register/deregister a secondary delegate for an event", async function() {
-            await eventsTestHelper.depositAndWhitelistApp(secondaryDelegate);
+          it("can register/deregister a secondary delegate for an event", async () => {
+            await eventsTestHelper.depositAndRegisterAventity(secondaryDelegate, testHelper.secondaryDelegateAventityType, testHelper.evidenceURL, "Registering secondary delegate");
 
-            let registered = await eventsManager.addressIsDelegate(eventId, "SecondaryDelegate", secondaryDelegate);
+            let registered = await eventsManager.addressIsDelegate(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate);
             assert.ok(!registered);
 
-            await eventsManager.registerDelegate(eventId, "SecondaryDelegate", secondaryDelegate, {from: eventOwner});
-            registered = await eventsManager.addressIsDelegate(eventId, "SecondaryDelegate", secondaryDelegate);
+            await eventsManager.registerRole(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate, {from: eventOwner});
+            registered = await eventsManager.addressIsDelegate(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate);
             assert.ok(registered);
 
-            await eventsManager.deregisterDelegate(eventId, "SecondaryDelegate", secondaryDelegate, {from: eventOwner});
-            registered = await eventsManager.addressIsDelegate(eventId, "SecondaryDelegate", secondaryDelegate);
+            await eventsManager.deregisterRole(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate, {from: eventOwner});
+            registered = await eventsManager.addressIsDelegate(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate);
             assert.ok(!registered);
 
-            await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(secondaryDelegate);
+            await eventsTestHelper.deregisterAventityAndWithdrawDeposit(secondaryDelegate, testHelper.secondaryDelegateAventityType);
           });
 
-          it("cannot register a delegate for an event if they are not whitelisted", async function() {
+          it("cannot register a delegate for an event if they are not registered as an aventity", async () => {
             await registerPrimaryDelegateFails(eventOwner);
           });
 
-          it ("can deregister a delegate if they are not registered", async function() {
-            await eventsTestHelper.depositAndWhitelistApp(primaryDelegate);
+          it ("can deregister a delegate for an event if they are not registered", async () => {
+            await eventsTestHelper.depositAndRegisterAventity(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
             await deregisterPrimaryDelegateSucceeds()
-            await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(primaryDelegate);
+            await eventsTestHelper.deregisterAventityAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateAventityType);
           });
 
-          it("cannot register/deregister a delegate for an event if not the owner", async function() {
-            await eventsTestHelper.depositAndWhitelistApp(primaryDelegate);
+          it("cannot register/deregister a delegate for an event if not the owner", async () => {
+            await eventsTestHelper.depositAndRegisterAventity(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
             await registerPrimaryDelegateFails(primaryDelegate);
             await registerPrimaryDelegateSucceeds();
-            await testHelper.expectRevert(() => eventsManager.deregisterDelegate(eventId, "PrimaryDelegate", primaryDelegate, {from: primaryDelegate}));
+            await testHelper.expectRevert(() => eventsManager.deregisterRole(eventId, testHelper.primaryDelegateAventityType, primaryDelegate, {from: primaryDelegate}));
             await deregisterPrimaryDelegateSucceeds()
-            await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(primaryDelegate);
+            await eventsTestHelper.deregisterAventityAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateAventityType);
           });
 
-          it("cannot register a delegate with an unknown role", async function() {
-            await eventsTestHelper.depositAndWhitelistApp(primaryDelegate);
+          it("cannot register a delegate with an unknown role", async () => {
+            await eventsTestHelper.depositAndRegisterAventity(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
             await registerUnknownDelegateRoleFails(primaryDelegate);
-            await eventsTestHelper.dewhitelistAppAndWithdrawDeposit(primaryDelegate);
+            await eventsTestHelper.deregisterAventityAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateAventityType);
           });
         });
       });

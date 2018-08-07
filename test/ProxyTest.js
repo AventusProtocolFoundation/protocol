@@ -4,7 +4,7 @@ const IERC20 = artifacts.require("IERC20");
 const LProposalForTesting = artifacts.require("LProposalForTesting.sol");
 const testHelper = require("./helpers/testHelper");
 
-contract('Proxy testing', function () {
+contract('Proxy testing', async () => {
   const oneDay = 86400;  // seconds in one day.
   const oneWeek = 7 * oneDay;
   const minimumVotingPeriod = oneWeek;
@@ -59,11 +59,11 @@ contract('Proxy testing', function () {
     await avtManager.withdraw("deposit", proposalDeposit);
   }
 
-  it("can access the current version number", async function() {
+  it("can access the current version number", async () => {
     const currentVersion = testHelper.getVersion();
   });
 
-  it("can call new version of a method with the same signature", async function() {
+  it("can call new version of a method with the same signature", async () => {
     // Calling a method with the original LProposal library results in normal behaviour.
     let proposalId = await createProposal("Shall we use the original library?");
     assert.notEqual(proposalId, 2018);
@@ -84,7 +84,7 @@ contract('Proxy testing', function () {
     await endProposalAndWithdrawDeposit(proposalId);
   });
 
-  it("cannot call new version of a method with different signature", async function() {
+  it("cannot call new version of a method with different signature", async () => {
     let proposalId = await createProposal("The new library will crash");
     await testHelper.advanceTimeToEndOfProposal(proposalId);
 

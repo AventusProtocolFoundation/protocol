@@ -1,6 +1,6 @@
 const EventsManager = artifacts.require("EventsManager");
 const ProposalsManager = artifacts.require("ProposalsManager");
-const AppsManager = artifacts.require("AppsManager");
+const AventitiesManager = artifacts.require("AventitiesManager");
 const testHelper = require("./testHelper");
 const web3Utils = require('web3-utils');
 
@@ -10,7 +10,7 @@ let eventsManager, proposalsManager, avt, avtManager;
 
 let validEventId, eventDeposit;
 
-let appAddress;
+let brokerAddress;
 let eventOwner;
 
 const eventCapacity = 5;
@@ -23,14 +23,14 @@ let eventCount = 1;
 const ticketDetailsBase = "Unallocated seating. Ticket number: ";
 let ticketCount = 1;
 
-async function before(_appAddress, _eventOwner) {
+async function before(_brokerAddress, _eventOwner) {
   await testHelper.before();
 
-  appAddress = _appAddress;
+  brokerAddress = _brokerAddress;
   eventOwner = _eventOwner;
 
   eventsManager = await EventsManager.deployed();
-  appsManager = await AppsManager.deployed();
+  aventitiesManager = await AventitiesManager.deployed();
   proposalsManager = testHelper.getProposalsManager();
   avtManager =  testHelper.getAVTManager();
 
@@ -60,16 +60,16 @@ function setupUniqueEventParameters() {
   eventTime = ticketSaleStartTime.plus(oneWeek);
 }
 
-async function depositAndWhitelistApp(_appAddress) {
-  let amount = await appsManager.getAppDeposit();
-  await makeDeposit(amount, _appAddress);
-  await appsManager.registerApp(_appAddress);
+async function depositAndRegisterAventity(_brokerAddress, _type, _evidenceUrl, _desc) {
+  let amount = await aventitiesManager.getAventityDeposit(_type);
+  await makeDeposit(amount, _brokerAddress);
+  await aventitiesManager.registerAventity(_brokerAddress, _type, _evidenceUrl, _desc);
 }
 
-async function dewhitelistAppAndWithdrawDeposit(_appAddress) {
-  await appsManager.deregisterApp(_appAddress);
-  let deposit = await appsManager.getAppDeposit();
-  await withdrawDeposit(deposit, _appAddress);
+async function deregisterAventityAndWithdrawDeposit(_brokerAddress, _type) {
+  await aventitiesManager.deregisterAventity(_brokerAddress, _type);
+  let deposit = await aventitiesManager.getAventityDeposit(_type);
+  await withdrawDeposit(deposit, _brokerAddress);
 }
 
 async function makeEventDeposit() {
@@ -97,7 +97,7 @@ async function doCreateEvent(_useSignedCreateEvent, _eventTime, _ticketSaleStart
         averageTicketPriceInUSCents, _ticketSaleStartTime, await web3Utils.soliditySha3(_eventSupportURL), eventOwner);
     let signedMessage = testHelper.createSignedMessage(eventOwner, keccak256Msg);
     await eventsManager.signedCreateEvent(signedMessage, eventDesc, _eventTime, eventCapacity, averageTicketPriceInUSCents,
-        _ticketSaleStartTime, _eventSupportURL, eventOwner, {from: appAddress});
+        _ticketSaleStartTime, _eventSupportURL, eventOwner, {from: brokerAddress});
   } else {
     await eventsManager.createEvent( eventDesc, _eventTime, eventCapacity, averageTicketPriceInUSCents,
        _ticketSaleStartTime, _eventSupportURL, {from: eventOwner});
@@ -135,15 +135,15 @@ module.exports = {
   getEventSupportURL: () => eventSupportURL,
   getEventCapacity: () => eventCapacity,
   getEventsManager: () => eventsManager,
-  getAppsManager: () => appsManager,
+  getAventitiesManager: () => aventitiesManager,
 
   makeDeposit,
   makeEventDeposit,
   withdrawDeposit,
   withdrawEventDeposit,
   setupUniqueEventParameters,
-  depositAndWhitelistApp,
-  dewhitelistAppAndWithdrawDeposit,
+  depositAndRegisterAventity,
+  deregisterAventityAndWithdrawDeposit,
   doCreateEvent,
   createValidEvent,
   makeEventDepositAndCreateValidEvent,
