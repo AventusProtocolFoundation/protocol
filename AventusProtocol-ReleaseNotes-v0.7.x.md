@@ -8,8 +8,10 @@ The release notes for this version follow, listed by sub-release and category.
 ## Release 0.7.3 - 2018-08-07
 
 * Support for Aventus entities (challengeable entities)
-* Consistently use lambdas and async in truffle tests
+* All "registered" apps are now challengeable as aventities and require an evidence URL
 * Change "whitelisted" app to "broker"
+* Consistently use lambdas and async in truffle tests
+* Refactor libraries due to binary size overflow
 
 ## Release 0.7.2 - 2018-07-25
 
