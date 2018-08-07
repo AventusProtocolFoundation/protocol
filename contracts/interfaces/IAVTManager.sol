@@ -20,7 +20,7 @@ interface IAVTManager {
   function withdraw(string _fund, uint _amount) external;
 
   /**
-  * @dev Deposit AVT for app/event/proposal deposits and stake weighted votes
+  * @dev Deposit AVT for aventity/proposal deposits and stake weighted votes
   * @param _fund Fund to deposit into (must be "deposit" or "stake")
   * @param _amount Amount to deposit.
   */

@@ -13,10 +13,18 @@ library LProposal {
   /// See IProposalsManager interface for events description
   event LogCreateProposal(address indexed sender, string desc, uint indexed proposalId, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd);
   event LogCreateEventChallenge(uint indexed eventId, uint indexed proposalId, string supportingUrl, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd);
+  event LogCreateAventityChallenge(uint indexed aventityId, uint indexed proposalId, string supportingUrl, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd);
   event LogCastVote(address indexed sender, uint indexed proposalId, bytes32 secret, uint prevTime);
   event LogRevealVote(address indexed sender, uint indexed proposalId, uint8 indexed optId, uint revealingStart, uint revealingEnd);
   event LogClaimVoterWinnings(uint indexed proposalId);
   event LogEndProposal(uint indexed proposalId, uint votesFor, uint votesAgainst, uint revealingEnd);
+
+  struct Periods {
+    uint lobbyingStart;
+    uint votingStart;
+    uint revealingStart;
+    uint revealingEnd;
+  }
 
   // Verify a proposal's status (see LProposalsEnact.doGetProposalStatus for values)
   modifier onlyInVotingPeriod(IAventusStorage _storage, uint _proposalId) {
@@ -35,10 +43,10 @@ library LProposal {
     _;
   }
 
-  modifier eventIsNotUnderChallenge(IAventusStorage _storage, uint _eventId) {
+  modifier aventityIsActiveAndNotUnderChallenge(IAventusStorage _storage, uint _aventityId) {
     require(
-      LEvents.eventIsNotUnderChallenge(_storage, _eventId),
-      "Event is being challenged"
+      LAventities.aventityIsActiveAndNotUnderChallenge(_storage, _aventityId),
+      "Aventity must be valid and not under challenge"
     );
     _;
   }
@@ -48,11 +56,8 @@ library LProposal {
     returns (uint proposalId_)
   {
     proposalId_ = LProposalsEnact.doCreateProposal(_storage, getGovernanceProposalDeposit(_storage));
-    uint lobbyingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", proposalId_, "lobbyingStart")));
-    uint votingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", proposalId_, "votingStart")));
-    uint revealingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", proposalId_, "revealingStart")));
-    uint revealingEnd = _storage.getUInt(keccak256(abi.encodePacked("Proposal", proposalId_, "revealingEnd")));
-    emit LogCreateProposal(msg.sender, _desc, proposalId_, lobbyingStart, votingStart, revealingStart, revealingEnd);
+    Periods memory periods = getPeriods(_storage, proposalId_);
+    emit LogCreateProposal(msg.sender, _desc, proposalId_, periods.lobbyingStart, periods.votingStart, periods.revealingStart, periods.revealingEnd);
   }
 
   function castVote(
@@ -91,20 +96,10 @@ library LProposal {
   */
   function createEventChallenge(IAventusStorage _storage, uint _eventId)
     external
-    eventIsNotUnderChallenge(_storage, _eventId)
     returns (uint challengeProposalId_)
   {
-    uint deposit = LEvents.getExistingEventDeposit(_storage, _eventId);
-    challengeProposalId_ = LProposalsEnact.doCreateProposal(_storage, deposit);
-    _storage.setUInt(keccak256(abi.encodePacked("Proposal", challengeProposalId_, "ChallengeEvent")), _eventId);
-    LEvents.setEventAsChallenged(_storage, _eventId, challengeProposalId_);
-
-    bytes32 supportingUrlKey = keccak256(abi.encodePacked("Event", _eventId, "eventSupportURL"));
-    uint lobbyingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", challengeProposalId_, "lobbyingStart")));
-    uint votingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", challengeProposalId_, "votingStart")));
-    uint revealingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", challengeProposalId_, "revealingStart")));
-    uint revealingEnd = _storage.getUInt(keccak256(abi.encodePacked("Proposal", challengeProposalId_, "revealingEnd")));
-    emit LogCreateEventChallenge(_eventId, challengeProposalId_, _storage.getString(supportingUrlKey), lobbyingStart, votingStart, revealingStart, revealingEnd);
+    uint aventityId = LAventities.getAventityIdFromEventId(_storage, _eventId, "Event");
+    challengeProposalId_ = createAventityChallenge(_storage, aventityId);
   }
 
   function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) external {
@@ -116,8 +111,8 @@ library LProposal {
     external
     onlyAfterRevealingFinishedAndProposalNotEnded(_storage, _proposalId)
   {
-    if (LProposalsEnact.doProposalIsEventChallenge(_storage, _proposalId)) {
-      LProposalsEnact.doEndEventChallenge(_storage, _proposalId);
+    if (LProposalsEnact.doProposalIsAventityChallenge(_storage, _proposalId)) {
+      LProposalsEnact.doEndAventityChallenge(_storage, _proposalId);
     }
 
     LProposalsEnact.doUnlockProposalDeposit(_storage, _proposalId);
@@ -132,4 +127,37 @@ library LProposal {
     prevTime_ = LProposalVoting.getPrevTimeParamForCastVote(_storage, _proposalId);
   }
 
+  /**
+  * @dev Create an aventity challenge for the specified aventity to be voted on.
+  * @param _storage Storage contract address
+  * @param _aventityId - aventity id for the aventity in context
+  */
+  function createAventityChallenge(IAventusStorage _storage, uint _aventityId)
+    public
+    aventityIsActiveAndNotUnderChallenge(_storage, _aventityId)
+    returns (uint challengeProposalId_)
+  {
+    uint deposit = LAventities.getExistingAventityDeposit(_storage, _aventityId);
+    challengeProposalId_ = LProposalsEnact.doCreateProposal(_storage, deposit);
+    _storage.setUInt(keccak256(abi.encodePacked("Proposal", challengeProposalId_, "ChallengeAventity")), _aventityId);
+    LAventities.setAventityAsChallenged(_storage, _aventityId, challengeProposalId_);
+
+    bytes32 supportingUrlKey = keccak256(abi.encodePacked("Aventity", _aventityId, "evidenceURL"));
+    Periods memory periods = getPeriods(_storage, challengeProposalId_);
+
+    uint entityId = _storage.getUInt(keccak256(abi.encodePacked("Aventity", _aventityId, "entityId")));
+    if (entityId != 0)
+      emit LogCreateEventChallenge(entityId, challengeProposalId_, _storage.getString(supportingUrlKey), periods.lobbyingStart, periods.votingStart, periods.revealingStart, periods.revealingEnd);
+    else
+      emit LogCreateAventityChallenge(_aventityId, challengeProposalId_, _storage.getString(supportingUrlKey), periods.lobbyingStart, periods.votingStart, periods.revealingStart, periods.revealingEnd);
+  }
+
+  function getPeriods(IAventusStorage _storage, uint _proposalId) private view returns (Periods) {
+    return Periods({
+      lobbyingStart: _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "lobbyingStart"))),
+      votingStart: _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "votingStart"))),
+      revealingStart: _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingStart"))),
+      revealingEnd: _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingEnd")))
+    });
+  }
 }

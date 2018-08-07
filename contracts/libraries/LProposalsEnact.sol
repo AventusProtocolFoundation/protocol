@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 import "../interfaces/IAventusStorage.sol";
 import "./LAventusTime.sol";
 import "./LProposalWinnings.sol";
-import "./LEvents.sol";
+import "./LAventities.sol";
 import './LAVTManager.sol';
 
 // Library for extending voting protocol functionality
@@ -50,15 +50,11 @@ library LProposalsEnact {
     setProposalTimes(_storage, proposalId_);
   }
 
-  function doEndEventChallenge(IAventusStorage _storage, uint _proposalId)
+  function doEndAventityChallenge(IAventusStorage _storage, uint _proposalId)
     external
-    returns (uint eventId_)
   {
-    eventId_ = getEventIdFromChallengeProposalId(_storage, _proposalId);
-
-    uint totalAgreedStake = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedStake", uint8(1))));
-    uint totalDisagreedStake = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedStake", uint8(2))));
-    endEventChallenge(_storage, _proposalId, eventId_, totalAgreedStake, totalDisagreedStake);
+    uint aventityId = getAventityIdFromChallengeProposalId(_storage, _proposalId);
+    endAventityChallenge(_storage, _proposalId, aventityId);
   }
 
   /**
@@ -93,39 +89,12 @@ library LProposalsEnact {
       statusNum_ = 5; // Proposal ended
   }
 
-  function doProposalIsEventChallenge(IAventusStorage _storage, uint _proposalId)
+  function doProposalIsAventityChallenge(IAventusStorage _storage, uint _proposalId)
     public
     view
-    returns (bool proposalIsAnEventChallenge_)
+    returns (bool proposalIsAnAventityChallenge_)
   {
-    proposalIsAnEventChallenge_ = getEventIdFromChallengeProposalId(_storage, _proposalId) != 0;
-  }
-
-  function endEventChallenge(IAventusStorage _storage, uint _proposalId, uint _eventId,
-    uint _totalAgreedStake, uint _totalDisagreedStake)
-    private
-  {
-    // Note: a "draw" is taken as not agreeing with the challenge.
-    uint8 winningOption = _totalAgreedStake > _totalDisagreedStake ? 1 : 2;
-
-    uint totalWinningStake;
-    bool challengeWon = challengerIsWinner(winningOption);
-    if (challengeWon) {
-      LEvents.setEventStatusFraudulent(_storage, _eventId);
-      totalWinningStake = _totalAgreedStake;
-    } else {
-      LEvents.setEventAsClearFromChallenge(_storage, _eventId);
-      totalWinningStake = _totalDisagreedStake;
-    }
-
-    uint deposit = getProposalDeposit(_storage, _proposalId);
-    address challenger = getProposalOwner(_storage, _proposalId);
-    address challengee = LEvents.getEventOwner(_storage, _eventId);
-    LProposalWinnings.doWinningsDistribution(_storage, _proposalId, winningOption, challengeWon, deposit, challenger, challengee);
-
-    // Save the information we need to calculate voter winnings when they make their claim.
-    _storage.setUInt8(keccak256(abi.encodePacked("Proposal", _proposalId, "winningOption")), winningOption);
-    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "totalWinningStake")), totalWinningStake);
+    proposalIsAnAventityChallenge_ = getAventityIdFromChallengeProposalId(_storage, _proposalId) != 0;
   }
 
   // NOTE: We allow an event challenge to straddle the ticket sales time on purpose: if
@@ -135,16 +104,16 @@ library LProposalsEnact {
   {
     uint lobbyingStart = LAventusTime.getCurrentTime(_storage);
     uint votingStart = lobbyingStart + (1 days * _storage.getUInt(keccak256(abi.encodePacked("Proposal",
-        doProposalIsEventChallenge(_storage, _proposalId) ?
-            "eventChallengeLobbyingPeriodDays" :
+        doProposalIsAventityChallenge(_storage, _proposalId) ?
+            "aventityChallengeLobbyingPeriodDays" :
             "governanceProposalLobbyingPeriodDays"))));
     uint revealingStart = votingStart + (1 days * _storage.getUInt(keccak256(abi.encodePacked("Proposal",
-        doProposalIsEventChallenge(_storage, _proposalId) ?
-            "eventChallengeVotingPeriodDays" :
+        doProposalIsAventityChallenge(_storage, _proposalId) ?
+            "aventityChallengeVotingPeriodDays" :
             "governanceProposalVotingPeriodDays"))));
     uint revealingEnd = revealingStart + (1 days * _storage.getUInt(keccak256(abi.encodePacked("Proposal",
-        doProposalIsEventChallenge(_storage, _proposalId) ?
-            "eventChallengeRevealingPeriodDays" :
+        doProposalIsAventityChallenge(_storage, _proposalId) ?
+            "aventityChallengeRevealingPeriodDays" :
             "governanceProposalRevealingPeriodDays"))));
 
     _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "lobbyingStart")), lobbyingStart);
@@ -169,15 +138,44 @@ library LProposalsEnact {
     owner_ = _storage.getAddress(keccak256(abi.encodePacked("Proposal", _proposalId, "owner")));
   }
 
-  function getEventIdFromChallengeProposalId(IAventusStorage _storage, uint _challengeProposalId)
-    private
-    view
-    returns (uint eventId_)
-  {
-    eventId_ = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _challengeProposalId, "ChallengeEvent")));
-  }
-
   function challengerIsWinner(uint8 _winningOption) private pure returns (bool challengerIsWinner_) {
     challengerIsWinner_ = (_winningOption == 1);
+  }
+
+  function getAventityIdFromChallengeProposalId(IAventusStorage _storage, uint _challengeProposalId)
+    private
+    view
+    returns (uint aventityId_)
+  {
+    aventityId_ = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _challengeProposalId, "ChallengeAventity")));
+  }
+
+  function endAventityChallenge(IAventusStorage _storage, uint _proposalId, uint _aventityId)
+    private
+  {
+    uint totalAgreedStake = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedStake", uint8(1))));
+    uint totalDisagreedStake = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedStake", uint8(2))));
+
+    // Note: a "draw" is taken as not agreeing with the challenge.
+    uint8 winningOption = totalAgreedStake > totalDisagreedStake ? 1 : 2;
+
+    uint totalWinningStake;
+    bool challengeWon = challengerIsWinner(winningOption);
+    if (challengeWon) {
+      LAventities.setAventityStatusFraudulent(_storage, _aventityId);
+      totalWinningStake = totalAgreedStake;
+    } else {
+      LAventities.setAventityAsClearFromChallenge(_storage, _aventityId);
+      totalWinningStake = totalDisagreedStake;
+    }
+
+    uint deposit = getProposalDeposit(_storage, _proposalId);
+    address challenger = getProposalOwner(_storage, _proposalId);
+    address challengee = LAventities.getAventityOwner(_storage, _aventityId);
+    LProposalWinnings.doWinningsDistribution(_storage, _proposalId, winningOption, challengeWon, deposit, challenger, challengee);
+
+    // Save the information we need to calculate voter winnings when they make their claim.
+    _storage.setUInt8(keccak256(abi.encodePacked("Proposal", _proposalId, "winningOption")), winningOption);
+    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "totalWinningStake")), totalWinningStake);
   }
 }

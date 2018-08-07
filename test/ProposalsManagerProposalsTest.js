@@ -1,6 +1,6 @@
 const testHelper = require("./helpers/testHelper");
 
-contract('ProposalsManager - Proposal set-up', function () {
+contract('ProposalsManager - Proposal set-up', async () => {
   const oneDay = new web3.BigNumber(86400);  // seconds in one day. Solidity uses uint256.
   const oneWeek = oneDay.times(7);
   const minimumVotingPeriod = oneWeek;
@@ -9,7 +9,7 @@ contract('ProposalsManager - Proposal set-up', function () {
   let proposalId = new web3.BigNumber(0);
   let deposit = new web3.BigNumber(0);
 
-  before(async function() {
+  before(async () => {
     await testHelper.before();
 
     proposalsManager = testHelper.getProposalsManager();
@@ -49,23 +49,23 @@ contract('ProposalsManager - Proposal set-up', function () {
   }
 
   context("createProposal", async () => {
-    it("can create a valid proposal", async function() {
+    it("can create a valid proposal", async () => {
       await createProposal("We should go bowling for a team outing.");
       await cleanUpProposal();
     });
 
-    it("can create a proposal with the same description as an existing one", async function() {
+    it("can create a proposal with the same description as an existing one", async () => {
       await createProposal("We should go bowling for a team outing.");
       await cleanUpProposal();
     });
 
-    it("cannot create a proposal if we haven't paid a deposit", async function() {
+    it("cannot create a proposal if we haven't paid a deposit", async () => {
       await testHelper.expectRevert(() => proposalsManager.createGovernanceProposal("This should fail"));
     });
   });
 
   context("endProposal", async () => {
-    it ("cannot withdraw funds until proposal has ended", async function() {
+    it ("cannot withdraw funds until proposal has ended", async () => {
       await createProposal("We have to wait for our money.");
       await testHelper.expectRevert(() => avtManager.withdraw("deposit", deposit));
       await testHelper.expectRevert(() => avtManager.withdraw("deposit", deposit));

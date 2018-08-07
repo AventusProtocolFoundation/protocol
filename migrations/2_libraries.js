@@ -3,13 +3,13 @@ const fs = require('fs');
 
 const AventusStorage = artifacts.require("AventusStorage");
 const ProposalsManager = artifacts.require("ProposalsManager");
-const AppsManager = artifacts.require("AppsManager");
+const AventitiesManager = artifacts.require("AventitiesManager");
 const AVTManager = artifacts.require("AVTManager");
 const EventsManager = artifacts.require("EventsManager");
 const Versioned = artifacts.require("Versioned");
 
 // Libraries
-const LApps = artifacts.require("LApps");
+const LAventities = artifacts.require("LAventities");
 const LAventusTime = artifacts.require("LAventusTime");
 const LAventusTimeMock = artifacts.require("LAventusTimeMock");
 const LProposalWinnings = artifacts.require("LProposalWinnings");
@@ -23,7 +23,7 @@ const LProposal = artifacts.require("LProposal");
 const LProposalForTesting = artifacts.require("LProposalForTesting");
 
 // Proxies
-const PApps = artifacts.require("PApps");
+const PAventities = artifacts.require("PAventities");
 const PAventusTime = artifacts.require("PAventusTime");
 const PEvents = artifacts.require("PEvents");
 const PAVTManager = artifacts.require("PAVTManager");
@@ -37,7 +37,7 @@ module.exports = function(deployer, network, accounts) {
 
 let deployLAventusTime;
 let deployLAVTManager;
-let deployLApps;
+let deployLAventities;
 let deployLEvents;
 let deployLProposal;
 let deployLProposalForTesting;
@@ -50,7 +50,7 @@ function deployLibraries(deployer, network) {
 
   deployLAventusTime = developmentMode;
   deployLAVTManager = developmentMode;
-  deployLApps = developmentMode;
+  deployLAventities = developmentMode;
   deployLEvents = developmentMode;
   deployLProposal = developmentMode;
   deployLProposalForTesting = developmentMode;
@@ -64,7 +64,7 @@ function deployLibraries(deployer, network) {
     return doDeployLAventusTime(deployer, s);
   })
   .then(() => doDeployLAVTManager(deployer, s))
-  .then(() => doDeployLApps(deployer, s))
+  .then(() => doDeployLAventities(deployer, s))
   .then(() => doDeployLEvents(deployer, s))
   .then(() => doDeployLProposal(deployer, s));
 }
@@ -105,18 +105,18 @@ function doDeployLAVTManager(_deployer, _storage) {
   const library = LAVTManager;
   const proxy = PAVTManager;
   const deployLibraryAndProxy = deployLAVTManager;
-  const dependents = [LProposal, LProposalWinnings, LProposalVoting, LEventsCommon, LEventsEnact, LApps, AVTManager, LProposalsEnact];
+  const dependents = [LProposal, LProposalWinnings, LProposalVoting, LEventsCommon, LEventsEnact, LAventities, AVTManager, LProposalsEnact];
 
   return doDeployLibraryAndProxy(_deployer, _storage, libraryName, proxyName, library, proxy, deployLibraryAndProxy, dependents);
 }
 
-function doDeployLApps(_deployer, _storage) {
-  const libraryName = "LAppsInstance";
-  const proxyName = "PAppsInstance";
-  const library = LApps;
-  const proxy = PApps;
-  const deployLibraryAndProxy = deployLApps;
-  const dependents = [LEvents, LEventsCommon, LEventsEnact, AppsManager, LProposal, LProposalsEnact];
+function doDeployLAventities(_deployer, _storage) {
+  const libraryName = "LAventitiesInstance";
+  const proxyName = "PAventitiesInstance";
+  const library = LAventities;
+  const proxy = PAventities;
+  const deployLibraryAndProxy = deployLAventities;
+  const dependents = [LEvents, LEventsCommon, LEventsEnact, AventitiesManager, LProposal, LProposalsEnact];
 
   return doDeployLibraryAndProxy(_deployer, _storage, libraryName, proxyName, library, proxy, deployLibraryAndProxy, dependents);
 }

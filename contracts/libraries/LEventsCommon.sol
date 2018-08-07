@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 import '../interfaces/IAventusStorage.sol';
 import "./LAventusTime.sol";
 import './LAVTManager.sol';
-import './LApps.sol';
+import './LAventities.sol';
 
 library LEventsCommon {
   bytes32 constant minimumEventReportingPeriodDaysKey = keccak256(abi.encodePacked("Events", "minimumEventReportingPeriodDays"));
@@ -11,10 +11,12 @@ library LEventsCommon {
   bytes32 constant fixedDepositAmountUsCentsKey = keccak256(abi.encodePacked("Events", "fixedDepositAmountUsCents"));
   bytes32 constant eventCountKey = keccak256(abi.encodePacked("EventCount"));
 
-  function eventIsNotUnderChallenge(IAventusStorage _storage, uint _eventId) external view returns (bool notUnderChallenge_) {
-    // This function is called outside the library, so it can't use a modifier.
-    require(eventValid(_storage, _eventId), "Event must be valid");
-    notUnderChallenge_ = 0 == _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "challenge")));
+  modifier isValidEvent(IAventusStorage _storage, uint _eventId) {
+    require(
+      eventValid(_storage, _eventId),
+      "Event must be valid"
+    );
+    _;
   }
 
   function validateEventCreation(IAventusStorage _storage, string _eventDesc, uint _eventTime, uint _capacity,
@@ -49,14 +51,6 @@ library LEventsCommon {
     _storage.setBoolean(hashMsgKey, true);
   }
 
-  function eventValid(IAventusStorage _storage, uint _eventId)
-    public
-    view
-    returns (bool isValid_)
-  {
-    isValid_ = _eventId != 0 && _eventId <= _storage.getUInt(eventCountKey);
-  }
-
   function checkOwnerOrDelegateByRole(IAventusStorage _storage, uint _eventId, address _eventOwnerOrDelegate, string _role) external view {
     require(
       addressIsOwner(_storage, _eventId, _eventOwnerOrDelegate) ||
@@ -82,11 +76,34 @@ library LEventsCommon {
     depositInAVTDecimals_ = LAVTManager.getAVTDecimals(_storage, depositInUSCents_);
   }
 
+  function eventActive(IAventusStorage _storage, uint _eventId)
+    public
+    view
+    isValidEvent(_storage, _eventId)
+    returns (bool active_)
+  {
+    bool eventHasHappened = LAventusTime.getCurrentTime(_storage) >=  _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "eventTime")));
+    bool eventIsCancelled = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "status"))) == 1;
+
+    uint aventityId = LAventities.getAventityIdFromEventId(_storage, _eventId, "Event");
+    bool aventityIsNotFraudulent = LAventities.aventityIsNotFraudulent(_storage, aventityId);
+
+    active_ = !eventHasHappened && !eventIsCancelled && aventityIsNotFraudulent;
+  }
+
+  function eventValid(IAventusStorage _storage, uint _eventId)
+    public
+    view
+    returns (bool isValid_)
+  {
+    isValid_ = _eventId != 0 && _eventId <= _storage.getUInt(eventCountKey);
+  }
+
   /**
   * @dev Check if an address is registered as a delegate for an event
   * @param _storage Storage contract
   * @param _eventId - ID of the event
-  * @param _role - role must be either "PrimaryDelegate" or "SecondaryDelegate"
+  * @param _role - role must be an aventity type of either "PrimaryDelegate", "SecondaryDelegate" or "Broker"
   * @param _delegate - address to check
   * @return registered_ - returns true if the supplied delegate is registered
   */
@@ -96,7 +113,7 @@ library LEventsCommon {
     returns (bool registered_)
   {
     registered_ = _storage.getBoolean(keccak256(abi.encodePacked("Event", _eventId, "role", _role, "delegate", _delegate))) &&
-      LApps.appIsRegistered(_storage, _delegate);
+      LAventities.aventityIsActive(_storage, _delegate, _role);
   }
 
   function addressIsOwner(IAventusStorage _storage, uint _eventId, address _owner) public view returns (bool isOwner_) {

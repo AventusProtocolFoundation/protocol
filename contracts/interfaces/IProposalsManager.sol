@@ -32,6 +32,11 @@ interface IProposalsManager {
   event LogCreateEventChallenge(uint indexed eventId, uint indexed proposalId, string supportingUrl, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd);
 
   /**
+   * Event emitted for a createAventityChallenge transaction.
+   */
+  event LogCreateAventityChallenge(uint indexed aventityId, uint indexed proposalId, string supportingUrl, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd);
+
+  /**
    * @return the deposit value in AVT - with 18 digits precision - for a corporate
    * governance proposal.
    */
@@ -49,6 +54,12 @@ interface IProposalsManager {
   * @param _eventId - event id for the event in context
   */
   function createEventChallenge(uint _eventId) external returns (uint proposalId_);
+
+  /**
+  * Create a challenge for the specified aventity to be voted on.
+  * @param _aventityId - aventity id for the aventity in context
+  */
+  function createAventityChallenge(uint _aventityId) external returns (uint challengeProposalId_);
 
   /**
    * End the proposal: will unlock the deposit and distribute any winnings.

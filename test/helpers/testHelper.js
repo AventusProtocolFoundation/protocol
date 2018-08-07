@@ -11,6 +11,13 @@ const oneDay = 86400;    // seconds in one day.
 const oneWeek = 7 * oneDay;
 const mockTimeKey = web3.sha3("MockCurrentTime");
 
+const brokerAventityType = 'Broker';
+const primaryDelegateAventityType = 'PrimaryDelegate';
+const secondaryDelegateAventityType = 'SecondaryDelegate';
+const invalidAventityType = 'invalid';
+
+const evidenceURL = "http://www.example.com/events?eventid=1111";
+
 let blockChainTime = new web3.BigNumber(0);
 let aventusStorage, avtAddress, proposalsManager, realTimeInstance, mockTimeInstance;
 let lastEventBlockNumber = -1;
@@ -170,5 +177,10 @@ module.exports = {
     createSignedMessage,
     getVersion,
     getVersionMajorMinor,
-    convertToAVTDecimal
+    convertToAVTDecimal,
+    brokerAventityType,
+    primaryDelegateAventityType,
+    secondaryDelegateAventityType,
+    invalidAventityType,
+    evidenceURL
 }

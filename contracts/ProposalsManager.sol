@@ -27,6 +27,10 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
     proposalId_ = LProposal.createEventChallenge(s, _eventId);
   }
 
+  function createAventityChallenge(uint _aventityId) external returns (uint challengeProposalId_) {
+    challengeProposalId_ = LProposal.createAventityChallenge(s, _aventityId);
+  }
+
   function endProposal(uint _proposalId) external {
     LProposal.endProposal(s, _proposalId);
   }
