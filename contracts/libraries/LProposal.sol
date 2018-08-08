@@ -11,9 +11,9 @@ library LProposal {
   bytes32 constant governanceProposalFixedDepositInUsCentsKey =
       keccak256(abi.encodePacked("Proposal", "governanceProposalFixedDepositInUsCents"));
   /// See IProposalsManager interface for events description
-  event LogCreateProposal(address indexed sender, string desc, uint indexed proposalId, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd);
-  event LogCreateEventChallenge(uint indexed eventId, uint indexed proposalId, string supportingUrl, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd);
-  event LogCreateAventityChallenge(uint indexed aventityId, uint indexed proposalId, string supportingUrl, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd);
+  event LogCreateProposal(address indexed sender, string desc, uint indexed proposalId, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd, uint deposit);
+  event LogCreateEventChallenge(uint indexed eventId, uint indexed proposalId, string supportingUrl, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd, uint deposit);
+  event LogCreateAventityChallenge(uint indexed aventityId, uint indexed proposalId, string supportingUrl, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd, uint deposit);
   event LogCastVote(address indexed sender, uint indexed proposalId, bytes32 secret, uint prevTime);
   event LogRevealVote(address indexed sender, uint indexed proposalId, uint8 indexed optId, uint revealingStart, uint revealingEnd);
   event LogClaimVoterWinnings(uint indexed proposalId);
@@ -55,9 +55,10 @@ library LProposal {
     external
     returns (uint proposalId_)
   {
-    proposalId_ = LProposalsEnact.doCreateProposal(_storage, getGovernanceProposalDeposit(_storage));
+    uint deposit = getGovernanceProposalDeposit(_storage);
+    proposalId_ = LProposalsEnact.doCreateProposal(_storage, deposit);
     Periods memory periods = getPeriods(_storage, proposalId_);
-    emit LogCreateProposal(msg.sender, _desc, proposalId_, periods.lobbyingStart, periods.votingStart, periods.revealingStart, periods.revealingEnd);
+    emit LogCreateProposal(msg.sender, _desc, proposalId_, periods.lobbyingStart, periods.votingStart, periods.revealingStart, periods.revealingEnd, deposit);
   }
 
   function castVote(
@@ -145,11 +146,11 @@ library LProposal {
     bytes32 supportingUrlKey = keccak256(abi.encodePacked("Aventity", _aventityId, "evidenceURL"));
     Periods memory periods = getPeriods(_storage, challengeProposalId_);
 
-    uint entityId = _storage.getUInt(keccak256(abi.encodePacked("Aventity", _aventityId, "entityId")));
-    if (entityId != 0)
-      emit LogCreateEventChallenge(entityId, challengeProposalId_, _storage.getString(supportingUrlKey), periods.lobbyingStart, periods.votingStart, periods.revealingStart, periods.revealingEnd);
+    uint eventId = _storage.getUInt(keccak256(abi.encodePacked("Aventity", _aventityId, "eventId")));
+    if (eventId != 0)
+      emit LogCreateEventChallenge(eventId, challengeProposalId_, _storage.getString(supportingUrlKey), periods.lobbyingStart, periods.votingStart, periods.revealingStart, periods.revealingEnd, deposit);
     else
-      emit LogCreateAventityChallenge(_aventityId, challengeProposalId_, _storage.getString(supportingUrlKey), periods.lobbyingStart, periods.votingStart, periods.revealingStart, periods.revealingEnd);
+      emit LogCreateAventityChallenge(_aventityId, challengeProposalId_, _storage.getString(supportingUrlKey), periods.lobbyingStart, periods.votingStart, periods.revealingStart, periods.revealingEnd, deposit);
   }
 
   function getPeriods(IAventusStorage _storage, uint _proposalId) private view returns (Periods) {
@@ -159,5 +160,9 @@ library LProposal {
       revealingStart: _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingStart"))),
       revealingEnd: _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingEnd")))
     });
+  }
+
+  function getAventusTime(IAventusStorage _storage) external view returns (uint time_) {
+    time_ = LAventusTime.getCurrentTime(_storage);
   }
 }

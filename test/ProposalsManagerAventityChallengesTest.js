@@ -30,21 +30,21 @@ contract('ProposalsManager - Aventity challenges', async () => {
     avt = testHelper.getAVTContract();
   });
 
-  async function registerAventity(_aventityAddress, _type) {
-    validAventityDeposit = await aventitiesManager.getAventityDeposit(_type);
+  async function registerAventityMember(_aventityAddress, _type) {
+    validAventityDeposit = await aventitiesManager.getAventityMemberDeposit(_type);
     await makeDeposit(validAventityDeposit, _aventityAddress);
-    await aventitiesManager.registerAventity(_aventityAddress, _type, testHelper.evidenceURL, "Registering aventity");
+    await aventitiesManager.registerAventityMember(_aventityAddress, _type, testHelper.evidenceURL, "Registering aventity");
     const eventArgs = await testHelper.getEventArgs(aventitiesManager.LogAventityMemberRegistered);
     validAventityId = eventArgs.aventityId.toNumber();
   }
 
   async function deregisterAventityAndWithdrawDeposit(_aventityAddress, _type) {
-    await aventitiesManager.deregisterAventity(_aventityAddress, _type);
+    await aventitiesManager.deregisterAventity(validAventityId);
     // check that this action was properly logged
     const eventArgs = await testHelper.getEventArgs(aventitiesManager.LogAventityMemberDeregistered);
     assert.equal(eventArgs.aventityAddress, _aventityAddress, "wrong address");
 
-    let deposit = await aventitiesManager.getAventityDeposit(_type);
+    let deposit = await aventitiesManager.getAventityMemberDeposit(_type);
     await avtManager.withdraw("deposit", deposit, {from: _aventityAddress});
   }
 
@@ -128,7 +128,7 @@ contract('ProposalsManager - Aventity challenges', async () => {
 
   context("Create and end challenge - no votes", async () => {
     beforeEach(async () => {
-      await registerAventity(broker, testHelper.brokerAventityType);
+      await registerAventityMember(broker, testHelper.brokerAventityType);
     });
 
     afterEach(async () => {
@@ -177,19 +177,19 @@ contract('ProposalsManager - Aventity challenges', async () => {
 
     it ("cannot deregister an aventity when under challenge", async () => {
       await createAventityChallengeSucceeds();
-      await testHelper.expectRevert(() => aventitiesManager.deregisterAventity(broker, testHelper.brokerAventityType));
+      await testHelper.expectRevert(() => aventitiesManager.deregisterAventity(validAventityId));
       await endChallengeAventity(0, 0);
       await withdrawDepositsAfterChallengeEnds();
     });
 
     it("cannot create a challenge to deregistered aventity", async () => {
       await deregisterAventityAndWithdrawDeposit(broker, testHelper.brokerAventityType);
-      validChallengeDeposit = await aventitiesManager.getAventityDeposit(testHelper.brokerAventityType);
+      validChallengeDeposit = await aventitiesManager.getAventityMemberDeposit(testHelper.brokerAventityType);
       await makeDeposit(validChallengeDeposit, challengeOwner);
       await testHelper.expectRevert(() => proposalsManager.createAventityChallenge(validAventityId, {from: challengeOwner}));
       await withdrawDeposit(validChallengeDeposit, challengeOwner);
       // registering again so the AfterEach block doesn't break for this test
-      await registerAventity(broker, testHelper.brokerAventityType);
+      await registerAventityMember(broker, testHelper.brokerAventityType);
     });
   });
 
@@ -198,7 +198,7 @@ contract('ProposalsManager - Aventity challenges', async () => {
 
     beforeEach(async () => {
       newBrokerAccount = testHelper.getAccount(newBrokerAccountNum++);
-      await registerAventity(newBrokerAccount, testHelper.brokerAventityType);
+      await registerAventityMember(newBrokerAccount, testHelper.brokerAventityType);
       await createAventityChallengeSucceeds();
       await depositStake(stake, voter1);
       await depositStake(stake, voter2);
@@ -306,7 +306,7 @@ contract('ProposalsManager - Aventity challenges', async () => {
     it("cannot deregister aventity if fraudulent", async () => {
       await voteToMarkAventityAsFraudulentAndWithdrawWinnings();
       // Aventity is now marked as fraudulent - we can not deregister it.
-      await testHelper.expectRevert(() => aventitiesManager.deregisterAventity(newBrokerAccount, testHelper.brokerAventityType));
+      await testHelper.expectRevert(() => aventitiesManager.deregisterAventity(validAventityId));
     });
   });
 });

@@ -59,4 +59,8 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
     prevTime_ = LProposal.getPrevTimeParamForCastVote(s, _proposalId);
   }
 
+  function getAventusTime() external view returns (uint time_) {
+    time_ = LProposal.getAventusTime(s);
+  }
+
 }

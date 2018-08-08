@@ -182,5 +182,6 @@ module.exports = {
     primaryDelegateAventityType,
     secondaryDelegateAventityType,
     invalidAventityType,
-    evidenceURL
+    evidenceURL,
+    oneDay
 }

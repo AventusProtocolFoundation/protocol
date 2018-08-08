@@ -12,6 +12,8 @@ The release notes for this version follow, listed by sub-release and category.
 * Change "whitelisted" app to "broker"
 * Consistently use lambdas and async in truffle tests
 * Refactor libraries due to binary size overflow
+* Deposit is reported in event log for proposal creation
+* "AventusTime" is now exposed in ProposalsManager for ease of testing using mock time
 
 ## Release 0.7.2 - 2018-07-25
 

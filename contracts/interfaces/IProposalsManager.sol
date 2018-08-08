@@ -4,7 +4,7 @@ interface IProposalsManager {
   /**
    * Event emitted for a createGovernanceProposal transaction.
    */
-  event LogCreateProposal(address indexed sender, string desc, uint indexed proposalId, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd);
+  event LogCreateProposal(address indexed sender, string desc, uint indexed proposalId, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd, uint deposit);
 
   /**
    * Event emitted for a castVote transaction.
@@ -29,12 +29,12 @@ interface IProposalsManager {
   /**
    * Event emitted for a createEventChallenge transaction.
    */
-  event LogCreateEventChallenge(uint indexed eventId, uint indexed proposalId, string supportingUrl, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd);
+  event LogCreateEventChallenge(uint indexed eventId, uint indexed proposalId, string supportingUrl, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd, uint deposit);
 
   /**
    * Event emitted for a createAventityChallenge transaction.
    */
-  event LogCreateAventityChallenge(uint indexed aventityId, uint indexed proposalId, string supportingUrl, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd);
+  event LogCreateAventityChallenge(uint indexed aventityId, uint indexed proposalId, string supportingUrl, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd, uint deposit);
 
   /**
    * @return the deposit value in AVT - with 18 digits precision - for a corporate
@@ -109,4 +109,9 @@ interface IProposalsManager {
    * @return prevTime_ The prevTime param.
    */
   function getPrevTimeParamForCastVote(uint _proposalId) external view returns (uint prevTime_);
+
+  /**
+   * Gets the current time.
+   */
+  function getAventusTime() external view returns (uint time_);
 }

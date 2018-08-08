@@ -5,11 +5,11 @@ import "../../interfaces/IAventusStorage.sol";
 library LProposalForTesting {
 
   /// See IProposalsManager interface for events description
-  event LogCreateProposal(address indexed sender, string desc, uint indexed proposalId, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd);
+  event LogCreateProposal(address indexed sender, string desc, uint indexed proposalId, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd, uint deposit);
 
   function createGovernanceProposal(IAventusStorage, string) public returns (uint proposalId_) {
     proposalId_ = 2018;
-    emit LogCreateProposal(msg.sender, "Test", proposalId_, 0, 0, 0, 0);
+    emit LogCreateProposal(msg.sender, "Test", proposalId_, 0, 0, 0, 0, 0);
   }
 
   function getGovernanceProposalDeposit(IAventusStorage) pure public returns (uint result_) {

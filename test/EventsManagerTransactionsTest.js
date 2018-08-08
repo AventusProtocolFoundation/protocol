@@ -55,7 +55,7 @@ contract('EventsManager - transactions', async () => {
 
       beforeEach(async () => {
         if (transactionIsSigned) {
-          await eventsTestHelper.depositAndRegisterAventity(brokerAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering broker");
+          await eventsTestHelper.depositAndRegisterAventityMember(brokerAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering broker");
         };
         await eventsTestHelper.makeEventDepositAndCreateValidEvent(useSignedCreateEvent);
         eventId = eventsTestHelper.getValidEventId();
@@ -211,7 +211,7 @@ contract('EventsManager - transactions', async () => {
           });
 
           it("if done by a primary delegate", async function () {
-            await eventsTestHelper.depositAndRegisterAventity(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
+            await eventsTestHelper.depositAndRegisterAventityMember(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
             await cancelEventFails(eventId, primaryDelegate); // when not primary delegate
             await eventsManager.registerRole(eventId, testHelper.primaryDelegateAventityType, primaryDelegate, {from: eventOwner});
             await cancelEventFails(eventId, primaryDelegate); // when primary delegate
@@ -219,7 +219,7 @@ contract('EventsManager - transactions', async () => {
           });
 
           it("if done by a secondary delegate", async function () {
-            await eventsTestHelper.depositAndRegisterAventity(secondaryDelegate, testHelper.secondaryDelegateAventityType, testHelper.evidenceURL, "Registering secondary delegate");
+            await eventsTestHelper.depositAndRegisterAventityMember(secondaryDelegate, testHelper.secondaryDelegateAventityType, testHelper.evidenceURL, "Registering secondary delegate");
             await cancelEventFails(eventId, secondaryDelegate); // when not secondary delegate
             await eventsManager.registerRole(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate, {from: eventOwner});
             await cancelEventFails(eventId, secondaryDelegate); // when secondary delegate
@@ -237,7 +237,7 @@ contract('EventsManager - transactions', async () => {
               it("but sending address is not registered as a broker", async () => {
                 await eventsTestHelper.deregisterAventityAndWithdrawDeposit(brokerAddress, testHelper.brokerAventityType);
                 await cancelEventFails(eventId);
-                await eventsTestHelper.depositAndRegisterAventity(brokerAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering broker");
+                await eventsTestHelper.depositAndRegisterAventityMember(brokerAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering broker");
               });
 
               it("but owner is sending address", async () => {
@@ -276,7 +276,7 @@ contract('EventsManager - transactions', async () => {
               });
 
               it("seller is a primary delegate", async function () {
-                await eventsTestHelper.depositAndRegisterAventity(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
+                await eventsTestHelper.depositAndRegisterAventityMember(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
                 await testHelper.expectRevert(() => doSellTicket(eventId, setupUniqueTicketParameters(), buyer1, primaryDelegate));
                 await eventsManager.registerRole(eventId, testHelper.primaryDelegateAventityType, primaryDelegate, {from: eventOwner});
                 await doSellTicket(eventId, setupUniqueTicketParameters(), buyer1, primaryDelegate);
@@ -306,14 +306,14 @@ contract('EventsManager - transactions', async () => {
               });
 
               it("the ticket seller is a deregistered primary delegate still registered on the event", async function () {
-                await eventsTestHelper.depositAndRegisterAventity(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
+                await eventsTestHelper.depositAndRegisterAventityMember(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
                 await eventsManager.registerRole(eventId, testHelper.primaryDelegateAventityType, primaryDelegate, {from: eventOwner});
                 await eventsTestHelper.deregisterAventityAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateAventityType);
                 await testHelper.expectRevert(() => doSellTicket(eventId, setupUniqueTicketParameters(), buyer1, primaryDelegate));
               });
 
               it("the seller is a secondary delegate", async function () {
-                await eventsTestHelper.depositAndRegisterAventity(secondaryDelegate, testHelper.secondaryDelegateAventityType, testHelper.evidenceURL, "Registering secondary delegate");
+                await eventsTestHelper.depositAndRegisterAventityMember(secondaryDelegate, testHelper.secondaryDelegateAventityType, testHelper.evidenceURL, "Registering secondary delegate");
                 await testHelper.expectRevert(() => doSellTicket(eventId, setupUniqueTicketParameters(), buyer1, secondaryDelegate));
                 await eventsManager.registerRole(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate, {from: eventOwner});
                 await testHelper.expectRevert(() => doSellTicket(eventId, setupUniqueTicketParameters(), buyer1, secondaryDelegate));
@@ -335,7 +335,7 @@ contract('EventsManager - transactions', async () => {
                 context("signed", async () => {
                   it("the signer is the sender", async () => {
                     const ticketDetails = setupUniqueTicketParameters();
-                    await eventsTestHelper.depositAndRegisterAventity(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegates");
+                    await eventsTestHelper.depositAndRegisterAventityMember(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegates");
                     await eventsManager.registerRole(eventId, testHelper.primaryDelegateAventityType, primaryDelegate, {from: eventOwner});
                     await testHelper.expectRevert(() => doSignedSellTicket(eventId, ticketDetails, buyer1, primaryDelegate, primaryDelegate));
                     await eventsTestHelper.deregisterAventityAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateAventityType);
@@ -344,7 +344,7 @@ contract('EventsManager - transactions', async () => {
                   it("but sending address is not registered as a broker", async () => {
                     await eventsTestHelper.deregisterAventityAndWithdrawDeposit(brokerAddress, testHelper.brokerAventityType);
                     await testHelper.expectRevert(() => doSellTicket(eventId, setupUniqueTicketParameters(), buyer1));
-                    await eventsTestHelper.depositAndRegisterAventity(brokerAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering broker");
+                    await eventsTestHelper.depositAndRegisterAventityMember(brokerAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering broker");
                   });
 
                   it("but owner is sending address", async () => {
@@ -405,7 +405,7 @@ contract('EventsManager - transactions', async () => {
               });
 
               it("current owner provides resale permission to secondary delegate", async () => {
-                await eventsTestHelper.depositAndRegisterAventity(secondaryDelegate, testHelper.secondaryDelegateAventityType, testHelper.evidenceURL, "Registering secondary delegate");
+                await eventsTestHelper.depositAndRegisterAventityMember(secondaryDelegate, testHelper.secondaryDelegateAventityType, testHelper.evidenceURL, "Registering secondary delegate");
                 await eventsManager.registerRole(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate, {from: eventOwner});
                 await resellTicketSucceeds(eventId, soldTicketId, currentOwner, newBuyer1, secondaryDelegate);
                 await eventsTestHelper.deregisterAventityAndWithdrawDeposit(secondaryDelegate, testHelper.secondaryDelegateAventityType);
@@ -420,7 +420,7 @@ contract('EventsManager - transactions', async () => {
 
             context("ticket exists but", async () => {
               it("reseller is a primary delegate", async () => {
-                await eventsTestHelper.depositAndRegisterAventity(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
+                await eventsTestHelper.depositAndRegisterAventityMember(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
                 await eventsManager.registerRole(eventId, testHelper.primaryDelegateAventityType, primaryDelegate, {from: eventOwner});
                 await resellTicketFails(eventId, soldTicketId, currentOwner, newBuyer1, primaryDelegate, eventOwner);
                 await eventsTestHelper.deregisterAventityAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateAventityType);
@@ -441,7 +441,7 @@ contract('EventsManager - transactions', async () => {
               });
 
               it("secondary delegate is not registered on the event", async () => {
-                await eventsTestHelper.depositAndRegisterAventity(secondaryDelegate, testHelper.secondaryDelegateAventityType, testHelper.evidenceURL, "Registering secondary delegate");
+                await eventsTestHelper.depositAndRegisterAventityMember(secondaryDelegate, testHelper.secondaryDelegateAventityType, testHelper.evidenceURL, "Registering secondary delegate");
                 await eventsManager.registerRole(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate, {from: eventOwner});
                 await resellTicketSucceeds(eventId, soldTicketId, currentOwner, newBuyer1, secondaryDelegate);
                 await eventsManager.deregisterRole(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate, {from: eventOwner});
@@ -450,7 +450,7 @@ contract('EventsManager - transactions', async () => {
               });
 
               it("secondary delegate is registered on the event but not as an aventity", async () => {
-                await eventsTestHelper.depositAndRegisterAventity(secondaryDelegate, testHelper.secondaryDelegateAventityType, testHelper.evidenceURL, "Registering secondary delegate");
+                await eventsTestHelper.depositAndRegisterAventityMember(secondaryDelegate, testHelper.secondaryDelegateAventityType, testHelper.evidenceURL, "Registering secondary delegate");
                 await eventsManager.registerRole(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate, {from: eventOwner});
                 await eventsTestHelper.deregisterAventityAndWithdrawDeposit(secondaryDelegate, testHelper.secondaryDelegateAventityType);
                 await resellTicketFails(eventId, soldTicketId, currentOwner, newBuyer1, secondaryDelegate);
@@ -517,7 +517,7 @@ contract('EventsManager - transactions', async () => {
           });
 
           it("cannot refund a ticket if sender is a secondary delegate", async function () {
-            await eventsTestHelper.depositAndRegisterAventity(secondaryDelegate, testHelper.secondaryDelegateAventityType, testHelper.evidenceURL, "Registering secondary delegate");
+            await eventsTestHelper.depositAndRegisterAventityMember(secondaryDelegate, testHelper.secondaryDelegateAventityType, testHelper.evidenceURL, "Registering secondary delegate");
             await testHelper.expectRevert(() => doRefundTicket(eventId, ticketId, secondaryDelegate));
             await eventsManager.registerRole(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate, {from: eventOwner});
             await testHelper.expectRevert(() => doRefundTicket(eventId, ticketId, secondaryDelegate));
@@ -525,7 +525,7 @@ contract('EventsManager - transactions', async () => {
           });
 
           it("can refund a ticket if sender is a primary delegate", async function () {
-            await eventsTestHelper.depositAndRegisterAventity(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
+            await eventsTestHelper.depositAndRegisterAventityMember(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
             await testHelper.expectRevert(() => doRefundTicket(eventId, ticketId, primaryDelegate));
             await eventsManager.registerRole(eventId, testHelper.primaryDelegateAventityType, primaryDelegate, {from: eventOwner});
             await doRefundTicket(eventId, ticketId, primaryDelegate);
@@ -533,7 +533,7 @@ contract('EventsManager - transactions', async () => {
           });
 
           it("cannot refund a ticket if primary delegate is registered on the event but not as an aventity", async function () {
-            await eventsTestHelper.depositAndRegisterAventity(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
+            await eventsTestHelper.depositAndRegisterAventityMember(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
             await eventsManager.registerRole(eventId, testHelper.primaryDelegateAventityType, primaryDelegate, {from: eventOwner});
             await eventsTestHelper.deregisterAventityAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateAventityType);
             await testHelper.expectRevert(() => doRefundTicket(eventId, ticketId, primaryDelegate));
@@ -544,7 +544,7 @@ contract('EventsManager - transactions', async () => {
               it("but sending address is not registered as a broker", async () => {
                 await eventsTestHelper.deregisterAventityAndWithdrawDeposit(brokerAddress, testHelper.brokerAventityType);
                 await testHelper.expectRevert(() => doRefundTicket(eventId, ticketId));
-                await eventsTestHelper.depositAndRegisterAventity(brokerAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering broker");
+                await eventsTestHelper.depositAndRegisterAventityMember(brokerAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering broker");
               });
 
               it("but owner is sending address", async () => {

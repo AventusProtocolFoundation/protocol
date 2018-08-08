@@ -4,6 +4,7 @@ const web3Utils = require('web3-utils');
 
 contract('AventitiesManager', async () => {
   let aventitiesManager;
+  let aventities = {};
 
   before(async () => {
     await testHelper.before();
@@ -16,7 +17,7 @@ contract('AventitiesManager', async () => {
   after(async () => await testHelper.checkFundsEmpty());
 
   async function makeDepositForAventity(accountNum, _type) {
-    let amount = await aventitiesManager.getAventityDeposit(_type);
+    let amount = await aventitiesManager.getAventityMemberDeposit(_type);
     let account = testHelper.getAccount(accountNum);
     if (accountNum != 0) {
         // Any other account will not have any AVT: give them what they need.
@@ -27,17 +28,19 @@ contract('AventitiesManager', async () => {
     return account;
   }
 
-  async function depositAndRegisterAventity(accountNum, _type) {
+  async function depositAndRegisterAventityMember(accountNum, _type) {
     let account = await makeDepositForAventity(accountNum, _type);
-    await aventitiesManager.registerAventity(account, _type, testHelper.evidenceURL, "Registering an aventity");
+    await aventitiesManager.registerAventityMember(account, _type, testHelper.evidenceURL, "Registering an aventity");
     // check that this action was properly logged
     const eventArgs = await testHelper.getEventArgs(aventitiesManager.LogAventityMemberRegistered);
     assert.equal(eventArgs.aventityAddress, account, "wrong aventity address");
+    let aventityId = eventArgs.aventityId.toNumber();
+    aventities[account+_type] = aventityId;
     return account;
   }
 
   async function deregisterAventityAndWithdrawDeposit(account, _type) {
-    await aventitiesManager.deregisterAventity(account, _type);
+    await aventitiesManager.deregisterAventity(aventities[account+_type]);
     // check that this action was properly logged
     const eventArgs = await testHelper.getEventArgs(aventitiesManager.LogAventityMemberDeregistered);
     assert.equal(eventArgs.aventityAddress, account, "wrong address");
@@ -46,7 +49,7 @@ contract('AventitiesManager', async () => {
   }
 
   async function withdrawDeposit(account, _type) {
-    let deposit = await aventitiesManager.getAventityDeposit(_type);
+    let deposit = await aventitiesManager.getAventityMemberDeposit(_type);
     await avtManager.withdraw("deposit", deposit, {from: account});
   }
 
@@ -64,7 +67,7 @@ contract('AventitiesManager', async () => {
       for (i = 0; i < 3; ++i) {
         let expectRegistered = i == 0; // Owner is ALWAYS registered; the rest should not be.
         assert.equal(expectRegistered, await aventitiesManager.aventityIsRegistered(testHelper.getAccount(i), testHelper.brokerAventityType));
-        let account = await depositAndRegisterAventity(i, testHelper.brokerAventityType);
+        let account = await depositAndRegisterAventityMember(i, testHelper.brokerAventityType);
         assert.equal(true, await aventitiesManager.aventityIsRegistered(account, testHelper.brokerAventityType));
         await deregisterAventityAndWithdrawDeposit(account, testHelper.brokerAventityType);
         assert.equal(expectRegistered, await aventitiesManager.aventityIsRegistered(account, testHelper.brokerAventityType));
@@ -77,14 +80,14 @@ contract('AventitiesManager', async () => {
       // use valid type for deposit
       const account = await makeDepositForAventity(1, validType);
       // use invalid type for registration
-      await testHelper.expectRevert(() => aventitiesManager.registerAventity(account, invalidType, testHelper.evidenceURL, "Registering an aventity"));
+      await testHelper.expectRevert(() => aventitiesManager.registerAventityMember(account, invalidType, testHelper.evidenceURL, "Registering an aventity"));
       await withdrawDeposit(account, validType);
     });
 
     it("cannot register broker addresses without a deposit", async () => {
-      await testHelper.expectRevert(() => aventitiesManager.registerAventity(testHelper.getAccount(0), testHelper.brokerAventityType, testHelper.evidenceURL, "Attempting to register aventity without deposit"));
-      await testHelper.expectRevert(() => aventitiesManager.registerAventity(testHelper.getAccount(1), testHelper.brokerAventityType, testHelper.evidenceURL, "Attempting to register aventity without deposit"));
-      await testHelper.expectRevert(() => aventitiesManager.registerAventity(testHelper.getAccount(2), testHelper.brokerAventityType, testHelper.evidenceURL, "Attempting to register aventity without deposit"));
+      await testHelper.expectRevert(() => aventitiesManager.registerAventityMember(testHelper.getAccount(0), testHelper.brokerAventityType, testHelper.evidenceURL, "Attempting to register aventity without deposit"));
+      await testHelper.expectRevert(() => aventitiesManager.registerAventityMember(testHelper.getAccount(1), testHelper.brokerAventityType, testHelper.evidenceURL, "Attempting to register aventity without deposit"));
+      await testHelper.expectRevert(() => aventitiesManager.registerAventityMember(testHelper.getAccount(2), testHelper.brokerAventityType, testHelper.evidenceURL, "Attempting to register aventity without deposit"));
     });
 
     it("can transfer funds from one account to another", async () => {
@@ -116,33 +119,22 @@ contract('AventitiesManager', async () => {
 
     it("cannot register an already registered aventity", async () => {
       for (i = 0; i < 3; ++i) {
-        let account = await depositAndRegisterAventity(i, testHelper.brokerAventityType);
+        let account = await depositAndRegisterAventityMember(i, testHelper.brokerAventityType);
         await makeDepositForAventity(i, testHelper.brokerAventityType);
-        await testHelper.expectRevert(() => aventitiesManager.registerAventity(account, testHelper.brokerAventityType, testHelper.evidenceURL, "Attempting to register an existing aventity"));
+        await testHelper.expectRevert(() => aventitiesManager.registerAventityMember(account, testHelper.brokerAventityType, testHelper.evidenceURL, "Attempting to register an existing aventity"));
         await withdrawDeposit(account, testHelper.brokerAventityType);
         await deregisterAventityAndWithdrawDeposit(account, testHelper.brokerAventityType);
       }
     });
 
-    it("cannot deregister an invalid type", async () => {
-      // use valid type to register
-      let account = await depositAndRegisterAventity(1, testHelper.brokerAventityType);
-      // use invalid type to attempt to deregister
-      await testHelper.expectRevert(() => aventitiesManager.deregisterAventity(account, testHelper.invalidAventityType));
-      // actually deregister
-      await deregisterAventityAndWithdrawDeposit(account, testHelper.brokerAventityType);
-    });
-
     it("cannot deregister an already deregistered aventity", async () => {
-      await testHelper.expectRevert(() => aventitiesManager.deregisterAventity(testHelper.getAccount(0), testHelper.brokerAventityType));
-      await testHelper.expectRevert(() => aventitiesManager.deregisterAventity(testHelper.getAccount(1), testHelper.brokerAventityType));
-      await testHelper.expectRevert(() => aventitiesManager.deregisterAventity(testHelper.getAccount(2), testHelper.brokerAventityType));
+      await testHelper.expectRevert(() => aventitiesManager.deregisterAventity(aventities[testHelper.getAccount(0)+testHelper.brokerAventityType]));
     });
 
     it("can register and deregister the same aventity with different types", async () => {
       //Using account 0 will not work because that is the owner account
-      let account = await depositAndRegisterAventity(1, testHelper.brokerAventityType);
-      let account2 = await depositAndRegisterAventity(1, testHelper.primaryDelegateAventityType);
+      let account = await depositAndRegisterAventityMember(1, testHelper.brokerAventityType);
+      let account2 = await depositAndRegisterAventityMember(1, testHelper.primaryDelegateAventityType);
       assert.equal(account, account2);
 
       assert.equal(true, await aventitiesManager.aventityIsRegistered(account, testHelper.brokerAventityType));
@@ -167,8 +159,8 @@ contract('AventitiesManager', async () => {
       await updateFixedDepositInStorage(brokerNewDepositAmount, testHelper.brokerAventityType);
       await updateFixedDepositInStorage(primaryDelegateNewDepositAmount, testHelper.primaryDelegateAventityType);
 
-      let brokerDepositAmount = await aventitiesManager.getAventityDeposit(testHelper.brokerAventityType);
-      let primaryDelegateDepositAmount = await aventitiesManager.getAventityDeposit(testHelper.primaryDelegateAventityType);
+      let brokerDepositAmount = await aventitiesManager.getAventityMemberDeposit(testHelper.brokerAventityType);
+      let primaryDelegateDepositAmount = await aventitiesManager.getAventityMemberDeposit(testHelper.primaryDelegateAventityType);
 
       assert.equal(testHelper.convertToAVTDecimal(oneAvtInUsCents, brokerNewDepositAmount), brokerDepositAmount.toNumber());
       assert.equal(testHelper.convertToAVTDecimal(oneAvtInUsCents, primaryDelegateNewDepositAmount), primaryDelegateDepositAmount.toNumber());

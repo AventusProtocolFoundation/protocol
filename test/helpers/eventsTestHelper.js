@@ -13,6 +13,8 @@ let validEventId, eventDeposit;
 let brokerAddress;
 let eventOwner;
 
+let aventities = {};
+
 const eventCapacity = 5;
 const eventSupportURL = "my support url that is really just a non-empty string";
 const averageTicketPriceInUSCents = 675;
@@ -60,15 +62,18 @@ function setupUniqueEventParameters() {
   eventTime = ticketSaleStartTime.plus(oneWeek);
 }
 
-async function depositAndRegisterAventity(_brokerAddress, _type, _evidenceUrl, _desc) {
-  let amount = await aventitiesManager.getAventityDeposit(_type);
+async function depositAndRegisterAventityMember(_brokerAddress, _type, _evidenceUrl, _desc) {
+  let amount = await aventitiesManager.getAventityMemberDeposit(_type);
   await makeDeposit(amount, _brokerAddress);
-  await aventitiesManager.registerAventity(_brokerAddress, _type, _evidenceUrl, _desc);
+  await aventitiesManager.registerAventityMember(_brokerAddress, _type, _evidenceUrl, _desc);
+  let eventArgs = await testHelper.getEventArgs(aventitiesManager.LogAventityMemberRegistered);
+  let aventityId = eventArgs.aventityId.toNumber();
+  aventities[_brokerAddress+_type] = aventityId;
 }
 
 async function deregisterAventityAndWithdrawDeposit(_brokerAddress, _type) {
-  await aventitiesManager.deregisterAventity(_brokerAddress, _type);
-  let deposit = await aventitiesManager.getAventityDeposit(_type);
+  await aventitiesManager.deregisterAventity(aventities[_brokerAddress+_type]);
+  let deposit = await aventitiesManager.getAventityMemberDeposit(_type);
   await withdrawDeposit(deposit, _brokerAddress);
 }
 
@@ -142,7 +147,7 @@ module.exports = {
   withdrawDeposit,
   withdrawEventDeposit,
   setupUniqueEventParameters,
-  depositAndRegisterAventity,
+  depositAndRegisterAventityMember,
   deregisterAventityAndWithdrawDeposit,
   doCreateEvent,
   createValidEvent,

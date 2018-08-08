@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 interface IAventitiesManager {
 
   /**
-   * Event emitted for a registerAventity transaction.
+   * Event emitted for a registerAventityMember transaction.
    */
   event LogAventityMemberRegistered(uint indexed aventityId, address indexed aventityAddress, string _type, string evidenceUrl, string desc, uint deposit);
 
@@ -13,26 +13,26 @@ interface IAventitiesManager {
   event LogAventityMemberDeregistered(uint indexed aventityId, address indexed aventityAddress, string _type);
 
   /**
-   * Event emitted for a registerEventAventity transaction.
+   * Event emitted for a registerAventityEvent transaction.
    */
-  event LogAventityEventRegistered(uint indexed aventityId, address indexed ownerAddress, uint indexed entityId, string _type, string evidenceUrl, string desc, uint deposit);
+  event LogAventityEventRegistered(uint indexed aventityId, address indexed ownerAddress, uint indexed eventId, string _type, string evidenceUrl, string desc, uint deposit);
 
   /**
-   * Event emitted for a deregisterEventAventity transaction.
+   * Event emitted for a deregisterAventity transaction.
    */
-  event LogAventityEventDeregistered(uint indexed aventityId, address indexed ownerAddress, uint indexed entityId, string _type);
+  event LogAventityEventDeregistered(uint indexed aventityId, address indexed ownerAddress, uint indexed eventId, string _type);
 
   /**
    * Register the given aventity address to use the Aventus Protocol.
-   * NOTE: requires a deposit to be made. See getAventityDeposit().
+   * NOTE: requires a deposit to be made. See getAventityMemberDeposit().
    */
-  function registerAventity(address _aventityAddress, string _type, string _evidenceUrl, string _desc) external;
+  function registerAventityMember(address _aventityAddress, string _type, string _evidenceUrl, string _desc) external;
 
   /**
-   * Stop the given aventity address from using the Aventus Protocol. This will unlock
+   * Stop the given aventity from using the Aventus Protocol. This will unlock
    * the deposit that was locked when the aventity was registered.
    */
-  function deregisterAventity(address _aventityAddress, string _type) external;
+  function deregisterAventity(uint _aventityId) external;
 
   /**
    * @return true if the given aventity address is registered to use the Aventus Protocol.
@@ -41,9 +41,9 @@ interface IAventitiesManager {
 
   /**
    * Get the deposit value in AVT - to 18 sig fig - required to register an aventity.
-   * See registerAventity().
+   * See registerAventityMember().
    */
-  function getAventityDeposit(string _type) view external returns (uint depositinAVT_);
+  function getAventityMemberDeposit(string _type) view external returns (uint depositinAVT_);
 
   /**
    * Create a challenge proposal stating that the given aventity address is fraudulent.
