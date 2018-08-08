@@ -3,11 +3,6 @@ const testHelper = require("./helpers/testHelper");
 const votingTestHelper = require("./helpers/votingTestHelper");
 
 contract('ProposalsManager - Voting:', async () => {
-    // Freeze time so we can use the mock time library in solidity. Make sure we
-    // keep time on the solidity side and the java side in sync.
-    const oneDay = new web3.BigNumber(86400);  // seconds in one day. Solidity uses uint256.
-    const oneWeek = oneDay.times(7);
-    const minimumVotingPeriod = oneWeek;
     let proposalsManager, avtManager, avt;
     let deposit;
     const BIGZERO = new web3.BigNumber(0);
@@ -501,5 +496,13 @@ contract('ProposalsManager - Voting:', async () => {
         await proposalsManager.endProposal(proposalId);
         await testHelper.expectRevert(() => proposalsManager.endProposal(proposalId));
       });
+
+      it("can get the blockchain time", async () => {
+        const oldBlockchainTime = (await votingTestHelper.getAventusTime()).toNumber();
+        await testHelper.advanceByDays(1);
+        const newBlockchainTime = (await votingTestHelper.getAventusTime()).toNumber();
+        assert.equal(oldBlockchainTime + testHelper.oneDay, newBlockchainTime);
+      });
+
     });
 });

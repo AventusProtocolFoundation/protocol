@@ -18,18 +18,18 @@ contract AventitiesManager is IAventitiesManager, Owned, Versioned {
       s = _s;
     }
 
-    function registerAventity(address _aventityAddress, string _type, string _evidenceUrl, string _desc)
+    function registerAventityMember(address _aventityAddress, string _type, string _evidenceUrl, string _desc)
       external
       onlyOwner
     {
-      LAventities.registerAventity(s, _aventityAddress, _type, _evidenceUrl, _desc);
+      LAventities.registerAventityMember(s, _aventityAddress, _type, _evidenceUrl, _desc);
     }
 
-    function deregisterAventity(address _aventityAddress, string _type)
+    function deregisterAventity(uint _aventityId)
       external
       onlyOwner
     {
-      LAventities.deregisterAventity(s, _aventityAddress, _type);
+      LAventities.deregisterAventity(s, _aventityId);
     }
 
     function challengeAventity(address /*_aventityAddress*/)
@@ -48,12 +48,11 @@ contract AventitiesManager is IAventitiesManager, Owned, Versioned {
       isRegistered_ = _aventityAddress == owner || LAventities.aventityIsActive(s, _aventityAddress, _type);
     }
 
-    function getAventityDeposit(string _type) external view returns (uint depositinAVT_) {
-      depositinAVT_ = LAventities.getAventityDeposit(s, _type);
+    function getAventityMemberDeposit(string _type) external view returns (uint depositinAVT_) {
+      depositinAVT_ = LAventities.getAventityMemberDeposit(s, _type);
     }
 
     function getExistingAventityDeposit(uint _aventityId) external view returns (uint aventityDeposit_) {
       aventityDeposit_ = LAventities.getExistingAventityDeposit(s, _aventityId);
     }
-
 }

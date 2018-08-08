@@ -40,10 +40,18 @@ async function revealVote(_signedMessage, _proposalId, _optionId, _address) {
   await proposalsManager.revealVote(_signedMessage, _proposalId, _optionId, {from: address});
 }
 
+/**
+ * Returns the current blockchain time on the main net or the mock time on a test network
+ */
+async function getAventusTime() {
+  return await proposalsManager.getAventusTime();
+}
+
 module.exports = {
   before,
   castVote,
   getSignatureSecret,
   getSignedMessage,
   revealVote,
+  getAventusTime
 }

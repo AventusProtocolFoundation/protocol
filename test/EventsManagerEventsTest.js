@@ -90,7 +90,7 @@ contract('EventsManager - event management', async () => {
           eventsTestHelper.setupUniqueEventParameters();
           await eventsTestHelper.makeEventDeposit();
           await createEventFailsDueToPreconditions();
-          await eventsTestHelper.depositAndRegisterAventity(brokerAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering broker");
+          await eventsTestHelper.depositAndRegisterAventityMember(brokerAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering broker");
           await eventsTestHelper.createValidEvent(useSignedCreateEvent);
           await eventsTestHelper.deregisterAventityAndWithdrawDeposit(brokerAddress, testHelper.brokerAventityType);
           await eventsTestHelper.endEventAndWithdrawDeposit();
@@ -101,7 +101,7 @@ contract('EventsManager - event management', async () => {
       context(eventPreTitle + (useSignedCreateEvent ? "with broker address" : ""), async () => {
         if (useSignedCreateEvent) {
           beforeEach(async () => {
-            await eventsTestHelper.depositAndRegisterAventity(brokerAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering broker");
+            await eventsTestHelper.depositAndRegisterAventityMember(brokerAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering broker");
           });
 
           afterEach(async () => {
@@ -220,7 +220,7 @@ contract('EventsManager - event management', async () => {
           }
 
           it("can register/deregister a primary delegate for an event", async () => {
-            await eventsTestHelper.depositAndRegisterAventity(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
+            await eventsTestHelper.depositAndRegisterAventityMember(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
 
             let registered = await eventsManager.addressIsDelegate(eventId, testHelper.primaryDelegateAventityType, primaryDelegate);
             assert.ok(!registered);
@@ -237,7 +237,7 @@ contract('EventsManager - event management', async () => {
           });
 
           it("can register/deregister a secondary delegate for an event", async () => {
-            await eventsTestHelper.depositAndRegisterAventity(secondaryDelegate, testHelper.secondaryDelegateAventityType, testHelper.evidenceURL, "Registering secondary delegate");
+            await eventsTestHelper.depositAndRegisterAventityMember(secondaryDelegate, testHelper.secondaryDelegateAventityType, testHelper.evidenceURL, "Registering secondary delegate");
 
             let registered = await eventsManager.addressIsDelegate(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate);
             assert.ok(!registered);
@@ -258,13 +258,13 @@ contract('EventsManager - event management', async () => {
           });
 
           it ("can deregister a delegate for an event if they are not registered", async () => {
-            await eventsTestHelper.depositAndRegisterAventity(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
+            await eventsTestHelper.depositAndRegisterAventityMember(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
             await deregisterPrimaryDelegateSucceeds()
             await eventsTestHelper.deregisterAventityAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateAventityType);
           });
 
           it("cannot register/deregister a delegate for an event if not the owner", async () => {
-            await eventsTestHelper.depositAndRegisterAventity(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
+            await eventsTestHelper.depositAndRegisterAventityMember(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
             await registerPrimaryDelegateFails(primaryDelegate);
             await registerPrimaryDelegateSucceeds();
             await testHelper.expectRevert(() => eventsManager.deregisterRole(eventId, testHelper.primaryDelegateAventityType, primaryDelegate, {from: primaryDelegate}));
@@ -273,7 +273,7 @@ contract('EventsManager - event management', async () => {
           });
 
           it("cannot register a delegate with an unknown role", async () => {
-            await eventsTestHelper.depositAndRegisterAventity(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
+            await eventsTestHelper.depositAndRegisterAventityMember(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
             await registerUnknownDelegateRoleFails(primaryDelegate);
             await eventsTestHelper.deregisterAventityAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateAventityType);
           });

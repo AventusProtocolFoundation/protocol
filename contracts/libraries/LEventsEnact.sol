@@ -110,7 +110,7 @@ library LEventsEnact {
   {
     setEventStatusCancelled(_storage, _eventId);
     uint aventityId = LAventities.getAventityIdFromEventId(_storage, _eventId, "Event");
-    LAventities.deregisterEventAventity(_storage, aventityId);
+    LAventities.deregisterAventity(_storage, aventityId);
   }
 
   /**
@@ -160,7 +160,7 @@ library LEventsEnact {
     (depositInUSCents, depositInAVTDecimals_) =
       LEventsCommon.getEventDeposit(_storage, _capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime);
 
-    LAventities.registerEventAventity(_storage, _owner, eventId_, "Event", _eventSupportURL, _eventDesc, depositInAVTDecimals_);
+    LAventities.registerAventityEvent(_storage, _owner, eventId_, "Event", _eventSupportURL, _eventDesc, depositInAVTDecimals_);
 
     _storage.setUInt(LEventsCommon.getEventCountKey(), eventId_);
     _storage.setAddress(keccak256(abi.encodePacked("Event", eventId_, "owner")), _owner);

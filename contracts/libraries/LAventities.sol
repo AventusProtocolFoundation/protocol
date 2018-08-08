@@ -15,8 +15,8 @@ library LAventities {
   /// See IAventitiesManager interface for events description
   event LogAventityMemberRegistered(uint indexed aventityId, address indexed aventityAddress, string _type, string evidenceUrl, string desc, uint deposit);
   event LogAventityMemberDeregistered(uint indexed aventityId, address indexed aventityAddress, string _type);
-  event LogAventityEventRegistered(uint indexed aventityId, address indexed ownerAddress, uint indexed entityId, string _type, string evidenceUrl, string desc, uint deposit);
-  event LogAventityEventDeregistered(uint indexed aventityId, address indexed ownerAddress, uint indexed entityId, string _type);
+  event LogAventityEventRegistered(uint indexed aventityId, address indexed ownerAddress, uint indexed eventId, string _type, string evidenceUrl, string desc, uint deposit);
+  event LogAventityEventDeregistered(uint indexed aventityId, address indexed ownerAddress, uint indexed eventId, string _type);
 
   modifier onlyValidAddressType(string _type) {
     bytes32 hashedType = keccak256(abi.encodePacked(_type));
@@ -30,9 +30,8 @@ library LAventities {
   }
 
   modifier onlyValidEventType(string _type) {
-    bytes32 hashedType = keccak256(abi.encodePacked(_type));
     require(
-      hashedType == eventHash,
+      isEventType(_type),
       "Aventity type must be 'Event'"
     );
     _;
@@ -78,12 +77,12 @@ library LAventities {
     _;
   }
 
-  function registerAventity(IAventusStorage _storage, address _aventityAddress, string _type, string _evidenceUrl, string _desc)
+  function registerAventityMember(IAventusStorage _storage, address _aventityAddress, string _type, string _evidenceUrl, string _desc)
     external
     onlyValidAddressType(_type)
     onlyNotRegistered(_storage, getAventityIdFromAddress(_storage, _aventityAddress, _type))
   {
-    uint aventityDeposit = getAventityDeposit(_storage, _type);
+    uint aventityDeposit = getAventityMemberDeposit(_storage, _type);
 
     lockAventityDeposit(_storage, _aventityAddress, aventityDeposit);
 
@@ -99,24 +98,7 @@ library LAventities {
     emit LogAventityMemberRegistered(aventityId, _aventityAddress, _type, _evidenceUrl, _desc, aventityDeposit);
   }
 
-  //TODO: should be a single method combined with deregisterEventAventity
-  function deregisterAventity(IAventusStorage _storage, address _aventityAddress, string _type)
-    external
-    onlyValidAventityId(_storage, getAventityIdFromAddress(_storage, _aventityAddress, _type))
-    onlyRegistered(_storage, getAventityIdFromAddress(_storage, _aventityAddress, _type))
-    onlyNotFraudulent(_storage, getAventityIdFromAddress(_storage, _aventityAddress, _type))
-    onlyNotUnderChallenge(_storage, getAventityIdFromAddress(_storage, _aventityAddress, _type))
-  {
-
-    uint aventityId = getAventityIdFromAddress(_storage, _aventityAddress, _type);
-
-    unlockAventityDeposit(_storage, aventityId);
-
-    _storage.setBoolean(keccak256(abi.encodePacked("Aventity", aventityId, "approved")), false);
-    emit LogAventityMemberDeregistered(aventityId, _aventityAddress, _type);
-  }
-
-  function deregisterEventAventity(IAventusStorage _storage, uint _aventityId)
+  function deregisterAventity(IAventusStorage _storage, uint _aventityId)
     external
     onlyValidAventityId(_storage, _aventityId)
     onlyRegistered(_storage, _aventityId)
@@ -126,11 +108,16 @@ library LAventities {
     unlockAventityDeposit(_storage, _aventityId);
 
     _storage.setBoolean(keccak256(abi.encodePacked("Aventity", _aventityId, "approved")), false);
-    emit LogAventityEventDeregistered(
-      _aventityId, getAventityOwner(_storage, _aventityId),
-      _storage.getUInt(keccak256(abi.encodePacked("Aventity", _aventityId, "entityId"))),
-      getAventityType(_storage, _aventityId)
-    );
+
+    string memory _type = getAventityType(_storage, _aventityId);
+    address owner = getAventityOwner(_storage, _aventityId);
+
+    if (isEventType(_type)) {
+      uint eventId = _storage.getUInt(keccak256(abi.encodePacked("Aventity", _aventityId, "eventId")));
+      emit LogAventityEventDeregistered(_aventityId, owner, eventId, _type);
+    } else {
+      emit LogAventityMemberDeregistered(_aventityId, owner, _type);
+    }
   }
 
   function setAventityStatusFraudulent(IAventusStorage _storage, uint _aventityId) external {
@@ -146,24 +133,24 @@ library LAventities {
     _storage.setUInt(keccak256(abi.encodePacked("Aventity", _aventityId, "challenge")), _challengeProposalId);
   }
 
-  function registerEventAventity(IAventusStorage _storage, address _aventityOwner, uint _entityId, string _type, string _evidenceUrl, string _desc, uint _aventityDeposit)
+  function registerAventityEvent(IAventusStorage _storage, address _aventityOwner, uint _eventId, string _type, string _evidenceUrl, string _desc, uint _aventityDeposit)
     public
     onlyValidEventType(_type)
-    onlyNotRegistered(_storage, getAventityIdFromEventId(_storage, _entityId, _type))
+    onlyNotRegistered(_storage, getAventityIdFromEventId(_storage, _eventId, _type))
   {
     lockAventityDeposit(_storage, _aventityOwner, _aventityDeposit);
 
     uint aventityId = _storage.getUInt(aventityCountKey) + 1;
 
     _storage.setUInt(aventityCountKey, aventityId);
-    _storage.setUInt(keccak256(abi.encodePacked("Aventity", _entityId, "type", _type, "aventityId")), aventityId);
+    _storage.setUInt(keccak256(abi.encodePacked("Aventity", _eventId, "type", _type, "aventityId")), aventityId);
     _storage.setUInt(keccak256(abi.encodePacked("Aventity", aventityId, "deposit")), _aventityDeposit);
     _storage.setAddress(keccak256(abi.encodePacked("Aventity", aventityId, "address")), _aventityOwner);
-    _storage.setUInt(keccak256(abi.encodePacked("Aventity", aventityId, "entityId")), _entityId);
+    _storage.setUInt(keccak256(abi.encodePacked("Aventity", aventityId, "eventId")), _eventId);
     _storage.setString(keccak256(abi.encodePacked("Aventity", aventityId, "type")), _type);
     _storage.setBoolean(keccak256(abi.encodePacked("Aventity", aventityId, "approved")), true);
 
-    emit LogAventityEventRegistered(aventityId, _aventityOwner, _entityId, _type, _evidenceUrl, _desc, _aventityDeposit);
+    emit LogAventityEventRegistered(aventityId, _aventityOwner, _eventId, _type, _evidenceUrl, _desc, _aventityDeposit);
   }
 
   function getAventityType(IAventusStorage _storage, uint _aventityId)
@@ -174,12 +161,12 @@ library LAventities {
     type_ = _storage.getString(keccak256(abi.encodePacked("Aventity", _aventityId, "type")));
   }
 
-  function getAventityIdFromEventId(IAventusStorage _storage, uint _entityId, string _type)
+  function getAventityIdFromEventId(IAventusStorage _storage, uint _eventId, string _type)
     public
     view
     returns (uint aventityId_)
   {
-    aventityId_ = _storage.getUInt(keccak256(abi.encodePacked("Aventity", _entityId, "type", _type, "aventityId")));
+    aventityId_ = _storage.getUInt(keccak256(abi.encodePacked("Aventity", _eventId, "type", _type, "aventityId")));
   }
 
   function setAventityAsClearFromChallenge(IAventusStorage _storage, uint _aventityId)
@@ -197,7 +184,7 @@ library LAventities {
   }
 
   // @return AVT value with 18 decimal places of precision.
-  function getAventityDeposit(IAventusStorage _storage, string _type)
+  function getAventityMemberDeposit(IAventusStorage _storage, string _type)
     view
     public
      onlyValidAddressType(_type)
@@ -236,6 +223,14 @@ library LAventities {
   {
     aventityIsRegisteredAndNotUnderChallenge_ = aventityIsActive(_storage, _aventityId) &&
         aventityIsNotUnderChallenge(_storage, _aventityId);
+  }
+
+  function aventityIsNotFraudulent(IAventusStorage _storage, uint _aventityId)
+    public
+    view
+    returns (bool aventityIsNotFraudulent_)
+  {
+    aventityIsNotFraudulent_ = fraudulentAventityStatus != _storage.getUInt(keccak256(abi.encodePacked("Aventity", _aventityId, "status")));
   }
 
   function unlockAventityDeposit(IAventusStorage _storage, uint _aventityId) public {
@@ -281,15 +276,6 @@ library LAventities {
     aventityIdIsValid_ = _aventityId != 0 && _aventityId <= _storage.getUInt(aventityCountKey);
   }
 
-  //TODO: Move to public
-  function aventityIsNotFraudulent(IAventusStorage _storage, uint _aventityId)
-    public
-    view
-    returns (bool aventityIsNotFraudulent_)
-  {
-    aventityIsNotFraudulent_ = fraudulentAventityStatus != _storage.getUInt(keccak256(abi.encodePacked("Aventity", _aventityId, "status")));
-  }
-
   function aventityIsRegistered(IAventusStorage _storage, uint _aventityId)
     private
     view
@@ -304,5 +290,10 @@ library LAventities {
     returns (uint aventityId_)
   {
     aventityId_ = _storage.getUInt(keccak256(abi.encodePacked("Aventity", _aventityAddress, "type", _type, "aventityId")));
+  }
+
+  function isEventType(string _type) private pure returns (bool isEventType_) {
+    bytes32 hashedType = keccak256(abi.encodePacked(_type));
+    isEventType_ = hashedType == eventHash;
   }
 }
