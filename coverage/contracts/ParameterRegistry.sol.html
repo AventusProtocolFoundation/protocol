@@ -37,7 +37,7 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Lines</span>
-        <span class='fraction'>16/16</span>
+        <span class='fraction'>18/18</span>
       </div>
     </div>
   </div>
@@ -104,7 +104,14 @@
 59
 60
 61
-62</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+62
+63
+64
+65
+66
+67</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -163,6 +170,9 @@
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.4.24;
@@ -178,9 +188,9 @@ contract ParameterRegistry is Owned, Versioned {
   uint private constant GOVERNANCE_PROPOSAL_VOTING_PERIOD_DAYS = 7;
   uint private constant GOVERNANCE_PROPOSAL_REVEALING_PERIOD_DAYS = 7;
   uint private constant GOVERNANCE_PROPOSAL_DEPOSIT_US_CENTS = 10000;
-  uint private constant EVENT_CHALLENGE_LOBBYING_PERIOD_DAYS = 14;
-  uint private constant EVENT_CHALLENGE_VOTING_PERIOD_DAYS = 7;
-  uint private constant EVENT_CHALLENGE_REVEALING_PERIOD_DAYS = 7;
+  uint private constant AVENTITY_CHALLENGE_LOBBYING_PERIOD_DAYS = 14;
+  uint private constant AVENTITY_CHALLENGE_VOTING_PERIOD_DAYS = 7;
+  uint private constant AVENTITY_CHALLENGE_REVEALING_PERIOD_DAYS = 7;
 &nbsp;
   // Events default values.
   uint private constant EVENT_MINIMUM_DEPOSIT_US_CENTS = 1000;
@@ -190,8 +200,10 @@ contract ParameterRegistry is Owned, Versioned {
   uint8 private constant EVENT_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE = 10;
   uint8 private constant EVENT_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE = 10;
 &nbsp;
-  // Apps default values.
-  uint private constant APPLICATION_DEPOSIT = 100000; // In US cents
+  // Aventity default values.
+  uint private constant BROKER_DEPOSIT = 100000; // In US cents
+  uint private constant PRIMARY_DELEGATE_DEPOSIT = 100000; // In US cents
+  uint private constant SECONDARY_DELEGATE_DEPOSIT = 100000; // In US cents
 &nbsp;
   uint private constant AVT_IN_US_CENTS = 97;
 &nbsp;
@@ -212,9 +224,9 @@ contract ParameterRegistry is Owned, Versioned {
     s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalRevealingPeriodDays")), GOVERNANCE_PROPOSAL_REVEALING_PERIOD_DAYS);
     s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalFixedDepositInUsCents")), GOVERNANCE_PROPOSAL_DEPOSIT_US_CENTS);
 &nbsp;
-    s.setUInt(keccak256(abi.encodePacked("Proposal", "eventChallengeLobbyingPeriodDays")), EVENT_CHALLENGE_LOBBYING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Proposal", "eventChallengeVotingPeriodDays")), EVENT_CHALLENGE_VOTING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Proposal", "eventChallengeRevealingPeriodDays")), EVENT_CHALLENGE_REVEALING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked("Proposal", "aventityChallengeLobbyingPeriodDays")), AVENTITY_CHALLENGE_LOBBYING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked("Proposal", "aventityChallengeVotingPeriodDays")), AVENTITY_CHALLENGE_VOTING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked("Proposal", "aventityChallengeRevealingPeriodDays")), AVENTITY_CHALLENGE_REVEALING_PERIOD_DAYS);
 &nbsp;
     s.setUInt(keccak256(abi.encodePacked("Events", "minimumDepositAmountUsCents")), EVENT_MINIMUM_DEPOSIT_US_CENTS);
     s.setUInt(keccak256(abi.encodePacked("Events", "fixedDepositAmountUsCents")), EVENT_FIXED_DEPOSIT_US_CENTS);
@@ -223,7 +235,10 @@ contract ParameterRegistry is Owned, Versioned {
     s.setUInt8(keccak256(abi.encodePacked("Events", "winningsForChallengeEnderPercentage")), EVENT_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE);
     s.setUInt8(keccak256(abi.encodePacked("Events", "winningsForChallengeWinnerPercentage")), EVENT_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE);
 &nbsp;
-    s.setUInt(keccak256(abi.encodePacked("Applications", "fixedDepositAmount")), APPLICATION_DEPOSIT);
+    s.setUInt(keccak256(abi.encodePacked("Aventity", "Broker", "fixedDepositAmount")), BROKER_DEPOSIT);
+    s.setUInt(keccak256(abi.encodePacked("Aventity", "PrimaryDelegate", "fixedDepositAmount")), PRIMARY_DELEGATE_DEPOSIT);
+    s.setUInt(keccak256(abi.encodePacked("Aventity", "SecondaryDelegate", "fixedDepositAmount")), SECONDARY_DELEGATE_DEPOSIT);
+&nbsp;
     s.setUInt(keccak256(abi.encodePacked("OneAVTInUSCents")), AVT_IN_US_CENTS);
   }
 }</pre></td></tr>
@@ -232,7 +247,7 @@ contract ParameterRegistry is Owned, Versioned {
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Wed Jul 18 2018 15:18:55 GMT+0100 (GMT Daylight Time)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Wed Aug 08 2018 16:21:04 GMT+0100 (GMT Daylight Time)
 </div>
 </div>
 <script src="../prettify.js"></script>

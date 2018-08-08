@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <title>Code coverage report for contracts\ProposalsManager.sol</title>
+    <title>Code coverage report for contracts\interfaces\IAventitiesManager.sol</title>
     <meta charset="utf-8" />
-    <link rel="stylesheet" href="../prettify.css" />
-    <link rel="stylesheet" href="../base.css" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style type='text/css'>
         .coverage-summary .sorter {
-            background-image: url(../sort-arrow-sprite.png);
+            background-image: url(../../sort-arrow-sprite.png);
         }
     </style>
 </head>
@@ -16,13 +16,13 @@
 <div class='wrapper'>
   <div class='pad1'>
     <h1>
-      <a href="../index.html">all files</a> / <a href="index.html">contracts/</a> ProposalsManager.sol
+      <a href="../../index.html">all files</a> / <a href="index.html">contracts/interfaces/</a> IAventitiesManager.sol
     </h1>
     <div class='clearfix'>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Statements</span>
-        <span class='fraction'>8/8</span>
+        <span class='fraction'>0/0</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
@@ -32,12 +32,12 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Functions</span>
-        <span class='fraction'>12/12</span>
+        <span class='fraction'>0/0</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Lines</span>
-        <span class='fraction'>12/12</span>
+        <span class='fraction'>0/0</span>
       </div>
     </div>
   </div>
@@ -99,17 +99,7 @@
 54
 55
 56
-57
-58
-59
-60
-61
-62
-63
-64
-65
-66
-67</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+57</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -127,121 +117,101 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">33×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">13×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">13×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">54×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">56×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">48×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">14×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">6×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">14×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">53×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.4.24;
 &nbsp;
-import './interfaces/IAventusStorage.sol';
-import './interfaces/IProposalsManager.sol';
-import './libraries/LEvents.sol';
-import './libraries/LProposal.sol';
-import './Owned.sol';
-import './Versioned.sol';
-&nbsp;
-contract ProposalsManager is IProposalsManager, Owned, Versioned {
-&nbsp;
-  IAventusStorage public s;
+interface IAventitiesManager {
 &nbsp;
   /**
-  * @dev Constructor
-  * @param _s Persistent storage contract
-  */
-  constructor(IAventusStorage _s) public {
-    s = _s;
-  }
+   * Event emitted for a registerAventityMember transaction.
+   */
+  event LogAventityMemberRegistered(uint indexed aventityId, address indexed aventityAddress, string _type, string evidenceUrl, string desc, uint deposit);
 &nbsp;
-  function createGovernanceProposal(string _desc) external returns (uint proposalId_) {
-    proposalId_ = LProposal.createGovernanceProposal(s, _desc);
-  }
+  /**
+   * Event emitted for a deregisterAventity transaction.
+   */
+  event LogAventityMemberDeregistered(uint indexed aventityId, address indexed aventityAddress, string _type);
 &nbsp;
-  function createEventChallenge(uint _eventId) external returns (uint proposalId_) {
-    proposalId_ = LProposal.createEventChallenge(s, _eventId);
-  }
+  /**
+   * Event emitted for a registerAventityEvent transaction.
+   */
+  event LogAventityEventRegistered(uint indexed aventityId, address indexed ownerAddress, uint indexed eventId, string _type, string evidenceUrl, string desc, uint deposit);
 &nbsp;
-  function createAventityChallenge(uint _aventityId) external returns (uint challengeProposalId_) {
-    challengeProposalId_ = LProposal.createAventityChallenge(s, _aventityId);
-  }
+  /**
+   * Event emitted for a deregisterAventity transaction.
+   */
+  event LogAventityEventDeregistered(uint indexed aventityId, address indexed ownerAddress, uint indexed eventId, string _type);
 &nbsp;
-  function endProposal(uint _proposalId) external {
-    LProposal.endProposal(s, _proposalId);
-  }
+  /**
+   * Register the given aventity address to use the Aventus Protocol.
+   * NOTE: requires a deposit to be made. See getAventityMemberDeposit().
+   */
+  function registerAventityMember(address _aventityAddress, string _type, string _evidenceUrl, string _desc) external;
 &nbsp;
-  function castVote(uint _proposalId, bytes32 _secret, uint _prevTime) external {
-    LProposal.castVote(s, _proposalId, _secret, _prevTime);
-  }
+  /**
+   * Stop the given aventity from using the Aventus Protocol. This will unlock
+   * the deposit that was locked when the aventity was registered.
+   */
+  function deregisterAventity(uint _aventityId) external;
 &nbsp;
-  function revealVote(bytes _signedMessage, uint _proposalId, uint8 _optId) external {
-    LProposal.revealVote(s, _signedMessage, _proposalId, _optId);
-  }
+  /**
+   * @return true if the given aventity address is registered to use the Aventus Protocol.
+   */
+  function aventityIsRegistered(address _aventityAddress, string _type) view external returns (bool isRegistered_);
 &nbsp;
-  function claimVoterWinnings(uint _proposalId) external {
-    LProposal.claimVoterWinnings(s, _proposalId);
-  }
+  /**
+   * Get the deposit value in AVT - to 18 sig fig - required to register an aventity.
+   * See registerAventityMember().
+   */
+  function getAventityMemberDeposit(string _type) view external returns (uint depositinAVT_);
 &nbsp;
-  function getGovernanceProposalDeposit() external view returns (uint proposalDeposit_) {
-    proposalDeposit_ = LProposal.getGovernanceProposalDeposit(s);
-  }
+  /**
+   * Create a challenge proposal stating that the given aventity address is fraudulent.
+   */
+  function challengeAventity(address /*_aventityAddress*/) external pure;
 &nbsp;
-  function getExistingEventDeposit(uint _eventId) external view returns(uint eventDeposit_) {
-    eventDeposit_ = LEvents.getExistingEventDeposit(s, _eventId);
-  }
-&nbsp;
-  function getPrevTimeParamForCastVote(uint _proposalId) external view returns (uint prevTime_) {
-    prevTime_ = LProposal.getPrevTimeParamForCastVote(s, _proposalId);
-  }
-&nbsp;
-  function getAventusTime() external view returns (uint time_) {
-    time_ = LProposal.getAventusTime(s);
-  }
-&nbsp;
-}
-&nbsp;</pre></td></tr>
+  /**
+   * Gets the deposit paid for the specified aventity.
+   */
+  function getExistingAventityDeposit(uint _aventityId) external view returns (uint aventityDeposit_);
+}</pre></td></tr>
 </table></pre>
 <div class='push'></div><!-- for sticky footer -->
 </div><!-- /wrapper -->
@@ -250,7 +220,7 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
   generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Wed Aug 08 2018 16:21:04 GMT+0100 (GMT Daylight Time)
 </div>
 </div>
-<script src="../prettify.js"></script>
+<script src="../../prettify.js"></script>
 <script>
 window.onload = function () {
         if (typeof prettyPrint === 'function') {
@@ -258,6 +228,6 @@ window.onload = function () {
         }
 };
 </script>
-<script src="../sorter.js"></script>
+<script src="../../sorter.js"></script>
 </body>
 </html>
