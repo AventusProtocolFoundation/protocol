@@ -1,17 +1,17 @@
 {
   "name": "protocol",
-  "version": "0.7.3",
-  "description": "The Aventus Protocol",
+  "version": "0.0.1",
+  "description": "The Bronze Protocol",
   "author": "Artos Systems Ltd",
   "license": "GPL-3.0-only",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AventusProtocolFoundation/protocol.git"
+    "url": "git+https://github.com/AventusSystems/bronze-protocol.git"
   },
   "bugs": {
-    "url": "https://github.com/AventusProtocolFoundation/protocol/issues"
+    "url": "https://github.com/AventusSystems/bronze-protocol/issues"
   },
-  "homepage": "https://github.com/AventusProtocolFoundation/protocol#readme",
+  "homepage": "https://github.com/AventusSystems/bronze-protocol#readme",
   "dependencies": {
     "eip55": "^1.0.3",
     "ethereumjs-testrpc-sc": "^6.1.2",
