@@ -11,7 +11,7 @@ library LEventsCommon {
   bytes32 constant fixedDepositAmountUsCentsKey = keccak256(abi.encodePacked("Events", "fixedDepositAmountUsCents"));
   bytes32 constant eventCountKey = keccak256(abi.encodePacked("EventCount"));
 
-  modifier isValidEvent(IAventusStorage _storage, uint _eventId) {
+  modifier onlyValidEvent(IAventusStorage _storage, uint _eventId) {
     require(
       eventValid(_storage, _eventId),
       "Event must be valid"
@@ -51,11 +51,11 @@ library LEventsCommon {
     _storage.setBoolean(hashMsgKey, true);
   }
 
-  function checkOwnerOrDelegateByRole(IAventusStorage _storage, uint _eventId, address _eventOwnerOrDelegate, string _role) external view {
+  function checkOwnerOrRegisteredRole(IAventusStorage _storage, uint _eventId, address _address, string _role) external view {
     require(
-      addressIsOwner(_storage, _eventId, _eventOwnerOrDelegate) ||
-      addressIsDelegate(_storage, _eventId, _role, _eventOwnerOrDelegate),
-      "Function must be called by owner or delegate only"
+      addressIsOwner(_storage, _eventId, _address) ||
+      roleIsRegistered(_storage, _eventId, _role, _address),
+      "Function must be called by owner or registered member only"
     );
   }
 
@@ -79,7 +79,7 @@ library LEventsCommon {
   function eventActive(IAventusStorage _storage, uint _eventId)
     public
     view
-    isValidEvent(_storage, _eventId)
+    onlyValidEvent(_storage, _eventId)
     returns (bool active_)
   {
     bool eventHasHappened = LAventusTime.getCurrentTime(_storage) >=  _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "eventTime")));
@@ -100,20 +100,20 @@ library LEventsCommon {
   }
 
   /**
-  * @dev Check if an address is registered as a delegate for an event
+  * @dev Check if an address is registered as a valid Aventity member for an event
   * @param _storage Storage contract
   * @param _eventId - ID of the event
   * @param _role - role must be an aventity type of either "PrimaryDelegate", "SecondaryDelegate" or "Broker"
-  * @param _delegate - address to check
+  * @param _address - address to check
   * @return registered_ - returns true if the supplied delegate is registered
   */
-  function addressIsDelegate(IAventusStorage _storage, uint _eventId, string _role, address _delegate)
+  function roleIsRegistered(IAventusStorage _storage, uint _eventId, string _role, address _address)
     public
     view
     returns (bool registered_)
   {
-    registered_ = _storage.getBoolean(keccak256(abi.encodePacked("Event", _eventId, "role", _role, "delegate", _delegate))) &&
-      LAventities.aventityIsActive(_storage, _delegate, _role);
+    registered_ = _storage.getBoolean(keccak256(abi.encodePacked("Event", _eventId, "role", _role, "address", _address))) &&
+      LAventities.aventityIsActive(_storage, _address, _role);
   }
 
   function addressIsOwner(IAventusStorage _storage, uint _eventId, address _owner) public view returns (bool isOwner_) {

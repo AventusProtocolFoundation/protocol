@@ -1,14 +1,12 @@
 pragma solidity ^0.4.24;
 
 import '../interfaces/IAventusStorage.sol';
-import '../interfaces/IERC20.sol';
 import "./LAventusTime.sol";
 
 // Library for adding functionality for handling AVT funds.
 library LAVTManager  {
   bytes32 constant stakeFundHash = keccak256(abi.encodePacked("stake"));
   bytes32 constant depositFundHash = keccak256(abi.encodePacked("deposit"));
-  bytes32 constant avtContractAddressKey = keccak256(abi.encodePacked("AVTERC20Instance"));
   bytes32 constant oneAVTInUSCentsKey = keccak256(abi.encodePacked("OneAVTInUSCents"));
   bytes32 constant totalAVTFundsKey = keccak256(abi.encodePacked("TotalAVTFunds"));
 
@@ -48,9 +46,8 @@ library LAVTManager  {
 
     decreaseFund(_storage, msg.sender, _fund, _amount);
 
-    IERC20 avt = IERC20(_storage.getAddress(avtContractAddressKey));
-    require (
-      avt.transfer(msg.sender, _amount),
+    require(
+      _storage.transferAVTTo(msg.sender, _amount),
       "Transfer of funds in withdraw must succeed before continuing"
     );
 
@@ -86,9 +83,8 @@ library LAVTManager  {
 
     increaseFund(_storage, msg.sender, _fund, _amount);
 
-    IERC20 avt = IERC20(_storage.getAddress(avtContractAddressKey));
     require (
-      avt.transferFrom(msg.sender, this, _amount),
+      _storage.transferAVTFrom(msg.sender, _amount),
       "Transfer of funds in 'deposit' must succeed before continuing"
     );
 

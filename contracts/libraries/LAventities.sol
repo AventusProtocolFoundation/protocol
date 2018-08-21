@@ -4,7 +4,6 @@ import '../interfaces/IAventusStorage.sol';
 import './LAVTManager.sol';
 
 library LAventities {
-  bytes32 constant fixedDepositAmountKey = keccak256(abi.encodePacked("Applications", "fixedDepositAmount"));
   bytes32 constant brokerHash = keccak256(abi.encodePacked("Broker"));
   bytes32 constant primaryDelegateHash = keccak256(abi.encodePacked("PrimaryDelegate"));
   bytes32 constant secondaryDelegateHash = keccak256(abi.encodePacked("SecondaryDelegate"));

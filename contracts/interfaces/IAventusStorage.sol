@@ -3,6 +3,9 @@ pragma solidity ^0.4.24;
 // TODO: Use leading and trailing underscores on parameters and return values.
 
 interface IAventusStorage {
+  function transferAVTTo(address _to, uint _tokens) external returns (bool retVal_);
+  function transferAVTFrom(address _from, uint _tokens) external returns (bool retVal_);
+
   function getUInt(bytes32 record) external constant returns (uint);
   function setUInt(bytes32 record, uint value) external;
 

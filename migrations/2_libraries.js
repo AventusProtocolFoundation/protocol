@@ -171,10 +171,10 @@ function doDeploySubLibraries(_deployer, library) {
   if (library === LProposal) {
     return _deployer.deploy(LProposalWinnings)
     .then(() => _deployer.link(LProposalWinnings, [LProposal, LProposalsEnact]))
-    .then(() => _deployer.deploy(LProposalVoting))
-    .then(() => _deployer.link(LProposalVoting, LProposal))
     .then(() => _deployer.deploy(LProposalsEnact))
-    .then(() => _deployer.link(LProposalsEnact, LProposal));
+    .then(() => _deployer.link(LProposalsEnact, [LProposal, LProposalVoting]))
+    .then(() => _deployer.deploy(LProposalVoting))
+    .then(() => _deployer.link(LProposalVoting, LProposal));
   } else if (library === LEvents) {
     return _deployer.deploy(LEventsCommon)
     .then(() => _deployer.link(LEventsCommon, [LEvents, LEventsEnact]))

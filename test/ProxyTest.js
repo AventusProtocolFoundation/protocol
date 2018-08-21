@@ -33,7 +33,7 @@ contract('Proxy testing', async () => {
 
   async function createProposal(desc) {
     proposalDeposit = await proposalsManager.getGovernanceProposalDeposit();
-    await avt.approve(avtManager.address, proposalDeposit);
+    await avt.approve(aventusStorage.address, proposalDeposit);
     await avtManager.deposit("deposit", proposalDeposit);
 
     await proposalsManager.createGovernanceProposal(desc);

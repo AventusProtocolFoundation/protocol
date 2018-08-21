@@ -3,23 +3,27 @@ pragma solidity ^0.4.24;
 import "./Owned.sol";
 
 contract MultiAccess is Owned {
-  event AllowAccessEvent(address indexed accessAddress);
-  event DenyAccessEvent(address indexed accessAddress);
+  event LogAllowAccess(string accessType, address indexed accessAddress);
+  event LogDenyAccess(string accessType, address indexed accessAddress);
 
-  mapping(address => bool) accessAllowed;
+  mapping(bytes32 => bool) accessAllowed;
 
-  function allowAccess(address _address) external onlyOwner {
-    accessAllowed[_address] = true;
-    emit AllowAccessEvent(_address);
+  function allowAccess(string _accessType, address _address) external onlyOwner {
+    accessAllowed[getKey(_accessType, _address)] = true;
+    emit LogAllowAccess(_accessType, _address);
   }
 
-  function denyAccess(address _address) external onlyOwner {
-    accessAllowed[_address] = false;
-    emit DenyAccessEvent(_address);
+  function denyAccess(string _accessType, address _address) external onlyOwner {
+    accessAllowed[getKey(_accessType, _address)] = false;
+    emit LogDenyAccess(_accessType, _address);
   }
 
-  function isAllowedAccess() internal view {
-    require(msg.sender == owner || accessAllowed[msg.sender]);
+  function isAllowedAccess(string _accessType) internal view {
+    require(msg.sender == owner || accessAllowed[getKey(_accessType, msg.sender)]);
+  }
+
+  function getKey(string _accessType, address _address) private pure returns (bytes32 key_) {
+    key_ = keccak256(abi.encodePacked(_accessType, _address));
   }
 
 }

@@ -12,6 +12,11 @@ interface IProposalsManager {
   event LogCastVote(address indexed sender, uint indexed proposalId, bytes32 secret, uint prevTime);
 
   /**
+   * Event emitted for a cancelVote transaction.
+   */
+  event LogCancelVote(address indexed sender, uint indexed proposalId);
+
+  /**
    * Event emitted for a revealVote transaction.
    */
   event LogRevealVote(address indexed sender, uint indexed proposalId, uint8 indexed optId, uint revealingStart, uint revealingEnd);
@@ -77,6 +82,13 @@ interface IProposalsManager {
   * @param _prevTime The previous time that locked the user's funds - from getPrevTimeParamForCastVote()
   */
   function castVote(uint _proposalId, bytes32 _secret, uint _prevTime) external;
+
+  /**
+   * Cancel a vote on one of a given proposal's options
+   * NOTE: Vote must be cancelled within the voting period.
+   * @param _proposalId Proposal ID
+   */
+  function cancelVote(uint _proposalId) external;
 
   /**
   * Reveal a vote on a proposal

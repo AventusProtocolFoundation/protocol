@@ -75,20 +75,20 @@ contract EventsManager is IEventsManager, Owned, Versioned {
     LEvents.signedResellTicket(s, _signedMessage, _eventId, _ticketId, _ownerPermission, _newBuyer);
   }
 
-  function registerRole(uint _eventId, string _role, address _delegate) external {
-    LEvents.registerRole(s, _eventId, _role, _delegate);
+  function registerRole(uint _eventId, string _role, address _address) external {
+    LEvents.registerRole(s, _eventId, _role, _address);
   }
 
-  function deregisterRole(uint _eventId, string _role, address _delegate) external {
-    LEvents.deregisterRole(s, _eventId, _role, _delegate);
+  function deregisterRole(uint _eventId, string _role, address _address) external {
+    LEvents.deregisterRole(s, _eventId, _role, _address);
   }
 
-  function addressIsDelegate(uint _eventId, string _role, address _delegate)
+  function roleIsRegistered(uint _eventId, string _role, address _address)
     external
     view
     returns (bool registered_)
   {
-    registered_ = LEvents.addressIsDelegate(s, _eventId, _role, _delegate);
+    registered_ = LEvents.roleIsRegistered(s, _eventId, _role, _address);
   }
 
   function getEventDeposit(uint _capacity, uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime)

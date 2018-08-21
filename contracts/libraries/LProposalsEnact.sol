@@ -8,6 +8,8 @@ import './LAVTManager.sol';
 
 // Library for extending voting protocol functionality
 library LProposalsEnact {
+  enum ProposalStatus {NonExistent, Lobbying, Voting, Revealing, RevealingFinishedProposalNotEnded, Ended}
+
   bytes32 constant proposalCountKey = keccak256(abi.encodePacked("ProposalCount"));
 
   function doUnlockProposalDeposit(IAventusStorage _storage, uint _proposalId) external {
@@ -61,12 +63,12 @@ library LProposalsEnact {
   * @dev Gets a given proposal's current status
   * @param _storage Storage contract
   * @param _proposalId Proposal ID
-  * @return Status number: 0 non-existent, 1 lobbying; 2 voting; 3 revealing; 4 revealing finished, 5 ended
+  * @return proposal Status
   */
   function doGetProposalStatus(IAventusStorage _storage, uint _proposalId)
     public
     view
-    returns (uint8 statusNum_)
+    returns (ProposalStatus status_)
   {
     uint votingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "votingStart")));
     uint revealingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingStart")));
@@ -76,17 +78,39 @@ library LProposalsEnact {
     uint currentTime = LAventusTime.getCurrentTime(_storage);
 
     if (votingStart == 0)
-      statusNum_ = 0;
+      status_ = ProposalStatus.NonExistent;
     else if (currentTime < votingStart)
-      statusNum_ = 1; // Lobbying
+      status_ = ProposalStatus.Lobbying;
     else if (currentTime < revealingStart)
-      statusNum_ = 2; // Voting
+      status_ = ProposalStatus.Voting;
     else if (currentTime < revealingEnd)
-      statusNum_ = 3; // Revealing
+      status_ = ProposalStatus.Revealing;
     else if (deposit != 0)
-      statusNum_ = 4; // Revealing Finished, proposal not ended
+      status_ = ProposalStatus.RevealingFinishedProposalNotEnded;
     else
-      statusNum_ = 5; // Proposal ended
+      status_ = ProposalStatus.Ended;
+  }
+
+  function onlyInRevealingPeriodOrLater(ProposalStatus _proposalStatus) public pure returns (bool result_) {
+    result_ =
+      (_proposalStatus == ProposalStatus.Revealing) ||
+      (_proposalStatus == ProposalStatus.RevealingFinishedProposalNotEnded) ||
+      (_proposalStatus == ProposalStatus.Ended);
+  }
+
+  function onlyInVotingPeriodOrAfterRevealingFinished(ProposalStatus _proposalStatus) public pure returns (bool result_) {
+    result_ =
+      _proposalStatus == LProposalsEnact.ProposalStatus.Voting ||
+      (_proposalStatus == LProposalsEnact.ProposalStatus.RevealingFinishedProposalNotEnded) ||
+      (_proposalStatus == LProposalsEnact.ProposalStatus.Ended);
+  }
+
+  function inVotingPeriod(IAventusStorage _storage, uint _proposalId) public view returns (bool result_) {
+    return doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.Voting;
+  }
+
+  function afterRevealingFinishedAndProposalNotEnded(IAventusStorage _storage, uint _proposalId) public view returns (bool result_) {
+    return doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.RevealingFinishedProposalNotEnded;
   }
 
   function doProposalIsAventityChallenge(IAventusStorage _storage, uint _proposalId)

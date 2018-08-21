@@ -2,6 +2,7 @@ pragma solidity ^0.4.24;
 
 import "./proxies/PDelegate.sol";
 import "./interfaces/IAventusStorage.sol";
+import './interfaces/IERC20.sol';
 import "./MultiAccess.sol";
 
 // Persistent storage on the blockchain
@@ -9,9 +10,15 @@ import "./MultiAccess.sol";
 // TODO: Use leading and trailing underscores on parameters and return values.
 
 contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
+  bytes32 constant avtContractAddressKey = keccak256(abi.encodePacked("AVTERC20Instance"));
 
-  modifier hasUpdateAccess() {
-    isAllowedAccess();
+  modifier onlyWithWriteAccess() {
+    isAllowedAccess("write");
+    _;
+  }
+
+  modifier onlyWithTransferAVTAccess() {
+    isAllowedAccess("transferAVT");
     _;
   }
 
@@ -54,6 +61,16 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   // some storage key e.g. keccak("vote", voteId, "end") => stored int8 value
   mapping(bytes32 => int8) Int8;
 
+  function transferAVTTo(address _to, uint _tokens) external onlyWithTransferAVTAccess returns (bool retVal_) {
+    IERC20 avt = IERC20(doGetAddress(avtContractAddressKey));
+    retVal_ = avt.transfer(_to, _tokens);
+  }
+
+  function transferAVTFrom(address _from, uint _tokens) external onlyWithTransferAVTAccess returns (bool retVal_) {
+    IERC20 avt = IERC20(doGetAddress(avtContractAddressKey));
+    retVal_ = avt.transferFrom(_from, this, _tokens);
+  }
+
   /**
    * @dev In case we need to extend functionality - avoids copying state
    */
@@ -84,7 +101,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setUInt(bytes32 record, uint value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     UInt[record] = value;
   }
@@ -108,7 +125,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setUInt128(bytes32 record, uint128 value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     UInt128[record] = value;
   }
@@ -132,7 +149,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setUInt64(bytes32 record, uint64 value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     UInt64[record] = value;
   }
@@ -156,7 +173,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setUInt32(bytes32 record, uint32 value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     UInt32[record] = value;
   }
@@ -180,7 +197,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setUInt16(bytes32 record, uint16 value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     UInt16[record] = value;
   }
@@ -204,7 +221,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setUInt8(bytes32 record, uint8 value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     UInt8[record] = value;
   }
@@ -228,7 +245,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setString(bytes32 record, string value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     String[record] = value;
   }
@@ -252,7 +269,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setAddress(bytes32 record, address value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     Address[record] = value;
   }
@@ -276,7 +293,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setBytes(bytes32 record, bytes value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     Bytes[record] = value;
   }
@@ -300,7 +317,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setBytes32(bytes32 record, bytes32 value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     Bytes32[record] = value;
   }
@@ -324,7 +341,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setBytes16(bytes32 record, bytes16 value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     Bytes16[record] = value;
   }
@@ -348,7 +365,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setBytes8(bytes32 record, bytes8 value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     Bytes8[record] = value;
   }
@@ -372,7 +389,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setBoolean(bytes32 record, bool value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     Boolean[record] = value;
   }
@@ -396,7 +413,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setInt(bytes32 record, int value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     Int[record] = value;
   }
@@ -420,7 +437,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setInt128(bytes32 record, int128 value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     Int128[record] = value;
   }
@@ -444,7 +461,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setInt64(bytes32 record, int64 value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     Int64[record] = value;
   }
@@ -468,7 +485,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setInt32(bytes32 record, int32 value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     Int32[record] = value;
   }
@@ -492,7 +509,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setInt16(bytes32 record, int16 value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     Int16[record] = value;
   }
@@ -516,7 +533,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   */
   function setInt8(bytes32 record, int8 value)
     external
-    hasUpdateAccess
+    onlyWithWriteAccess
   {
     Int8[record] = value;
   }

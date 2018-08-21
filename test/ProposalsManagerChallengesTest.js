@@ -14,9 +14,8 @@ contract('ProposalsManager - Event challenges', async () => {
   const challengeOwner = testHelper.getAccount(1);
   const voter1 =  testHelper.getAccount(2);
   const voter2 =  testHelper.getAccount(3);
-  const challengeEnder = testHelper.getAccount(4);
-  const ONE_AVT = new web3.BigNumber(1 * 10**18);
-  const stake = ONE_AVT;
+  const challengeEnder = testHelper.getAccount(4);  
+  const stake = testHelper.oneAVT;
   const fixedPercentageToWinner = 10;
   const fixedPercentageToChallengeEnder = 10;
 
@@ -48,8 +47,9 @@ contract('ProposalsManager - Event challenges', async () => {
     validEventId = eventArgs.eventId.toNumber();
   }
 
-  async function cancelEventAndWithdrawDeposit() {
-    await eventsManager.cancelEvent(validEventId, {from: eventOwner});
+  async function endEventAndWithdrawDeposit() {
+    await testHelper.advanceTimeToEventEnd(validEventId);
+    await eventsManager.unlockEventDeposit(validEventId);
     await withdrawDeposit(validEventDeposit, eventOwner);
   }
 
@@ -88,7 +88,7 @@ contract('ProposalsManager - Event challenges', async () => {
       // Any other account will not have any AVT: give them what they need.
       await avt.transfer(_depositer, _depositAmount);
     }
-    await avt.approve(avtManager.address, _depositAmount, {from: _depositer});
+    await avt.approve(testHelper.getStorage().address, _depositAmount, {from: _depositer});
     await avtManager.deposit('deposit', _depositAmount, {from: _depositer});
   }
 
@@ -101,7 +101,7 @@ contract('ProposalsManager - Event challenges', async () => {
       // Any other account will not have any AVT: give them what they need.
       await avt.transfer(_depositer, _stakeAmount);
     }
-    await avt.approve(avtManager.address, _stakeAmount, {from: _depositer});
+    await avt.approve(testHelper.getStorage().address, _stakeAmount, {from: _depositer});
     await avtManager.deposit('stake', _stakeAmount, {from: _depositer});
   }
 
@@ -111,8 +111,11 @@ contract('ProposalsManager - Event challenges', async () => {
 
   context("Challenge deposit", async () => {
     it("can get the correct event deposit", async () => {
+      await createValidEvent();
       let deposit = await getExistingEventDeposit(validEventId);
+      assert.notEqual(deposit.toNumber(), 0);
       assert.equal(deposit.toString(), validEventDeposit.toString());
+      await endEventAndWithdrawDeposit();
     });
 
     it("cannot get the event deposit for non-existent event", async () => {
@@ -132,12 +135,13 @@ contract('ProposalsManager - Event challenges', async () => {
   }
 
   context("Create and end challenge - no votes", async () => {
+
     beforeEach(async () => {
       await createValidEvent();
     });
 
     afterEach(async () => {
-      await cancelEventAndWithdrawDeposit();
+      await endEventAndWithdrawDeposit();
     });
 
     after(async () => await testHelper.checkFundsEmpty());
@@ -181,11 +185,17 @@ contract('ProposalsManager - Event challenges', async () => {
       await withdrawDepositsAfterChallengeEnds();
     });
 
-    it ("cannot cancel an event when under challenge", async () => {
+    it("cannot cancel an event when under challenge", async () => {
       await createEventChallengeSucceeds();
       await testHelper.expectRevert(() => eventsManager.cancelEvent(validEventId, {from: eventOwner}));
       await endChallengeEvent(0, 0);
       await withdrawDepositsAfterChallengeEnds();
+    });
+
+    it("cannot create a challenge to an event that has ended", async() => {
+      const correctDeposit = await getExistingEventDeposit(validEventId);
+      await testHelper.advanceTimeToEventEnd(validEventId);
+      await createEventChallengeFails(correctDeposit, validEventId);
     });
   });
 
@@ -255,7 +265,7 @@ contract('ProposalsManager - Event challenges', async () => {
       // Winning voter gets the rest.
       await proposalsManager.claimVoterWinnings(validChallengeProposalId, {from: voter1});
       await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()).minus(fixedAmountToChallengeEnder()), voter1);
-      await cancelEventAndWithdrawDeposit();
+      await endEventAndWithdrawDeposit();
     });
 
     it("pays the correct winnings in the case of disagreement winning via a 'score draw'", async () => {
@@ -275,7 +285,7 @@ contract('ProposalsManager - Event challenges', async () => {
       await proposalsManager.claimVoterWinnings(validChallengeProposalId, {from: voter2});
       await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()).minus(fixedAmountToChallengeEnder()), voter2);
 
-      await cancelEventAndWithdrawDeposit();
+      await endEventAndWithdrawDeposit();
     });
 
     it("pays the correct winnings in the case of disagreement winning via a 'no-score draw'", async () => {
@@ -294,7 +304,7 @@ contract('ProposalsManager - Event challenges', async () => {
       // The challenge ender gets the rest.
       await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()), challengeEnder);
 
-      await cancelEventAndWithdrawDeposit();
+      await endEventAndWithdrawDeposit();
     });
 
     it("can only sell and refund tickets if event has not been deemed fraudulent", async () => {

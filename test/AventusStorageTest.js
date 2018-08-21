@@ -4,13 +4,62 @@ const AventusStorageForTesting = artifacts.require('AventusStorageForTesting');
 const testHelper = require('./helpers/testHelper');
 
 contract('AventusStorage', async () => {
-  let avtStorage;
+  const owner = testHelper.getAccount(0);
+
+  let avtStorage, avtERC20Contract;
 
   const key = 'key';
 
   before(async () => {
-    avtStorage = await AventusStorage.new();
-    assert.ok(avtStorage);
+    await testHelper.before();
+    avtStorage = testHelper.getStorage();
+    avtERC20Contract = testHelper.getAVTContract();
+  });
+
+  context('AVT tests', async () => {
+    const someAVTTokens = 100;
+    const otherAccount = testHelper.getAccount(1);
+    let initialStorageBalance, initialOwnerBalance;
+
+    before(async () => {
+      initialStorageBalance = (await avtERC20Contract.balanceOf(avtStorage.address)).toNumber();
+      initialOwnerBalance = (await avtERC20Contract.balanceOf(owner)).toNumber();
+    });
+
+    afterEach(async () => {
+      assert.equal(initialStorageBalance, (await avtERC20Contract.balanceOf(avtStorage.address)).toNumber());
+      assert.equal(initialOwnerBalance, (await avtERC20Contract.balanceOf(owner)).toNumber());
+    });
+
+    it ('can transfer AVT directly to and from storage if owner', async () => {
+      await avtERC20Contract.approve(avtStorage.address, someAVTTokens);
+      await avtStorage.transferAVTFrom(owner, someAVTTokens);
+      assert.equal((await avtERC20Contract.balanceOf(avtStorage.address)).toNumber(), initialStorageBalance + someAVTTokens);
+      assert.equal((await avtERC20Contract.balanceOf(owner)).toNumber(), initialOwnerBalance - someAVTTokens);
+      await avtStorage.transferAVTTo(owner, someAVTTokens);
+    });
+
+    it ('can transfer AVT directly to and from storage if allowed', async () => {
+      await avtStorage.allowAccess("transferAVT", otherAccount);
+
+      await avtERC20Contract.approve(avtStorage.address, someAVTTokens);
+      await avtStorage.transferAVTFrom(owner, someAVTTokens, {from:otherAccount});
+      assert.equal((await avtERC20Contract.balanceOf(avtStorage.address)).toNumber(), initialStorageBalance + someAVTTokens);
+      assert.equal((await avtERC20Contract.balanceOf(owner)).toNumber(), initialOwnerBalance - someAVTTokens);
+      await avtStorage.transferAVTTo(owner, someAVTTokens, {from:otherAccount});
+
+      await avtStorage.denyAccess("transferAVT", otherAccount);
+    });
+
+     it ('cannot transfer AVT directly to and from storage if not allowed', async () => {
+       await avtERC20Contract.approve(avtStorage.address, someAVTTokens);
+       await testHelper.expectRevert(() => avtStorage.transferAVTFrom(owner, someAVTTokens, {from:otherAccount}));
+       await avtStorage.transferAVTFrom(owner, someAVTTokens);
+       assert.equal((await avtERC20Contract.balanceOf(avtStorage.address)).toNumber(), initialStorageBalance + someAVTTokens);
+       assert.equal((await avtERC20Contract.balanceOf(owner)).toNumber(), initialOwnerBalance - someAVTTokens);
+       await testHelper.expectRevert(() => avtStorage.transferAVTTo(owner, someAVTTokens, {from:otherAccount}));
+       await avtStorage.transferAVTTo(owner, someAVTTokens);
+     });
   });
 
   context('Storage test for uint8/16/32/64/128 - ', async () => {
@@ -256,7 +305,6 @@ contract('AventusStorage', async () => {
   });
 
   context('Ownership and access rights - ', async () => {
-    const owner = testHelper.getAccount(0);
     const newOwner = testHelper.getAccount(1);
     const account1 = testHelper.getAccount(2);
 
@@ -289,7 +337,7 @@ contract('AventusStorage', async () => {
       await avtStorage.setUInt8(key, defaultValue);
       assert.equal(await avtStorage.getUInt8(key), defaultValue);
 
-      await avtStorage.allowAccess(account1);
+      await avtStorage.allowAccess("write", account1);
 
       // Now account1 should have access right to update storage
       await avtStorage.setUInt8(key, testValue, {from: account1});
@@ -307,7 +355,7 @@ contract('AventusStorage', async () => {
       assert.equal(await avtStorage.getUInt8(key), defaultValue);
 
       // Now deny account1 its access rights
-      await avtStorage.denyAccess(account1);
+      await avtStorage.denyAccess("write", account1);
 
       // And it should no longer be able to change the value from default
       await testHelper.expectRevert(() => avtStorage.setUInt8(key, testValue, {from: account1}));

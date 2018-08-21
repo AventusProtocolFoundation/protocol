@@ -3,9 +3,17 @@ pragma solidity ^0.4.24;
 import "../interfaces/IAventusStorage.sol";
 import "./LAVTManager.sol";
 import "./zeppelin/LECRecovery.sol";
+import "./LProposalsEnact.sol";
 
 library LProposalVoting {
 
+  modifier onlyInVotingPeriodOrAfterRevealingFinished(LProposalsEnact.ProposalStatus _proposalStatus) {
+     require(
+       LProposalsEnact.onlyInVotingPeriodOrAfterRevealingFinished(_proposalStatus),
+       "Proposal must be in the voting period or after revealing finished"
+     );
+     _;
+   }
   /**
   * @dev Cast a vote on one of a given proposal's options
   * @param _storage Storage contract
@@ -34,16 +42,45 @@ library LProposalVoting {
   }
 
   /**
+   * @dev Cancel a non revealed vote
+   * @param _storage Storage contract
+   * @param _proposalId Proposal ID
+   * @param _proposalStatus The proposal status
+   */
+  function cancelVote(
+    IAventusStorage _storage,
+    uint _proposalId,
+    LProposalsEnact.ProposalStatus _proposalStatus
+  )
+    external
+     onlyInVotingPeriodOrAfterRevealingFinished(_proposalStatus)
+  {
+    bytes32 secretKey = keccak256(abi.encodePacked("Voting", msg.sender, "secrets", _proposalId));
+    bytes32 secret = _storage.getBytes32(secretKey);
+
+    require(
+      secret != 0,
+      "Sender must have a non revealed vote"
+    );
+
+    removeSendersVoteFromDLL(_storage, _proposalId);
+  }
+
+  /**
   * @dev Reveal a vote on a proposal
   * @param _storage Storage contract
   * @param _proposalId Proposal ID
   * @param _optId ID of option that was voted on
   * @param _signedMessage a signed message
-  * @param _proposalStatus 0 non-existent, 1 lobbying; 2 voting; 3 revealing; 4 revealing finished, 5 ended
+  * @param _proposalStatus The current status of the proposal
   */
-  function revealVote(IAventusStorage _storage, bytes _signedMessage, uint _proposalId, uint8 _optId, uint _proposalStatus) external {
+  // TODO: extract the condition to test if the proposal is in the revealing phase to LProposalsEnact
+  function revealVote(IAventusStorage _storage, bytes _signedMessage, uint _proposalId, uint8 _optId, LProposalsEnact.ProposalStatus _proposalStatus)
+    external
+  {
+    // this is not a modifier because that would cause a stack too deep error
     require (
-      _proposalStatus >= 3,
+      LProposalsEnact.onlyInRevealingPeriodOrLater(_proposalStatus),
       "A vote can only be revealed in the revealing phase or later"
     );
     require (
@@ -69,7 +106,7 @@ library LProposalVoting {
 
     // IFF we are still in the reveal period AND the user has non-zero stake at reveal time...
     uint stake = LAVTManager.getBalance(_storage, voter, "stake");
-    if (_proposalStatus == 3 && stake != 0) {
+    if (_proposalStatus == LProposalsEnact.ProposalStatus.Revealing && stake != 0) {
       // ...increment the total stake for this option with the voter's stake...
       bytes32 totalStakeForOptionKey = keccak256(abi.encodePacked("Proposal", _proposalId, "revealedStake", _optId));
       _storage.setUInt(totalStakeForOptionKey, _storage.getUInt(totalStakeForOptionKey) + stake);
