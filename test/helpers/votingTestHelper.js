@@ -35,6 +35,11 @@ async function castVote(_proposalId, _optionId, _address) {
   return signedMessage;
 }
 
+async function cancelVote(_proposalId, _address) {
+  let address = _address || testHelper.getAccount(0);
+  await proposalsManager.cancelVote(_proposalId, {from: address});
+}
+
 async function revealVote(_signedMessage, _proposalId, _optionId, _address) {
   let address = _address || testHelper.getAccount(0);
   await proposalsManager.revealVote(_signedMessage, _proposalId, _optionId, {from: address});
@@ -50,6 +55,7 @@ async function getAventusTime() {
 module.exports = {
   before,
   castVote,
+  cancelVote,
   getSignatureSecret,
   getSignedMessage,
   revealVote,
