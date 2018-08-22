@@ -17,6 +17,7 @@ const secondaryDelegateAventityType = 'SecondaryDelegate';
 const invalidAventityType = 'invalid';
 
 const evidenceURL = "http://www.example.com/events?eventid=1111";
+const ONE_AVT = new web3.BigNumber(1 * 10**18);
 
 let blockChainTime = new web3.BigNumber(0);
 let aventusStorage, avtAddress, proposalsManager, realTimeInstance, mockTimeInstance;
@@ -116,7 +117,7 @@ function getEventArgs(eventListenerFunction) {
         lastEventBlockNumber = event.blockNumber;
         resolve(event.args);
       } else if (log.length > 1) {
-        reject("Duplicate events: ", log.length);
+        reject(`Duplicate events: ${log.length}`);
       }
     });
   });
@@ -183,5 +184,6 @@ module.exports = {
     secondaryDelegateAventityType,
     invalidAventityType,
     evidenceURL,
-    oneDay
+    oneDay,
+    oneAVT: ONE_AVT
 }

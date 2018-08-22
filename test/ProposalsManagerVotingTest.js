@@ -68,7 +68,7 @@ contract('ProposalsManager - Voting:', async () => {
             // Any other account will not have any AVT: give them what they need.
             await avt.transfer(account, amount);
         }
-        await avt.approve(avtManager.address, amount, {from: account});
+        await avt.approve(testHelper.getStorage().address, amount, {from: account});
         await avtManager.deposit(fund, amount, {from: account});
     }
 
@@ -504,5 +504,138 @@ contract('ProposalsManager - Voting:', async () => {
         assert.equal(oldBlockchainTime + testHelper.oneDay, newBlockchainTime);
       });
 
+      // TODO: Put tests into sub-contexts based on time periods.
+      context("Cancelling votes", async () => {
+        const optionId = 2;
+
+        let proposalId;
+
+        beforeEach(async () => {
+          proposalId = await createGovernanceProposal("A governance proposal");
+        })
+
+        afterEach(async () => {
+          // Clear up before the next test unless we are told otherwise.
+          await proposalsManager.endProposal(proposalId)
+        })
+
+        async function cancelVote(_proposalId) {
+          await votingTestHelper.cancelVote(proposalId);
+          const eventArgs = await testHelper.getEventArgs(proposalsManager.LogCancelVote);
+          return eventArgs.proposalId;
+        }
+
+        it("can cancel vote after revealing period ends", async () => {
+          await testHelper.advanceTimeToVotingStart(proposalId);
+          await votingTestHelper.castVote(proposalId, optionId);
+
+          // end proposal
+          await testHelper.advanceTimeToEndOfProposal(proposalId);
+
+          // cancel vote after proposal has ended
+          const cancelledProposalId = await cancelVote(proposalId);
+          assert.equal(proposalId, cancelledProposalId);
+        });
+
+        it("cannot cancel vote after reveal period and the user has already revealed", async () => {
+          await testHelper.advanceTimeToVotingStart(proposalId);
+          const signedMessage = await votingTestHelper.castVote(proposalId, optionId);
+          await testHelper.advanceTimeToRevealingStart(proposalId);
+          await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
+          await testHelper.advanceTimeToEndOfProposal(proposalId);
+
+          await testHelper.expectRevert(() => votingTestHelper.cancelVote(proposalId));
+        });
+
+        context("Cancelling votes - before reveal period ends", async () => {
+          afterEach(async () => {
+            // Clear up before the next test unless we are told otherwise.
+            await testHelper.advanceTimeToEndOfProposal(proposalId);
+          })
+
+          it("can cancel vote before the reveal period", async () => {
+            await depositStake(10);
+
+            await testHelper.advanceTimeToVotingStart(proposalId);
+            await votingTestHelper.castVote(proposalId, optionId);
+
+            //cancel the vote while in the voting period
+            const cancelledProposalId = await cancelVote(proposalId);
+            assert.equal(proposalId, cancelledProposalId);
+
+            // can withdraw stake at any time because vote has been cancelled.
+            await testHelper.advanceTimeToRevealingStart(proposalId);
+            await withdrawStake(10);
+          });
+
+          it("can cancel vote and vote again with the same option before the reveal period", async () => {
+            await testHelper.advanceTimeToVotingStart(proposalId);
+            await votingTestHelper.castVote(proposalId, optionId);
+
+            //cancel the vote while in the voting period
+            const cancelledProposalId = await cancelVote(proposalId);
+            assert.equal(proposalId, cancelledProposalId);
+
+            // vote again with the same option
+            await votingTestHelper.castVote(proposalId, optionId);
+          });
+
+          it("can cancel vote and vote again with a different option before the reveal period", async () => {
+            await testHelper.advanceTimeToVotingStart(proposalId);
+            await votingTestHelper.castVote(proposalId, optionId);
+
+            //cancel the vote while in the voting period
+            const cancelledProposalId = await cancelVote(proposalId);
+            assert.equal(proposalId, cancelledProposalId);
+
+            // vote again with a different option
+            await votingTestHelper.castVote(proposalId, 1);
+          });
+
+          it("cannot cancel vote without voting first", async () => {
+            await testHelper.advanceTimeToVotingStart(proposalId);
+            await testHelper.expectRevert(() => votingTestHelper.cancelVote(proposalId));
+          });
+
+          it("cannot cancel vote for a proposal that doesn't exist", async () => {
+            await testHelper.advanceTimeToVotingStart(proposalId);
+            await votingTestHelper.castVote(proposalId, optionId);
+
+            await testHelper.expectRevert(() => votingTestHelper.cancelVote(999));
+
+            const cancelledProposalId = await cancelVote(proposalId);
+            assert.equal(proposalId, cancelledProposalId);
+          });
+
+          it("cannot cancel vote after it has been cancelled already", async () => {
+            await testHelper.advanceTimeToVotingStart(proposalId);
+            await votingTestHelper.castVote(proposalId, optionId);
+
+            const cancelledProposalId = await cancelVote(proposalId);
+            assert.equal(proposalId, cancelledProposalId);
+
+            await testHelper.expectRevert(() => votingTestHelper.cancelVote(proposalId));
+          });
+
+          it("cannot cancel vote during reveal period and the user has already revealed", async () => {
+            await testHelper.advanceTimeToVotingStart(proposalId);
+            const signedMessage = await votingTestHelper.castVote(proposalId, optionId);
+            await testHelper.advanceTimeToRevealingStart(proposalId);
+            await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
+
+            await testHelper.expectRevert(() => votingTestHelper.cancelVote(proposalId));
+          });
+
+          it("cannot cancel vote during reveal period and the user has not yet revealed", async () => {
+            await testHelper.advanceTimeToVotingStart(proposalId);
+            await votingTestHelper.castVote(proposalId, optionId);
+            await testHelper.advanceTimeToRevealingStart(proposalId);
+
+            await testHelper.expectRevert(() => votingTestHelper.cancelVote(proposalId));
+          });
+        });
+
+
+      });
     });
 });

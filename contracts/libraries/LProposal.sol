@@ -8,6 +8,7 @@ import "./LProposalVoting.sol";
 
 // Library for extending voting protocol functionality
 library LProposal {
+
   bytes32 constant governanceProposalFixedDepositInUsCentsKey =
       keccak256(abi.encodePacked("Proposal", "governanceProposalFixedDepositInUsCents"));
   /// See IProposalsManager interface for events description
@@ -15,6 +16,7 @@ library LProposal {
   event LogCreateEventChallenge(uint indexed eventId, uint indexed proposalId, string supportingUrl, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd, uint deposit);
   event LogCreateAventityChallenge(uint indexed aventityId, uint indexed proposalId, string supportingUrl, uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd, uint deposit);
   event LogCastVote(address indexed sender, uint indexed proposalId, bytes32 secret, uint prevTime);
+  event LogCancelVote(address indexed sender, uint indexed proposalId);
   event LogRevealVote(address indexed sender, uint indexed proposalId, uint8 indexed optId, uint revealingStart, uint revealingEnd);
   event LogClaimVoterWinnings(uint indexed proposalId);
   event LogEndProposal(uint indexed proposalId, uint votesFor, uint votesAgainst, uint revealingEnd);
@@ -29,7 +31,7 @@ library LProposal {
   // Verify a proposal's status (see LProposalsEnact.doGetProposalStatus for values)
   modifier onlyInVotingPeriod(IAventusStorage _storage, uint _proposalId) {
     require(
-      LProposalsEnact.doGetProposalStatus(_storage, _proposalId) == 2,
+      LProposalsEnact.inVotingPeriod(_storage, _proposalId),
       "Proposal has the wrong status"
     );
     _;
@@ -37,17 +39,22 @@ library LProposal {
 
   modifier onlyAfterRevealingFinishedAndProposalNotEnded(IAventusStorage _storage, uint _proposalId) {
     require(
-      LProposalsEnact.doGetProposalStatus(_storage, _proposalId) == 4,
+      LProposalsEnact.afterRevealingFinishedAndProposalNotEnded(_storage, _proposalId),
       "Proposal has the wrong status"
     );
     _;
   }
 
-  modifier aventityIsActiveAndNotUnderChallenge(IAventusStorage _storage, uint _aventityId) {
+  modifier onlyActiveAndNotUnderChallengeAventity(IAventusStorage _storage, uint _aventityId) {
     require(
       LAventities.aventityIsActiveAndNotUnderChallenge(_storage, _aventityId),
       "Aventity must be valid and not under challenge"
     );
+    _;
+  }
+
+  modifier onlyActiveEvent(IAventusStorage _storage, uint _eventId) {
+    require(LEvents.eventActive(_storage, _eventId), "Event must be active");
     _;
   }
 
@@ -74,9 +81,24 @@ library LProposal {
     emit LogCastVote(msg.sender, _proposalId, _secret, _prevTime);
   }
 
+  // TODO: get the proposal status inside LProposalVoting.cancelVote,
+  // instead of passing it from the outside
+  function cancelVote(
+    IAventusStorage _storage,
+    uint _proposalId
+  )
+    external
+  {
+    LProposalsEnact.ProposalStatus proposalStatus = LProposalsEnact.doGetProposalStatus(_storage, _proposalId);
+    LProposalVoting.cancelVote(_storage, _proposalId, proposalStatus);
+    emit LogCancelVote(msg.sender, _proposalId);
+  }
+
+  // TODO: get the proposal status inside LProposalVoting.revealVote,
+  // instead of passing it from the outside
   function revealVote(IAventusStorage _storage, bytes _signedMessage, uint _proposalId, uint8 _optId) external {
     // Make sure proposal status is Reveal or after.
-    uint proposalStatus = LProposalsEnact.doGetProposalStatus(_storage, _proposalId);
+    LProposalsEnact.ProposalStatus proposalStatus = LProposalsEnact.doGetProposalStatus(_storage, _proposalId);
     LProposalVoting.revealVote(_storage, _signedMessage, _proposalId, _optId, proposalStatus);
 
     uint revealingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingStart")));
@@ -97,6 +119,7 @@ library LProposal {
   */
   function createEventChallenge(IAventusStorage _storage, uint _eventId)
     external
+    onlyActiveEvent(_storage, _eventId)
     returns (uint challengeProposalId_)
   {
     uint aventityId = LAventities.getAventityIdFromEventId(_storage, _eventId, "Event");
@@ -135,7 +158,7 @@ library LProposal {
   */
   function createAventityChallenge(IAventusStorage _storage, uint _aventityId)
     public
-    aventityIsActiveAndNotUnderChallenge(_storage, _aventityId)
+    onlyActiveAndNotUnderChallengeAventity(_storage, _aventityId)
     returns (uint challengeProposalId_)
   {
     uint deposit = LAventities.getExistingAventityDeposit(_storage, _aventityId);

@@ -21,8 +21,8 @@ library LEvents {
   event LogSignedTicketRefund(uint indexed eventId, uint indexed ticketId);
   event LogTicketResale(uint indexed eventId, uint indexed ticketId, address indexed newBuyer);
   event LogSignedTicketResale(uint indexed eventId, uint indexed ticketId, address indexed newBuyer);
-  event LogRegisterRole(uint indexed eventId, string role, address indexed delegate);
-  event LogDeregisterRole(uint indexed eventId, string role, address indexed delegate);
+  event LogRegisterRole(uint indexed eventId, string role, address indexed _address);
+  event LogDeregisterRole(uint indexed eventId, string role, address indexed _address);
 
   modifier onlyEventOwner(IAventusStorage _storage, uint _eventId) {
     require(
@@ -40,22 +40,25 @@ library LEvents {
     _;
   }
 
-  modifier roleAddressIsRegistered(IAventusStorage _storage, address _roleAddress, string _role) {
+  modifier onlyRegisteredMember(IAventusStorage _storage, address _address, string _role) {
     require(
-      LAventities.aventityIsActive(_storage, _roleAddress, _role),
-      "Aventity must have been registered as a role"
+      LAventities.aventityIsActive(_storage, _address, _role),
+      "Aventity must have been registered"
     );
     _;
   }
 
-  modifier validDelegateRole(IAventusStorage _storage, string _role) {
+  modifier onlyValidRole(IAventusStorage _storage, string _role) {
     require(
       keccak256(abi.encodePacked(_role)) == keccak256("PrimaryDelegate") ||
-      keccak256(abi.encodePacked(_role)) == keccak256("SecondaryDelegate") ||
-      keccak256(abi.encodePacked(_role)) == keccak256("Broker"),
-      "Delegate role must be PrimaryDelegate, SecondaryDelegate or Broker"
+      keccak256(abi.encodePacked(_role)) == keccak256("SecondaryDelegate"),
+      "Role must be PrimaryDelegate, SecondaryDelegate"
     );
     _;
+  }
+
+  function eventActive(IAventusStorage _storage, uint _eventId) view external returns (bool _eventActive) {
+    _eventActive = LEventsCommon.eventActive(_storage, _eventId);
   }
 
   function createEvent(IAventusStorage _storage, string _eventDesc, uint _eventTime, uint _capacity,
@@ -160,37 +163,37 @@ library LEvents {
    }
 
   /**
-  * @dev Register a delegate for an existing event
+  * @dev Register an Aventity member for an existing event
   * @param _storage Storage contract
   * @param _eventId - ID of the event
   * @param _role - role must be an aventity type of either "PrimaryDelegate", "SecondaryDelegate" or "Broker"
-  * @param _delegate - delegate address
+  * @param _address - address
   */
-  function registerRole(IAventusStorage _storage, uint _eventId, string _role, address _delegate)
+  function registerRole(IAventusStorage _storage, uint _eventId, string _role, address _address)
     external
     onlyEventOwner(_storage, _eventId)
-    validDelegateRole(_storage, _role)
-    roleAddressIsRegistered(_storage, _delegate, _role)
+    onlyValidRole(_storage, _role)
+    onlyRegisteredMember(_storage, _address, _role)
   {
-    _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "role", _role, "delegate", _delegate)), true);
-    emit LogRegisterRole(_eventId, _role, _delegate);
+    _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "role", _role, "address", _address)), true);
+    emit LogRegisterRole(_eventId, _role, _address);
   }
 
   /**
-  * @dev Deregister a delegate to an existing event
+  * @dev Deregister an Aventity member from an existing event
   * @param _storage Storage contract
   * @param _eventId - ID of the event
   * @param _role - role must be an aventity type of either "PrimaryDelegate", "SecondaryDelegate" or "Broker"
-  * @param _delegate - delegate of the event
+  * @param _address - address
   */
-  function deregisterRole(IAventusStorage _storage, uint _eventId, string _role, address _delegate)
+  function deregisterRole(IAventusStorage _storage, uint _eventId, string _role, address _address)
     external
     onlyEventOwner(_storage, _eventId)
-    validDelegateRole(_storage, _role)
+    onlyValidRole(_storage, _role)
   {
-    if (LEventsCommon.addressIsDelegate(_storage, _eventId, _role, _delegate)) {
-      _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "role", _role, "delegate", _delegate)), false);
-      emit LogDeregisterRole(_eventId, _role, _delegate);
+    if (LEventsCommon.roleIsRegistered(_storage, _eventId, _role, _address)) {
+      _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "role", _role, "address", _address)), false);
+      emit LogDeregisterRole(_eventId, _role, _address);
     }
   }
 
@@ -224,19 +227,19 @@ library LEvents {
   }
 
   /**
-  * @dev Check if an address is registered as a delegate for an event
+  * @dev Check if an Aventity member is registered for an event
   * @param _storage Storage contract
   * @param _eventId - ID of the event
-  * @param _delegate - address to check
+  * @param _address - address to check
   * @param _role - role must be an aventity type of either "PrimaryDelegate", "SecondaryDelegate" or "Broker"
-  * @return registered_ - returns true if the supplied delegate is registered
+  * @return registered_ - returns true if the supplied member is registered
   */
-  function addressIsDelegate(IAventusStorage _storage, uint _eventId, string _role, address _delegate)
+  function roleIsRegistered(IAventusStorage _storage, uint _eventId, string _role, address _address)
     public
     view
     returns (bool registered_)
   {
-    registered_ = LEventsCommon.addressIsDelegate(_storage, _eventId, _role, _delegate);
+    registered_ = LEventsCommon.roleIsRegistered(_storage, _eventId, _role, _address);
   }
 
   function getEventDeposit(IAventusStorage _storage, uint _capacity, uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime)

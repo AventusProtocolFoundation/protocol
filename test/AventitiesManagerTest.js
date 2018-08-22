@@ -23,7 +23,7 @@ contract('AventitiesManager', async () => {
         // Any other account will not have any AVT: give them what they need.
         await avt.transfer(account, amount);
     }
-    await avt.approve(avtManager.address, amount, {from: account});
+    await avt.approve(testHelper.getStorage().address, amount, {from: account});
     await avtManager.deposit("deposit", amount, {from: account});
     return account;
   }
@@ -99,7 +99,7 @@ contract('AventitiesManager', async () => {
 
       for (const fund of funds) {
         // add the fundAmount to account 0
-        await avt.approve(avtManager.address, fundAmount);
+        await avt.approve(testHelper.getStorage().address, fundAmount);
         await avtManager.deposit(fund, fundAmount);
 
         // check balances

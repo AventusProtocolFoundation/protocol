@@ -1,12 +1,13 @@
 const EventsManager = artifacts.require("EventsManager");
 const ProposalsManager = artifacts.require("ProposalsManager");
 const AventitiesManager = artifacts.require("AventitiesManager");
+const AventusStorage = artifacts.require("AventusStorage");
 const testHelper = require("./testHelper");
 const web3Utils = require('web3-utils');
 
 const oneDay = new web3.BigNumber(86400);  // seconds in one day. Solidity uses uint256.
 const oneWeek = oneDay.times(7);
-let eventsManager, proposalsManager, avt, avtManager;
+let eventsManager, proposalsManager, avt, avtManager, storage;
 
 let validEventId, eventDeposit;
 
@@ -33,6 +34,7 @@ async function before(_brokerAddress, _eventOwner) {
 
   eventsManager = await EventsManager.deployed();
   aventitiesManager = await AventitiesManager.deployed();
+  storage = await AventusStorage.deployed();
   proposalsManager = testHelper.getProposalsManager();
   avtManager =  testHelper.getAVTManager();
 
@@ -46,7 +48,7 @@ async function makeDeposit(_amount, _depositer) {
     // Any other account will not have any AVT: give them what they need.
     await avt.transfer(_depositer, _amount);
   }
-  await avt.approve(avtManager.address, _amount, {from: _depositer});
+  await avt.approve(storage.address, _amount, {from: _depositer});
   await avtManager.deposit("deposit", _amount, {from: _depositer});
 }
 

@@ -39,6 +39,10 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
     LProposal.castVote(s, _proposalId, _secret, _prevTime);
   }
 
+  function cancelVote(uint _proposalId) external {
+    LProposal.cancelVote(s, _proposalId);
+  }
+
   function revealVote(bytes _signedMessage, uint _proposalId, uint8 _optId) external {
     LProposal.revealVote(s, _signedMessage, _proposalId, _optId);
   }

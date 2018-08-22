@@ -77,7 +77,7 @@ function doDeployProposalsManager(_deployer, _storage) {
 
   return _deployer.deploy(ProposalsManager, _storage.address)
   .then(() => saveInterfaceToStorage(_storage, "IProposalsManager", ProposalsManagerInterface, ProposalsManager))
-  .then(() => _storage.allowAccess(ProposalsManager.address))
+  .then(() => _storage.allowAccess("write", ProposalsManager.address))
 }
 
 function doDeployAVTManager(_deployer, _storage) {
@@ -85,7 +85,8 @@ function doDeployAVTManager(_deployer, _storage) {
 
   return _deployer.deploy(AVTManager, _storage.address)
   .then(() => saveInterfaceToStorage(_storage, "IAVTManager", AVTManagerInterface, AVTManager))
-  .then(() => _storage.allowAccess(AVTManager.address))
+  .then(() => _storage.allowAccess("write", AVTManager.address))
+  .then(() => _storage.allowAccess("transferAVT", AVTManager.address))
 }
 
 function doDeployAventitiesManager(_deployer, _storage) {
@@ -93,7 +94,7 @@ function doDeployAventitiesManager(_deployer, _storage) {
 
   return _deployer.deploy(AventitiesManager, _storage.address)
   .then(() => saveInterfaceToStorage(_storage, "IAventitiesManager", AventitiesManagerInterface, AventitiesManager))
-  .then(() => _storage.allowAccess(AventitiesManager.address));
+  .then(() => _storage.allowAccess("write", AventitiesManager.address));
 }
 
 function doDeployEventsManager(_deployer, _storage) {
@@ -101,14 +102,14 @@ function doDeployEventsManager(_deployer, _storage) {
 
   return _deployer.deploy(EventsManager, _storage.address)
   .then(() => saveInterfaceToStorage(_storage, "IEventsManager", EventsManagerInterface, EventsManager))
-  .then(() => _storage.allowAccess(EventsManager.address));
+  .then(() => _storage.allowAccess("write", EventsManager.address));
 }
 
 function doDeployParameterRegistry(_deployer, _storage) {
   if (!deployParameterRegistry) return _deployer;
 
   return _deployer.deploy(ParameterRegistry, _storage.address)
-  .then(() => _storage.allowAccess(ParameterRegistry.address))
+  .then(() => _storage.allowAccess("write", ParameterRegistry.address))
   .then(() => ParameterRegistry.deployed())
   .then(parameterRegistry => parameterRegistry.setupDefaultParameters());
 }

@@ -31,7 +31,7 @@ contract('ProposalsManager - Proposal set-up', async () => {
         // Any other account will not have any AVT: give them what they need.
         await avt.transfer(owner, deposit);
     }
-    await avt.approve(avtManager.address, deposit, {from: owner});
+    await avt.approve(testHelper.getStorage().address, deposit, {from: owner});
     await avtManager.deposit("deposit", deposit, {from: owner});
 
     await proposalsManager.createGovernanceProposal(desc, {from: owner});
