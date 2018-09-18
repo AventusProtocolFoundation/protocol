@@ -32,5 +32,5 @@ Internal only major changes:
 Internal only minor changes:
 * Some updates for consistency of line length, variable naming, NATSPEC documentation, etc
 * TotalAVTFunds no longer tracked - protocol balance can be read from ERC20 contract
-* Use web3Utls.soliditySga3 throughout all test code instead of web3.sha3
+* Use web3Utls.soliditySha3 throughout all test code instead of web3.sha3
 * Some general testing clean up including better sharing of code via helpers
