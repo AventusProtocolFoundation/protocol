@@ -7,26 +7,31 @@ const Versioned = artifacts.require("Versioned");
 const IERC20 = artifacts.require("IERC20");
 const web3Utils = require('web3-utils');
 
+const accounts = web3.eth.accounts;
+
 const oneDay = 86400;    // seconds in one day.
 const oneWeek = 7 * oneDay;
-const mockTimeKey = web3.sha3("MockCurrentTime");
+const mockTimeKey = web3Utils.soliditySha3("MockCurrentTime");
 
-const brokerAventityType = 'Broker';
-const primaryDelegateAventityType = 'PrimaryDelegate';
-const secondaryDelegateAventityType = 'SecondaryDelegate';
-const invalidAventityType = 'invalid';
+const brokerMemberType = 'Broker';
+const primaryDelegateMemberType = 'PrimaryDelegate';
+const secondaryDelegateMemberType = 'SecondaryDelegate';
+const tokenBondingCurveMemberType = 'TokenBondingCurve';
+const scalingProviderMemberType = 'ScalingProvider';
+const invalidMemberType = 'invalid';
 
 const evidenceURL = "http://www.example.com/events?eventid=1111";
 const ONE_AVT = new web3.BigNumber(1 * 10**18);
 
 let blockChainTime = new web3.BigNumber(0);
-let aventusStorage, avtAddress, proposalsManager, realTimeInstance, mockTimeInstance;
+let aventusStorage, avtAddress, proposalsManager, realTimeInstance, mockTimeInstance, avt;
 let lastEventBlockNumber = -1;
 
 async function before() {
   aventusStorage = await AventusStorage.deployed();
   versioned = await Versioned.deployed();
-  avtAddress = await aventusStorage.getAddress(web3.sha3("AVTERC20Instance"));
+  avtAddress = await aventusStorage.getAddress(web3Utils.soliditySha3("AVTERC20Instance"));
+  avt = IERC20.at(avtAddress);
   proposalsManager = await ProposalsManager.deployed();
   avtManager = await AVTManager.deployed();
   realTimeInstance = await LAventusTime.deployed();
@@ -43,7 +48,7 @@ async function checkFundsEmpty(alsoCheckStakes) {
     checkFundIsEmpty('deposit', i);
     if (alsoCheckStakes) checkFundIsEmpty('stake', i);
   }
-  let totalAVTFunds = await aventusStorage.getUInt(web3.sha3("TotalAVTFunds"));
+  let totalAVTFunds = await avt.balanceOf(aventusStorage.address);
   assert.equal(totalAVTFunds.toNumber(), 0, "Total balance not cleared");
 }
 
@@ -53,12 +58,12 @@ async function checkFundIsEmpty(fund, accountNum) {
 }
 
 function getAccount(id) {
-  return web3.eth.accounts[id];
+  return accounts[id];
 }
 
 async function getTimeKey() {
   const versionMajorMinor = await getVersionMajorMinor();
-  return web3.sha3("LAventusTimeInstance" + "-" + versionMajorMinor);
+  return web3Utils.soliditySha3("LAventusTimeInstance" + "-" + versionMajorMinor);
 }
 
 async function useRealTime() {
@@ -129,6 +134,13 @@ function createSignedMessage(_signer, _keccak256Msg) {
   return signedMessage;
 }
 
+function createSignedSecret(_secret, _signer) {
+  let hexSecret = web3Utils.soliditySha3(_secret);
+  const signedSecret = web3.eth.sign(_signer, hexSecret);
+  assert.equal(signedSecret.length, 132);
+  return signedSecret;
+}
+
 async function getVersion() {
   let v = await versioned.getVersion();
   return v;
@@ -139,12 +151,43 @@ async function getVersionMajorMinor() {
   return v;
 }
 
-function convertToAVTDecimal(_oneAvtInUsCents, _amount) {
-  return (_amount * (10**18)) / _oneAvtInUsCents;
+function convertToAVTDecimal(_oneAvtInUSCents, _amount) {
+  return (_amount * (10**18)) / _oneAvtInUSCents;
 }
 
 const ganacheRevert = 'Error: VM Exception while processing transaction: revert';
 const gethRevert = 'exited with an error (status 0)';
+
+function getMultipleEventArgs(eventListenerFunction) {
+  return new Promise((resolve, reject) => {
+    let eventListener = eventListenerFunction({}, {fromBlock: lastEventBlockNumber + 1});
+    return eventListener.get((error, log) => {
+      if (error) {
+        reject(error);
+      } else if (log.length < 1) {
+        reject("No logs present: ", log.length);
+      } else {
+        let lastEvent = log[log.length-1];
+        lastEventBlockNumber = lastEvent.blockNumber;
+        resolve(log.map(event => event.args));
+      }
+    });
+  });
+}
+
+async function addAVTToFund(_amount, _sender, _fund) {
+  if (_sender != getAccount(0)) {
+    // Any other account will not have any AVT: give them what they need.
+    await avt.transfer(_sender, _amount);
+  }
+
+  await avt.approve(aventusStorage.address, _amount, {from: _sender});
+  await avtManager.deposit(_fund, _amount, {from: _sender});
+}
+
+async function withdrawAVTFromFund(_depositAmount, _withdrawer, _fund) {
+  await avtManager.withdraw(_fund, _depositAmount, {from: _withdrawer});
+}
 
 module.exports = {
     expectRevert: async (myFunc) => {
@@ -162,7 +205,7 @@ module.exports = {
     getStorage: () => aventusStorage,
     getProposalsManager: () => proposalsManager,
     getAVTManager: () => avtManager,
-    getAVTContract: () => IERC20.at(avtAddress),
+    getAVTContract: () => avt,
     before,
     checkFundsEmpty,
     getAccount,
@@ -176,14 +219,20 @@ module.exports = {
     advanceTimeToEventTicketSaleStart,
     advanceTimeToEventEnd,
     createSignedMessage,
+    createSignedSecret,
     getVersion,
     getVersionMajorMinor,
     convertToAVTDecimal,
-    brokerAventityType,
-    primaryDelegateAventityType,
-    secondaryDelegateAventityType,
-    invalidAventityType,
+    brokerMemberType,
+    primaryDelegateMemberType,
+    secondaryDelegateMemberType,
+    tokenBondingCurveMemberType,
+    scalingProviderMemberType,
+    invalidMemberType,
     evidenceURL,
+    getMultipleEventArgs,
     oneDay,
-    oneAVT: ONE_AVT
+    oneAVT: ONE_AVT,
+    addAVTToFund,
+    withdrawAVTFromFund
 }

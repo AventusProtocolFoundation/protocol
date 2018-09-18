@@ -3,19 +3,17 @@ const testHelper = require("./helpers/testHelper");
 const votingTestHelper = require("./helpers/votingTestHelper");
 
 contract('ProposalsManager - Voting:', async () => {
-    let proposalsManager, avtManager, avt;
+    let proposalsManager;
     let deposit;
     const BIGZERO = new web3.BigNumber(0);
     let expectedStake = [BIGZERO, BIGZERO, BIGZERO]; // Keep a balance for three stake funds.
     let expectedDeposit = [BIGZERO, BIGZERO, BIGZERO]; // Keep a balance for three deposit funds.
 
     before(async function () {
-      await votingTestHelper.before();
+      await testHelper.before();
+      await votingTestHelper.before(testHelper);
 
       proposalsManager = testHelper.getProposalsManager();
-      avtManager = testHelper.getAVTManager();
-
-      avt = testHelper.getAVTContract();
       deposit = await proposalsManager.getGovernanceProposalDeposit();
     });
 
@@ -50,46 +48,42 @@ contract('ProposalsManager - Voting:', async () => {
 
     async function depositStake(amount, accountNum) {
       let _accountNum = accountNum || 0;
-      await depositAmount("stake", amount, _accountNum);
+      let account = testHelper.getAccount(_accountNum);
+
+      await testHelper.addAVTToFund(amount, account, "stake");
+
       let balance = expectedStake[_accountNum];
       expectedStake[_accountNum] = balance.plus(amount);
     }
 
     async function depositDeposit(amount, accountNum) {
       let _accountNum = accountNum || 0;
-      await depositAmount("deposit", amount, _accountNum);
+      let account = testHelper.getAccount(_accountNum);
+
+      await testHelper.addAVTToFund(amount, account, "deposit");
+
       let balance = expectedDeposit[_accountNum];
       expectedDeposit[_accountNum] = balance.plus(amount);
     }
 
-    async function depositAmount(fund, amount, accountNum) {
-        let account = testHelper.getAccount(accountNum);
-        if (accountNum != 0) {
-            // Any other account will not have any AVT: give them what they need.
-            await avt.transfer(account, amount);
-        }
-        await avt.approve(testHelper.getStorage().address, amount, {from: account});
-        await avtManager.deposit(fund, amount, {from: account});
-    }
-
     async function withdrawStake(amount, accountNum) {
         let _accountNum = accountNum || 0;
-        await withdrawAmount("stake", amount, _accountNum);
+        let account = testHelper.getAccount(_accountNum);
+
+        await testHelper.withdrawAVTFromFund(amount, account, 'stake');
+
         let balance = expectedStake[_accountNum];
         expectedStake[_accountNum] = balance.minus(amount);
     }
 
     async function withdrawDeposit(amount, accountNum) {
         let _accountNum = accountNum || 0;
-        await withdrawAmount("deposit", amount, _accountNum);
+        let account = testHelper.getAccount(_accountNum);
+
+        await testHelper.withdrawAVTFromFund(amount, account, 'deposit');
+
         let balance = expectedDeposit[_accountNum];
         expectedDeposit[_accountNum] = balance.minus(amount);
-    }
-
-    async function withdrawAmount(fund, amount, accountNum) {
-        let _accountNum = accountNum || 0;
-        let account = testHelper.getAccount(_accountNum);
-        await avtManager.withdraw(fund, amount, {from: account});
     }
 
     context("Tests for voting on governance proposals", async () => {

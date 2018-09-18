@@ -1,11 +1,11 @@
 const ProposalsManager = artifacts.require("ProposalsManager.sol");
-const testHelper = require("./testHelper");
 const web3Utils = require('web3-utils');
 
-let proposalsManager;
+let testHelper, proposalsManager;
 
-async function before() {
-  await testHelper.before();
+async function before(_testHelper) {
+  testHelper = _testHelper;
+
   proposalsManager = testHelper.getProposalsManager();
 }
 

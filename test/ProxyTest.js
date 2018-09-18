@@ -3,13 +3,16 @@ const AventusStorage = artifacts.require("AventusStorage.sol");
 const IERC20 = artifacts.require("IERC20");
 const LProposalForTesting = artifacts.require("LProposalForTesting.sol");
 const testHelper = require("./helpers/testHelper");
+const web3Utils = require('web3-utils');
 
 contract('Proxy testing', async () => {
   const oneDay = 86400;  // seconds in one day.
   const oneWeek = 7 * oneDay;
   const minimumVotingPeriod = oneWeek;
 
-  let proposalsManager, aventusStorage, avt;
+  const account0 = testHelper.getAccount(0);
+
+  let proposalsManager, aventusStorage;
   let newLibraryAddress, oldLibraryAddress;
   let proposalDeposit;
 
@@ -19,22 +22,19 @@ contract('Proxy testing', async () => {
     await testHelper.before();
 
     const versionMajorMinor = await testHelper.getVersionMajorMinor();
-    libraryKey = web3.sha3("LProposalInstance" + "-" + versionMajorMinor);
+    libraryKey = web3Utils.soliditySha3("LProposalInstance" + "-" + versionMajorMinor);
 
     aventusStorage = testHelper.getStorage();
     proposalsManager = testHelper.getProposalsManager();
     newLibraryAddress = (await LProposalForTesting.deployed()).address;
     oldLibraryAddress = await aventusStorage.getAddress(libraryKey);
-
-    avt = testHelper.getAVTContract();
   });
 
   after(async () => await testHelper.checkFundsEmpty());
 
   async function createProposal(desc) {
     proposalDeposit = await proposalsManager.getGovernanceProposalDeposit();
-    await avt.approve(aventusStorage.address, proposalDeposit);
-    await avtManager.deposit("deposit", proposalDeposit);
+    await testHelper.addAVTToFund(proposalDeposit, account0, "deposit");
 
     await proposalsManager.createGovernanceProposal(desc);
     const eventArgs = await testHelper.getEventArgs(proposalsManager.LogCreateProposal);
@@ -56,7 +56,7 @@ contract('Proxy testing', async () => {
   async function endProposalAndWithdrawDeposit(_proposalId) {
     await testHelper.advanceTimeToEndOfProposal(_proposalId);
     await proposalsManager.endProposal(_proposalId);
-    await avtManager.withdraw("deposit", proposalDeposit);
+    await testHelper.withdrawAVTFromFund(proposalDeposit, account0, 'deposit');
   }
 
   it("can access the current version number", async () => {
@@ -74,7 +74,7 @@ contract('Proxy testing', async () => {
     // ...then calling the method again should give different behaviour.
     proposalId = await createProposal("What will the new library print?");
     assert.equal(proposalId, 2018);
-    await avtManager.withdraw("deposit", proposalDeposit);
+    await testHelper.withdrawAVTFromFund(proposalDeposit, account0, 'deposit');
 
     // Put the old library back...
     await useOldLibrary();
@@ -96,6 +96,6 @@ contract('Proxy testing', async () => {
     await useOldLibrary();
     // ...and the correct behaviour is restored.
     await proposalsManager.endProposal(proposalId);
-    await avtManager.withdraw("deposit", proposalDeposit);
+    await testHelper.withdrawAVTFromFund(proposalDeposit, account0, 'deposit');
   });
 });

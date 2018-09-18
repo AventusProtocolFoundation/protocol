@@ -2,8 +2,6 @@ pragma solidity ^0.4.24;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LAventusTime.sol";
-import "./LProposalWinnings.sol";
-import "./LAventities.sol";
 import './LAVTManager.sol';
 
 // Library for extending voting protocol functionality
@@ -28,7 +26,8 @@ library LProposalsEnact {
   * @param _deposit Deposit that has to have been paid for this proposal
   * @return uint proposalId_ of newly created proposal
   */
-  function doCreateProposal(IAventusStorage _storage, uint _deposit)
+  function doCreateProposal(IAventusStorage _storage, uint _deposit, uint numDaysInLobbyingPeriod, uint numDaysInVotingPeriod,
+      uint numDaysInRevealingPeriod)
     external
     returns (uint proposalId_)
   {
@@ -49,14 +48,7 @@ library LProposalsEnact {
     _storage.setAddress(keccak256(abi.encodePacked("Proposal", proposalId_, "owner")), owner);
     _storage.setUInt(keccak256(abi.encodePacked("Proposal", proposalId_, "deposit")), _deposit);
     _storage.setUInt(proposalCountKey, proposalId_);
-    setProposalTimes(_storage, proposalId_);
-  }
-
-  function doEndAventityChallenge(IAventusStorage _storage, uint _proposalId)
-    external
-  {
-    uint aventityId = getAventityIdFromChallengeProposalId(_storage, _proposalId);
-    endAventityChallenge(_storage, _proposalId, aventityId);
+    setProposalTimes(_storage, proposalId_, numDaysInLobbyingPeriod, numDaysInVotingPeriod, numDaysInRevealingPeriod);
   }
 
   /**
@@ -83,7 +75,7 @@ library LProposalsEnact {
       status_ = ProposalStatus.Lobbying;
     else if (currentTime < revealingStart)
       status_ = ProposalStatus.Voting;
-    else if (currentTime < revealingEnd)
+    else if (currentTime < revealingEnd && thereAreUnrevealedVotes(_storage, _proposalId))
       status_ = ProposalStatus.Revealing;
     else if (deposit != 0)
       status_ = ProposalStatus.RevealingFinishedProposalNotEnded;
@@ -113,32 +105,13 @@ library LProposalsEnact {
     return doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.RevealingFinishedProposalNotEnded;
   }
 
-  function doProposalIsAventityChallenge(IAventusStorage _storage, uint _proposalId)
-    public
-    view
-    returns (bool proposalIsAnAventityChallenge_)
-  {
-    proposalIsAnAventityChallenge_ = getAventityIdFromChallengeProposalId(_storage, _proposalId) != 0;
-  }
-
-  // NOTE: We allow an event challenge to straddle the ticket sales time on purpose: if
-  // the event is under challenge at ticket sale time it will NOT block ticket sales.
-  function setProposalTimes(IAventusStorage _storage, uint _proposalId)
+  function setProposalTimes(IAventusStorage _storage, uint _proposalId, uint numDaysInLobbyingPeriod, uint numDaysInVotingPeriod, uint numDaysInRevealingPeriod)
     private
   {
     uint lobbyingStart = LAventusTime.getCurrentTime(_storage);
-    uint votingStart = lobbyingStart + (1 days * _storage.getUInt(keccak256(abi.encodePacked("Proposal",
-        doProposalIsAventityChallenge(_storage, _proposalId) ?
-            "aventityChallengeLobbyingPeriodDays" :
-            "governanceProposalLobbyingPeriodDays"))));
-    uint revealingStart = votingStart + (1 days * _storage.getUInt(keccak256(abi.encodePacked("Proposal",
-        doProposalIsAventityChallenge(_storage, _proposalId) ?
-            "aventityChallengeVotingPeriodDays" :
-            "governanceProposalVotingPeriodDays"))));
-    uint revealingEnd = revealingStart + (1 days * _storage.getUInt(keccak256(abi.encodePacked("Proposal",
-        doProposalIsAventityChallenge(_storage, _proposalId) ?
-            "aventityChallengeRevealingPeriodDays" :
-            "governanceProposalRevealingPeriodDays"))));
+    uint votingStart = lobbyingStart + (1 days * numDaysInLobbyingPeriod);
+    uint revealingStart = votingStart + (1 days * numDaysInVotingPeriod);
+    uint revealingEnd = revealingStart + (1 days * numDaysInRevealingPeriod);
 
     _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "lobbyingStart")), lobbyingStart);
     _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "votingStart")), votingStart);
@@ -162,44 +135,8 @@ library LProposalsEnact {
     owner_ = _storage.getAddress(keccak256(abi.encodePacked("Proposal", _proposalId, "owner")));
   }
 
-  function challengerIsWinner(uint8 _winningOption) private pure returns (bool challengerIsWinner_) {
-    challengerIsWinner_ = (_winningOption == 1);
-  }
-
-  function getAventityIdFromChallengeProposalId(IAventusStorage _storage, uint _challengeProposalId)
-    private
-    view
-    returns (uint aventityId_)
-  {
-    aventityId_ = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _challengeProposalId, "ChallengeAventity")));
-  }
-
-  function endAventityChallenge(IAventusStorage _storage, uint _proposalId, uint _aventityId)
-    private
-  {
-    uint totalAgreedStake = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedStake", uint8(1))));
-    uint totalDisagreedStake = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedStake", uint8(2))));
-
-    // Note: a "draw" is taken as not agreeing with the challenge.
-    uint8 winningOption = totalAgreedStake > totalDisagreedStake ? 1 : 2;
-
-    uint totalWinningStake;
-    bool challengeWon = challengerIsWinner(winningOption);
-    if (challengeWon) {
-      LAventities.setAventityStatusFraudulent(_storage, _aventityId);
-      totalWinningStake = totalAgreedStake;
-    } else {
-      LAventities.setAventityAsClearFromChallenge(_storage, _aventityId);
-      totalWinningStake = totalDisagreedStake;
-    }
-
-    uint deposit = getProposalDeposit(_storage, _proposalId);
-    address challenger = getProposalOwner(_storage, _proposalId);
-    address challengee = LAventities.getAventityOwner(_storage, _aventityId);
-    LProposalWinnings.doWinningsDistribution(_storage, _proposalId, winningOption, challengeWon, deposit, challenger, challengee);
-
-    // Save the information we need to calculate voter winnings when they make their claim.
-    _storage.setUInt8(keccak256(abi.encodePacked("Proposal", _proposalId, "winningOption")), winningOption);
-    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "totalWinningStake")), totalWinningStake);
+  function thereAreUnrevealedVotes(IAventusStorage _storage, uint _proposalId) private view returns (bool result_) {
+    bytes32 unrevealedVotesCountKey = keccak256(abi.encodePacked("Proposal", _proposalId, "unrevealedVotesCount"));
+    result_ = _storage.getUInt(unrevealedVotesCountKey) > 0;
   }
 }

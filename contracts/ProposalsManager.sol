@@ -23,15 +23,8 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
     proposalId_ = LProposal.createGovernanceProposal(s, _desc);
   }
 
-  function createEventChallenge(uint _eventId) external returns (uint proposalId_) {
-    proposalId_ = LProposal.createEventChallenge(s, _eventId);
-  }
-
-  function createAventityChallenge(uint _aventityId) external returns (uint challengeProposalId_) {
-    challengeProposalId_ = LProposal.createAventityChallenge(s, _aventityId);
-  }
-
   function endProposal(uint _proposalId) external {
+    LAventities.finaliseChallenge(s, _proposalId);
     LProposal.endProposal(s, _proposalId);
   }
 
@@ -48,15 +41,11 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
   }
 
   function claimVoterWinnings(uint _proposalId) external {
-    LProposal.claimVoterWinnings(s, _proposalId);
+    LAventities.claimVoterWinnings(s, _proposalId);
   }
 
   function getGovernanceProposalDeposit() external view returns (uint proposalDeposit_) {
     proposalDeposit_ = LProposal.getGovernanceProposalDeposit(s);
-  }
-
-  function getExistingEventDeposit(uint _eventId) external view returns(uint eventDeposit_) {
-    eventDeposit_ = LEvents.getExistingEventDeposit(s, _eventId);
   }
 
   function getPrevTimeParamForCastVote(uint _proposalId) external view returns (uint prevTime_) {

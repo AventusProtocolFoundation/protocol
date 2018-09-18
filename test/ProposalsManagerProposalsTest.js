@@ -1,21 +1,21 @@
 const testHelper = require("./helpers/testHelper");
+const votingTestHelper = require("./helpers/votingTestHelper");
 
 contract('ProposalsManager - Proposal set-up', async () => {
   const oneDay = new web3.BigNumber(86400);  // seconds in one day. Solidity uses uint256.
   const oneWeek = oneDay.times(7);
   const minimumVotingPeriod = oneWeek;
   const tenThousandYears = oneDay.times(10000 * 365);
-  let proposalsManager, avtManager, avt;
+  let proposalsManager;
   let proposalId = new web3.BigNumber(0);
   let deposit = new web3.BigNumber(0);
 
   before(async () => {
     await testHelper.before();
+    await votingTestHelper.before(testHelper);
 
     proposalsManager = testHelper.getProposalsManager();
-    avtManager = testHelper.getAVTManager();
 
-    avt = testHelper.getAVTContract();
     deposit = await proposalsManager.getGovernanceProposalDeposit();
   });
 
@@ -27,12 +27,8 @@ contract('ProposalsManager - Proposal set-up', async () => {
 
   async function createProposal(desc, _owner) {
     let owner = _owner || testHelper.getAccount(0);
-    if (owner == _owner) {
-        // Any other account will not have any AVT: give them what they need.
-        await avt.transfer(owner, deposit);
-    }
-    await avt.approve(testHelper.getStorage().address, deposit, {from: owner});
-    await avtManager.deposit("deposit", deposit, {from: owner});
+
+    await testHelper.addAVTToFund(deposit, owner, "deposit");
 
     await proposalsManager.createGovernanceProposal(desc, {from: owner});
     const eventArgs = await testHelper.getEventArgs(proposalsManager.LogCreateProposal);
@@ -42,10 +38,14 @@ contract('ProposalsManager - Proposal set-up', async () => {
     assert.equal(eventArgs.desc, desc, "wrong description");
   }
 
+  async function withdrawDeposit() {
+    await testHelper.withdrawAVTFromFund(deposit, testHelper.getAccount(0), 'deposit');
+  }
+
   async function cleanUpProposal() {
     await testHelper.advanceTimeToEndOfProposal(proposalId);
     await proposalsManager.endProposal(proposalId);
-    await avtManager.withdraw("deposit", deposit);
+    await withdrawDeposit();
   }
 
   context("createProposal", async () => {
@@ -67,12 +67,37 @@ contract('ProposalsManager - Proposal set-up', async () => {
   context("endProposal", async () => {
     it ("cannot withdraw funds until proposal has ended", async () => {
       await createProposal("We have to wait for our money.");
-      await testHelper.expectRevert(() => avtManager.withdraw("deposit", deposit));
-      await testHelper.expectRevert(() => avtManager.withdraw("deposit", deposit));
+      await testHelper.expectRevert(() => withdrawDeposit());
+      await testHelper.expectRevert(() => withdrawDeposit());
       await testHelper.advanceTimeToEndOfProposal(proposalId);
-      await testHelper.expectRevert(() => avtManager.withdraw("deposit", deposit));
+      await testHelper.expectRevert(() => withdrawDeposit());
       await proposalsManager.endProposal(proposalId);
-      await avtManager.withdraw("deposit", deposit);
+      await withdrawDeposit();
+    });
+
+    it("can end proposal in revealing period, if all votes have been revealed", async() => {
+      await createProposal("We have to wait for our money.");
+      const voter1 = testHelper.getAccount(0);
+      const voter2 = testHelper.getAccount(1);
+      const voter3 = testHelper.getAccount(2);
+
+      await testHelper.advanceTimeToVotingStart(proposalId);
+      const signedMessage1 = await votingTestHelper.castVote(proposalId, 1, voter1);
+      const signedMessage2 = await votingTestHelper.castVote(proposalId, 1, voter2);
+      const signedMessage3 = await votingTestHelper.castVote(proposalId, 2, voter3);
+
+      await testHelper.advanceTimeToRevealingStart(proposalId);
+
+      await votingTestHelper.revealVote(signedMessage1, proposalId, 1, voter1);
+      await votingTestHelper.revealVote(signedMessage2, proposalId, 1, voter2);
+
+      // cannot end proposal while there are unrevealed votes
+      await testHelper.expectRevert(() => proposalsManager.endProposal(proposalId));
+
+      await votingTestHelper.revealVote(signedMessage3, proposalId, 2, voter3);
+
+      await proposalsManager.endProposal(proposalId);
+      await withdrawDeposit();
     });
   });
 });

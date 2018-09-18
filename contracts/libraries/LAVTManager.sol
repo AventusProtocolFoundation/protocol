@@ -8,7 +8,6 @@ library LAVTManager  {
   bytes32 constant stakeFundHash = keccak256(abi.encodePacked("stake"));
   bytes32 constant depositFundHash = keccak256(abi.encodePacked("deposit"));
   bytes32 constant oneAVTInUSCentsKey = keccak256(abi.encodePacked("OneAVTInUSCents"));
-  bytes32 constant totalAVTFundsKey = keccak256(abi.encodePacked("TotalAVTFunds"));
 
   /// See IAVTManager interface for events description
   event LogWithdraw(address indexed sender, string fund, uint amount);
@@ -51,7 +50,6 @@ library LAVTManager  {
       "Transfer of funds in withdraw must succeed before continuing"
     );
 
-    updateBalance(_storage, _amount, false);
     emit LogWithdraw(msg.sender, _fund, _amount);
   }
 
@@ -88,7 +86,6 @@ library LAVTManager  {
       "Transfer of funds in 'deposit' must succeed before continuing"
     );
 
-    updateBalance(_storage, _amount, true);
     emit LogDeposit(msg.sender, _fund, _amount);
   }
 
@@ -129,8 +126,8 @@ library LAVTManager  {
   }
 
   function getAVTDecimals(IAventusStorage _storage, uint _usCents) external view returns (uint avtDecimals_) {
-    uint oneAvtInUsCents = _storage.getUInt(oneAVTInUSCentsKey);
-    avtDecimals_ = (_usCents * (10**18)) / oneAvtInUsCents;
+    uint oneAvtInUSCents = _storage.getUInt(oneAVTInUSCentsKey);
+    avtDecimals_ = (_usCents * (10**18)) / oneAvtInUSCents;
   }
 
   // NOTE: This version has NO CHECKS on whether the transfer should be blocked so should only be
@@ -153,23 +150,6 @@ library LAVTManager  {
     // ...and give it to the "to" _fund.
     bytes32 toKey = keccak256(abi.encodePacked("AVTFund", _toAddress, _toFund));
     _storage.setUInt(toKey, _storage.getUInt(toKey) + _amount);
-  }
-
-  /**
-  * Keep track of the total AVT funds in the contract.
-  * @param _storage Storage contract
-  * @param _amount amount to update the balance by
-  * @param _increment True if incrementing balance
-  */
-  function updateBalance(IAventusStorage _storage, uint _amount, bool _increment) private {
-    uint balance = _storage.getUInt(totalAVTFundsKey);
-
-    if (_increment)
-      balance += _amount;
-    else
-      balance -= _amount;
-
-    _storage.setUInt(totalAVTFundsKey, balance);
   }
 
   /**

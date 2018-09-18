@@ -1,6 +1,7 @@
 const EventsManager = artifacts.require("EventsManager");
 const testHelper = require("./helpers/testHelper");
 const eventsTestHelper = require("./helpers/eventsTestHelper");
+const membersTestHelper = require("./helpers/membersTestHelper");
 const web3Utils = require('web3-utils');
 
 // For unsigned transactions, only the event owner or a delegate can be the msg.sender.
@@ -16,9 +17,13 @@ contract('EventsManager - event management', async () => {
   const eventOwner = testHelper.getAccount(1);
   const primaryDelegate = testHelper.getAccount(2);
   const secondaryDelegate = testHelper.getAccount(3);
+  const buyer = testHelper.getAccount(4);
+  const emptyOptionalData = "0x";
 
   before(async () => {
-    await eventsTestHelper.before(brokerAddress, eventOwner);
+    await testHelper.before();
+    await eventsTestHelper.before(testHelper, brokerAddress, eventOwner);
+    await membersTestHelper.before(testHelper);
 
     eventsManager = await EventsManager.deployed();
     aventusStorage = testHelper.getStorage();
@@ -32,18 +37,19 @@ contract('EventsManager - event management', async () => {
 
     // Use BigNumber for the deposits so we don't lose accuracy.
     async function getAndCheckEventDeposit(_eventCapacity, _price, _startTime, _expectedUSCentsDepositBN) {
-      const deposits = await eventsManager.getEventDeposit(_eventCapacity, _price, _startTime);
-      const depositInUsCentsBN = deposits[0];
-      assert.equal(_expectedUSCentsDepositBN.toString(), depositInUsCentsBN.toString());
-      const oneAvtInUsCentsBN = await aventusStorage.getUInt(web3Utils.soliditySha3("OneAVTInUSCents"));
+      const deposits = await eventsManager.getNewEventDeposit(_price);
+      const depositInUSCentsBN = deposits[0];
+      assert.equal(_expectedUSCentsDepositBN.toString(), depositInUSCentsBN.toString());
+      const oneAvtInUSCentsBN = await aventusStorage.getUInt(web3Utils.soliditySha3("OneAVTInUSCents"));
       const depositInAVTBN = deposits[1];
       assert.equal(
         depositInAVTBN.toString(),
-        depositInUsCentsBN.mul(to18SigFig).dividedToIntegerBy(oneAvtInUsCentsBN).toString());
+        depositInUSCentsBN.mul(to18SigFig).dividedToIntegerBy(oneAvtInUSCentsBN).toString());
     };
 
     it("gets the same deposit regardless of non-zero ticket price, eventCapacity or startTime", async () => {
-      const expectedUSCentsDepositBN = (await aventusStorage.getUInt(web3Utils.soliditySha3("Events", "fixedDepositAmountUsCents")));
+      const expectedUSCentsDepositBN = await aventusStorage.getUInt(
+          web3Utils.soliditySha3("Events", "fixedDepositAmountUSCents"));
       for (i = 1000; i != 10000; i += 1000) {
         // Create some varied values for the deposit paramaters. Shouldn't make a difference.
         const eventCapacity = 1000 + i * 10;
@@ -55,7 +61,8 @@ contract('EventsManager - event management', async () => {
 
     it("gets the same deposit regardless of eventCapacity or startTime if event is free", async () => {
       const price = 0;
-      const expectedUSCentsDepositBN = (await aventusStorage.getUInt(web3Utils.soliditySha3("Events", "minimumDepositAmountUsCents")));
+      const expectedUSCentsDepositBN = await aventusStorage.getUInt(
+          web3Utils.soliditySha3("Events", "minimumDepositAmountUSCents"));
       for (i = 1000; i != 10000; i += 1000) {
         // Create some varied values for the deposit paramaters. Shouldn't make a difference.
         const eventCapacity = 1000 + i * 10;
@@ -90,22 +97,24 @@ contract('EventsManager - event management', async () => {
           eventsTestHelper.setupUniqueEventParameters();
           await eventsTestHelper.makeEventDeposit();
           await createEventFailsDueToPreconditions();
-          await eventsTestHelper.depositAndRegisterAventityMember(brokerAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering broker");
+          await membersTestHelper.depositAndRegisterMember(brokerAddress, testHelper.brokerMemberType, testHelper.evidenceURL, "Registering broker");
           await eventsTestHelper.createValidEvent(useSignedCreateEvent);
-          await eventsTestHelper.deregisterAventityAndWithdrawDeposit(brokerAddress, testHelper.brokerAventityType);
+          await membersTestHelper.deregisterMemberAndWithdrawDeposit(brokerAddress, testHelper.brokerMemberType);
           await eventsTestHelper.endEventAndWithdrawDeposit();
         });
 
       }
 
+      // TODO: Consider moving these out of the for loop - they don't depend on whether the creation comes from a broker or not.
       context(eventPreTitle + (useSignedCreateEvent ? "with broker address" : ""), async () => {
         if (useSignedCreateEvent) {
           beforeEach(async () => {
-            await eventsTestHelper.depositAndRegisterAventityMember(brokerAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering broker");
+            await membersTestHelper.depositAndRegisterMember(brokerAddress, testHelper.brokerMemberType, testHelper.evidenceURL,
+                "Registering broker");
           });
 
           afterEach(async () => {
-              await eventsTestHelper.deregisterAventityAndWithdrawDeposit(brokerAddress, testHelper.brokerAventityType);
+              await membersTestHelper.deregisterMemberAndWithdrawDeposit(brokerAddress, testHelper.brokerMemberType);
           });
         }
 
@@ -204,80 +213,204 @@ contract('EventsManager - event management', async () => {
           });
 
           async function registerPrimaryDelegateSucceeds() {
-            await eventsManager.registerRole(eventId, testHelper.primaryDelegateAventityType, primaryDelegate, {from: eventOwner});
+            await eventsManager.registerRole(eventId, testHelper.primaryDelegateMemberType, primaryDelegate, {from: eventOwner});
           }
 
           async function registerPrimaryDelegateFails(_address) {
-            await testHelper.expectRevert(() => eventsManager.registerRole(eventId, testHelper.primaryDelegateAventityType, primaryDelegate, {from: _address}));
+            await testHelper.expectRevert(() => eventsManager.registerRole(eventId, testHelper.primaryDelegateMemberType, primaryDelegate, {from: _address}));
           }
 
           async function deregisterPrimaryDelegateSucceeds() {
-            await eventsManager.deregisterRole(eventId, testHelper.primaryDelegateAventityType, primaryDelegate, {from: eventOwner});
+            await eventsManager.deregisterRole(eventId, testHelper.primaryDelegateMemberType, primaryDelegate, {from: eventOwner});
           }
 
           async function registerUnknownRoleFails(_address) {
-            await testHelper.expectRevert(() => eventsManager.registerRole(eventId, "unknownAventityType", _address, {from: eventOwner}));
+            await testHelper.expectRevert(() => eventsManager.registerRole(eventId, "unknownMemberType", _address, {from: eventOwner}));
           }
 
           it("can register/deregister a primary delegate for an event", async () => {
-            await eventsTestHelper.depositAndRegisterAventityMember(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
+            await membersTestHelper.depositAndRegisterMember(primaryDelegate, testHelper.primaryDelegateMemberType, testHelper.evidenceURL, "Registering primary delegate");
 
-            let registered = await eventsManager.roleIsRegistered(eventId, testHelper.primaryDelegateAventityType, primaryDelegate);
+            let registered = await eventsManager.roleIsRegistered(eventId, testHelper.primaryDelegateMemberType, primaryDelegate);
             assert.ok(!registered);
 
             await registerPrimaryDelegateSucceeds();
-            registered = await eventsManager.roleIsRegistered(eventId, testHelper.primaryDelegateAventityType, primaryDelegate);
+            registered = await eventsManager.roleIsRegistered(eventId, testHelper.primaryDelegateMemberType, primaryDelegate);
             assert.ok(registered);
 
             await deregisterPrimaryDelegateSucceeds()
-            registered = await eventsManager.roleIsRegistered(eventId, testHelper.primaryDelegateAventityType, primaryDelegate);
+            registered = await eventsManager.roleIsRegistered(eventId, testHelper.primaryDelegateMemberType, primaryDelegate);
             assert.ok(!registered);
 
-            await eventsTestHelper.deregisterAventityAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateAventityType);
+            await membersTestHelper.deregisterMemberAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateMemberType);
           });
 
           it("can register/deregister a secondary delegate for an event", async () => {
-            await eventsTestHelper.depositAndRegisterAventityMember(secondaryDelegate, testHelper.secondaryDelegateAventityType, testHelper.evidenceURL, "Registering secondary delegate");
+            await membersTestHelper.depositAndRegisterMember(secondaryDelegate, testHelper.secondaryDelegateMemberType, testHelper.evidenceURL, "Registering secondary delegate");
 
-            let registered = await eventsManager.roleIsRegistered(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate);
+            let registered = await eventsManager.roleIsRegistered(eventId, testHelper.secondaryDelegateMemberType, secondaryDelegate);
             assert.ok(!registered);
 
-            await eventsManager.registerRole(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate, {from: eventOwner});
-            registered = await eventsManager.roleIsRegistered(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate);
+            await eventsManager.registerRole(eventId, testHelper.secondaryDelegateMemberType, secondaryDelegate, {from: eventOwner});
+            registered = await eventsManager.roleIsRegistered(eventId, testHelper.secondaryDelegateMemberType, secondaryDelegate);
             assert.ok(registered);
 
-            await eventsManager.deregisterRole(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate, {from: eventOwner});
-            registered = await eventsManager.roleIsRegistered(eventId, testHelper.secondaryDelegateAventityType, secondaryDelegate);
+            await eventsManager.deregisterRole(eventId, testHelper.secondaryDelegateMemberType, secondaryDelegate, {from: eventOwner});
+            registered = await eventsManager.roleIsRegistered(eventId, testHelper.secondaryDelegateMemberType, secondaryDelegate);
             assert.ok(!registered);
 
-            await eventsTestHelper.deregisterAventityAndWithdrawDeposit(secondaryDelegate, testHelper.secondaryDelegateAventityType);
+            await membersTestHelper.deregisterMemberAndWithdrawDeposit(secondaryDelegate, testHelper.secondaryDelegateMemberType);
           });
 
-          it("cannot register a delegate for an event if they are not registered as an aventity", async () => {
+          it("cannot register a delegate for an event if they are not registered as a member", async () => {
             await registerPrimaryDelegateFails(eventOwner);
           });
 
           it ("can deregister a delegate for an event if they are not registered", async () => {
-            await eventsTestHelper.depositAndRegisterAventityMember(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
+            await membersTestHelper.depositAndRegisterMember(primaryDelegate, testHelper.primaryDelegateMemberType, testHelper.evidenceURL, "Registering primary delegate");
             await deregisterPrimaryDelegateSucceeds()
-            await eventsTestHelper.deregisterAventityAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateAventityType);
+            await membersTestHelper.deregisterMemberAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateMemberType);
           });
 
           it("cannot register/deregister a delegate for an event if not the owner", async () => {
-            await eventsTestHelper.depositAndRegisterAventityMember(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
+            await membersTestHelper.depositAndRegisterMember(primaryDelegate, testHelper.primaryDelegateMemberType, testHelper.evidenceURL, "Registering primary delegate");
             await registerPrimaryDelegateFails(primaryDelegate);
             await registerPrimaryDelegateSucceeds();
-            await testHelper.expectRevert(() => eventsManager.deregisterRole(eventId, testHelper.primaryDelegateAventityType, primaryDelegate, {from: primaryDelegate}));
+            await testHelper.expectRevert(() => eventsManager.deregisterRole(eventId, testHelper.primaryDelegateMemberType, primaryDelegate, {from: primaryDelegate}));
             await deregisterPrimaryDelegateSucceeds()
-            await eventsTestHelper.deregisterAventityAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateAventityType);
+            await membersTestHelper.deregisterMemberAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateMemberType);
           });
 
           it("cannot register a delegate with an unknown role", async () => {
-            await eventsTestHelper.depositAndRegisterAventityMember(primaryDelegate, testHelper.primaryDelegateAventityType, testHelper.evidenceURL, "Registering primary delegate");
+            await membersTestHelper.depositAndRegisterMember(primaryDelegate, testHelper.primaryDelegateMemberType, testHelper.evidenceURL, "Registering primary delegate");
             await registerUnknownRoleFails(primaryDelegate);
-            await eventsTestHelper.deregisterAventityAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateAventityType);
+            await membersTestHelper.deregisterMemberAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateMemberType);
           });
         });
+
+        context(eventPreTitle + "cancellation", async () => {
+          let eventId;
+
+          beforeEach(async () => {
+            await eventsTestHelper.makeEventDepositAndCreateValidEvent(useSignedCreateEvent);
+            eventId = eventsTestHelper.getValidEventId();
+            eventDeposit = eventsTestHelper.getEventDeposit();
+
+            if (useSignedCreateEvent) {
+              await eventsManager.registerRole(eventId, testHelper.brokerMemberType, brokerAddress, {from: eventOwner});
+            };
+          });
+
+          async function doCancelEvent(_eventId, _canceller) {
+            if (useSignedCreateEvent) {
+              await doSignedCancelEvent(_eventId, _canceller, brokerAddress);
+            } else {
+              await eventsManager.cancelEvent(_eventId, '0x', {from: _canceller});
+            }
+          }
+
+          async function doSignedCancelEvent(_eventId, _canceller, _sender) {
+            let keccak256Msg = await web3Utils.soliditySha3(_eventId);
+            let signedMessage = testHelper.createSignedMessage(_canceller, keccak256Msg);
+            await eventsManager.cancelEvent(_eventId, signedMessage, {from: _sender});
+          }
+
+          async function cancelEventSucceeds() {
+            await doCancelEvent(eventId, eventOwner);
+            const eventArgs = await testHelper.getEventArgs(eventsManager.LogEventCancelled);
+            assert.equal(eventArgs.eventId.toNumber(), eventId);
+          }
+
+          async function cancelEventFails(_eventId, _canceller) {
+            const canceller = _canceller || eventOwner;
+            await testHelper.expectRevert(() => doCancelEvent(_eventId, canceller));
+          }
+
+          context("succeeds", async () => {
+            afterEach(async () => {
+              await eventsTestHelper.withdrawDeposit(eventDeposit, eventOwner);
+            });
+
+            it("within the reporting period", async () => {
+              await cancelEventSucceeds();
+            });
+
+            it("within the ticket sale period", async () => {
+              await testHelper.advanceTimeToEventTicketSaleStart(eventId);
+              await cancelEventSucceeds();
+            });
+
+            it("but only once", async () => {
+              await cancelEventSucceeds();
+              await cancelEventFails(eventId);
+            });
+
+            it("if all tickets have been refunded", async () => {
+              await testHelper.advanceTimeToEventTicketSaleStart(eventId);
+              const vendorTicketRefHash = web3Utils.soliditySha3("UniqueVendorTicketRef");
+              const ticketId = await eventsTestHelper.sellTicketSucceeds(eventId, vendorTicketRefHash, "some metadata", buyer,
+              emptyOptionalData, emptyOptionalData, eventOwner);
+              await eventsTestHelper.refundTicketSucceeds(eventId, ticketId, eventOwner, emptyOptionalData);
+              await cancelEventSucceeds(eventId);
+            });
+          });
+
+          context("fails", async () => {
+            afterEach(async () => {
+              await eventsTestHelper.endEventAndWithdrawDeposit();
+            });
+
+            it("if event doesn't exist", async () => {
+              await cancelEventFails(999);
+            });
+
+            it("if the event has ended", async () => {
+              await testHelper.advanceTimeToEventEnd(eventId);
+              await cancelEventFails(eventId);
+            });
+
+            it("if not the owner", async () => {
+              await cancelEventFails(eventId, secondaryDelegate);
+            });
+
+            it("if done by a primary delegate", async function () {
+              await membersTestHelper.depositAndRegisterMember(primaryDelegate, testHelper.primaryDelegateMemberType, testHelper.evidenceURL, "Registering primary delegate");
+              await cancelEventFails(eventId, primaryDelegate); // when not primary delegate
+              await eventsManager.registerRole(eventId, testHelper.primaryDelegateMemberType, primaryDelegate, {from: eventOwner});
+              await cancelEventFails(eventId, primaryDelegate); // when primary delegate
+              await membersTestHelper.deregisterMemberAndWithdrawDeposit(primaryDelegate, testHelper.primaryDelegateMemberType);
+            });
+
+            it("if done by a secondary delegate", async function () {
+              await membersTestHelper.depositAndRegisterMember(secondaryDelegate, testHelper.secondaryDelegateMemberType, testHelper.evidenceURL, "Registering secondary delegate");
+              await cancelEventFails(eventId, secondaryDelegate); // when not secondary delegate
+              await eventsManager.registerRole(eventId, testHelper.secondaryDelegateMemberType, secondaryDelegate, {from: eventOwner});
+              await cancelEventFails(eventId, secondaryDelegate); // when secondary delegate
+              await membersTestHelper.deregisterMemberAndWithdrawDeposit(secondaryDelegate, testHelper.secondaryDelegateMemberType);
+            });
+
+            it("if tickets have been sold", async () => {
+              await testHelper.advanceTimeToEventTicketSaleStart(eventId);
+              const vendorTicketRefHash = web3Utils.soliditySha3("UniqueVendorTicketRef");
+              await eventsTestHelper.sellTicketSucceeds(eventId, vendorTicketRefHash, "some metadata", buyer, emptyOptionalData, emptyOptionalData, eventOwner);
+              await cancelEventFails(eventId);
+            });
+
+            if (useSignedCreateEvent) {
+              context("when signed", async () => {
+                it("but sending address is not registered as a broker", async () => {
+                  await membersTestHelper.deregisterMemberAndWithdrawDeposit(brokerAddress, testHelper.brokerMemberType);
+                  await cancelEventFails(eventId);
+                  await membersTestHelper.depositAndRegisterMember(brokerAddress, testHelper.brokerMemberType, testHelper.evidenceURL, "Registering broker");
+                });
+
+                it("but owner is sending address", async () => {
+                  await testHelper.expectRevert(() => doSignedCancelEvent(eventId, eventOwner, eventOwner));
+                });
+              });
+            }
+          });
+        })
       });
     });
   }
