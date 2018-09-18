@@ -11,11 +11,14 @@ const AVTManagerInterface = artifacts.require("IAVTManager");
 const ProposalsManager = artifacts.require("ProposalsManager");
 const ProposalsManagerInterface = artifacts.require("IProposalsManager");
 
-const AventitiesManager = artifacts.require("AventitiesManager");
-const AventitiesManagerInterface = artifacts.require("IAventitiesManager");
+const MembersManager = artifacts.require("MembersManager");
+const MembersManagerInterface = artifacts.require("IMembersManager");
 
 const EventsManager = artifacts.require("EventsManager");
 const EventsManagerInterface = artifacts.require("IEventsManager");
+
+const MerkleRootsManager = artifacts.require("MerkleRootsManager");
+const MerkleRootsManagerInterface = artifacts.require("IMerkleRootsManager");
 
 const ParameterRegistry = artifacts.require("ParameterRegistry");
 const abiPartLength = 16;
@@ -29,8 +32,9 @@ module.exports = function(deployer, network, accounts) {
 
 let deployAVTManager;
 let deployProposalsManager;
-let deployAventitiesManager;
+let deployMembersManager;
 let deployEventsManager;
+let deployMerkleRootsManager;
 let deployParameterRegistry;
 
 let version;
@@ -43,8 +47,9 @@ function deployContracts(deployer, network) {
   // ALWAYS deploy to development, NEVER to another network unless hard coded.
   deployAVTManager = developmentMode;
   deployProposalsManager = developmentMode;
-  deployAventitiesManager = developmentMode;
+  deployMembersManager = developmentMode;
   deployEventsManager = developmentMode;
+  deployMerkleRootsManager = developmentMode;
   deployParameterRegistry = developmentMode;
 
   let storage;
@@ -57,8 +62,9 @@ function deployContracts(deployer, network) {
     return doDeployProposalsManager(deployer, storage)
   })
   .then(() => doDeployAVTManager(deployer, storage))
-  .then(() => doDeployAventitiesManager(deployer, storage))
+  .then(() => doDeployMembersManager(deployer, storage))
   .then(() => doDeployEventsManager(deployer, storage))
+  .then(() => doDeployMerkleRootsManager(deployer, storage))
   .then(() => doDeployParameterRegistry(deployer, storage));
 }
 
@@ -89,12 +95,12 @@ function doDeployAVTManager(_deployer, _storage) {
   .then(() => _storage.allowAccess("transferAVT", AVTManager.address))
 }
 
-function doDeployAventitiesManager(_deployer, _storage) {
-  if (!deployAventitiesManager) return _deployer;
+function doDeployMembersManager(_deployer, _storage) {
+  if (!deployMembersManager) return _deployer;
 
-  return _deployer.deploy(AventitiesManager, _storage.address)
-  .then(() => saveInterfaceToStorage(_storage, "IAventitiesManager", AventitiesManagerInterface, AventitiesManager))
-  .then(() => _storage.allowAccess("write", AventitiesManager.address));
+  return _deployer.deploy(MembersManager, _storage.address)
+  .then(() => saveInterfaceToStorage(_storage, "IMembersManager", MembersManagerInterface, MembersManager))
+  .then(() => _storage.allowAccess("write", MembersManager.address));
 }
 
 function doDeployEventsManager(_deployer, _storage) {
@@ -103,6 +109,14 @@ function doDeployEventsManager(_deployer, _storage) {
   return _deployer.deploy(EventsManager, _storage.address)
   .then(() => saveInterfaceToStorage(_storage, "IEventsManager", EventsManagerInterface, EventsManager))
   .then(() => _storage.allowAccess("write", EventsManager.address));
+}
+
+function doDeployMerkleRootsManager(_deployer, _storage) {
+  if (!deployMerkleRootsManager) return _deployer;
+
+  return _deployer.deploy(MerkleRootsManager, _storage.address)
+  .then(() => saveInterfaceToStorage(_storage, "IMerkleRootsManager", MerkleRootsManagerInterface, MerkleRootsManager))
+  .then(() => _storage.allowAccess("write", MerkleRootsManager.address));
 }
 
 function doDeployParameterRegistry(_deployer, _storage) {

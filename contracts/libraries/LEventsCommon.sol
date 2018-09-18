@@ -1,14 +1,15 @@
 pragma solidity ^0.4.24;
 
 import '../interfaces/IAventusStorage.sol';
-import "./LAventusTime.sol";
+import './LAventusTime.sol';
 import './LAVTManager.sol';
 import './LAventities.sol';
+import './LMembers.sol';
 
 library LEventsCommon {
   bytes32 constant minimumEventReportingPeriodDaysKey = keccak256(abi.encodePacked("Events", "minimumEventReportingPeriodDays"));
-  bytes32 constant minimumDepositAmountUsCentsKey = keccak256(abi.encodePacked("Events", "minimumDepositAmountUsCents"));
-  bytes32 constant fixedDepositAmountUsCentsKey = keccak256(abi.encodePacked("Events", "fixedDepositAmountUsCents"));
+  bytes32 constant minimumDepositAmountUSCentsKey = keccak256(abi.encodePacked("Events", "minimumDepositAmountUSCents"));
+  bytes32 constant fixedDepositAmountUSCentsKey = keccak256(abi.encodePacked("Events", "fixedDepositAmountUSCents"));
   bytes32 constant eventCountKey = keccak256(abi.encodePacked("EventCount"));
 
   modifier onlyValidEvent(IAventusStorage _storage, uint _eventId) {
@@ -19,12 +20,12 @@ library LEventsCommon {
     _;
   }
 
-  function validateEventCreation(IAventusStorage _storage, string _eventDesc, uint _eventTime, uint _capacity,
-    uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime, string _eventSupportURL, address _owner)
+  function validateEventCreation(IAventusStorage _storage, string _eventDesc, string _eventSupportURL,
+    uint _ticketSaleStartTime, uint _eventTime, uint _capacity, uint _averageTicketPriceInUSCents)
     external
   {
-    bytes32 hashMsg = hashEventParameters(_eventDesc, _eventTime, _capacity, _averageTicketPriceInUSCents,
-      _ticketSaleStartTime, _eventSupportURL, _owner);
+    bytes32 hashMsg = hashEventParameters(_eventDesc, _eventSupportURL, _ticketSaleStartTime, _eventTime, _capacity,
+        _averageTicketPriceInUSCents);
     bytes32 hashMsgKey = keccak256(abi.encodePacked("Event", "hashMessage", hashMsg));
 
     uint minimumEventReportingPeriod = (1 days) * _storage.getUInt(minimumEventReportingPeriodDaysKey);
@@ -60,19 +61,17 @@ library LEventsCommon {
   }
 
   /**
-  * @dev Calculate the appropriate event deposit In USCents and in AVT
-  * @param _capacity - number of tickets (capacity) for the event
-  * @param _averageTicketPriceInUSCents  - average ticket price in US Cents
-  * @param _ticketSaleStartTime - expected ticket sale start time
-  * @return uint depositInUSCents_ calculated deposit in US cents
-  * @return uint depositInAVTDecimals_ calculated deposit in AVT Decimals
+  * @notice Calculate the event deposit In USCents and in AVT
+  * @param _averageTicketPriceInUSCents Average ticket price in US Cents
+  * @return uint depositInUSCents_ Deposit in US cents
+  * @return uint depositInAVTDecimals_ Deposit in AVT Decimals
   */
-  function getEventDeposit(IAventusStorage _storage, uint _capacity, uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime)
+  function getNewEventDeposit(IAventusStorage _storage, uint _averageTicketPriceInUSCents)
     external
     view
     returns (uint depositInUSCents_, uint depositInAVTDecimals_)
   {
-    depositInUSCents_ = getDepositInUSCents(_storage, _capacity, _averageTicketPriceInUSCents, _ticketSaleStartTime);
+    depositInUSCents_ = getDepositInUSCents(_storage, _averageTicketPriceInUSCents);
     depositInAVTDecimals_ = LAVTManager.getAVTDecimals(_storage, depositInUSCents_);
   }
 
@@ -85,10 +84,18 @@ library LEventsCommon {
     bool eventHasHappened = LAventusTime.getCurrentTime(_storage) >=  _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "eventTime")));
     bool eventIsCancelled = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "status"))) == 1;
 
-    uint aventityId = LAventities.getAventityIdFromEventId(_storage, _eventId, "Event");
+    uint aventityId = getAventityIdFromEventId(_storage, _eventId);
     bool aventityIsNotFraudulent = LAventities.aventityIsNotFraudulent(_storage, aventityId);
 
     active_ = !eventHasHappened && !eventIsCancelled && aventityIsNotFraudulent;
+  }
+
+  function getAventityIdFromEventId(IAventusStorage _storage, uint _eventId)
+    public
+    view
+    returns (uint aventityId_)
+  {
+    aventityId_ = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "aventityId")));
   }
 
   function eventValid(IAventusStorage _storage, uint _eventId)
@@ -113,7 +120,7 @@ library LEventsCommon {
     returns (bool registered_)
   {
     registered_ = _storage.getBoolean(keccak256(abi.encodePacked("Event", _eventId, "role", _role, "address", _address))) &&
-      LAventities.aventityIsActive(_storage, _address, _role);
+      LMembers.memberIsActive(_storage, _address, _role);
   }
 
   function addressIsOwner(IAventusStorage _storage, uint _eventId, address _owner) public view returns (bool isOwner_) {
@@ -128,30 +135,31 @@ library LEventsCommon {
     eventOwner_ = _storage.getAddress(keccak256(abi.encodePacked("Event", _eventId, "owner")));
   }
 
-  function getExistingEventDeposit(IAventusStorage _storage, uint _eventId) internal view returns (uint eventDeposit_) {
-    eventDeposit_ = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "deposit")));
+  function getExistingEventDeposit(IAventusStorage _storage, uint _eventId) public view returns (uint eventDeposit_) {
+    uint aventityId = getAventityIdFromEventId(_storage, _eventId);
+    eventDeposit_ = LAventities.getExistingAventityDeposit(_storage, aventityId);
   }
 
   function getEventCountKey() internal pure returns (bytes32 key_) {
     key_ = eventCountKey;
   }
 
-  function hashEventParameters(string _eventDesc, uint _eventTime, uint _capacity, uint _averageTicketPriceInUSCents,
-    uint _ticketSaleStartTime, string _eventSupportURL, address _owner)
+  function hashEventParameters(string _eventDesc, string _eventSupportURL, uint _ticketSaleStartTime, uint _eventTime,
+      uint _capacity, uint _averageTicketPriceInUSCents)
     internal
     pure
     returns (bytes32 hash_)
   {
     // Hash the variable length parameters to create fixed length parameters.
     // See: http://solidity.readthedocs.io/en/v0.4.21/abi-spec.html#abi-packed-mode
-    hash_ = keccak256(abi.encodePacked(keccak256(abi.encodePacked(_eventDesc)), _eventTime, _capacity, _averageTicketPriceInUSCents,
-        _ticketSaleStartTime,  keccak256(abi.encodePacked(_eventSupportURL)), _owner));
+    hash_ = keccak256(abi.encodePacked(keccak256(abi.encodePacked(_eventDesc)), keccak256(abi.encodePacked(_eventSupportURL)),
+        _ticketSaleStartTime, _eventTime, _capacity, _averageTicketPriceInUSCents));
   }
 
   function checkEventOverCapacity(IAventusStorage _storage, uint _eventId) internal view  returns (uint ticketCount_) {
     uint capacity = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "capacity")));
-    ticketCount_ = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "TicketCount")));
-    uint refundedTicketCount = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "RefundedTicketCount")));
+    ticketCount_ = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "ticketCount")));
+    uint refundedTicketCount = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "refundedTicketCount")));
     ticketCount_ += 1;
 
     require(
@@ -160,7 +168,7 @@ library LEventsCommon {
     );
   }
 
-  function getDepositInUSCents(IAventusStorage _storage, uint /*_capacity*/, uint _averageTicketPriceInUSCents, uint /*_ticketSaleStartTime*/)
+  function getDepositInUSCents(IAventusStorage _storage, uint _averageTicketPriceInUSCents)
     private
     view
     returns (uint depositInUSCents_)
@@ -168,7 +176,7 @@ library LEventsCommon {
     // TODO: Use a more advanced formula, taking into consideration reporting period, fraudulence
     // rates, etc, instead of fixed values.
     depositInUSCents_ = _averageTicketPriceInUSCents == 0 ?
-      _storage.getUInt(minimumDepositAmountUsCentsKey):
-      _storage.getUInt(fixedDepositAmountUsCentsKey);
+      _storage.getUInt(minimumDepositAmountUSCentsKey):
+      _storage.getUInt(fixedDepositAmountUSCentsKey);
   }
 }

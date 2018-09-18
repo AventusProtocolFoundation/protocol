@@ -1,20 +1,17 @@
 const EventsManager = artifacts.require("EventsManager");
 const ProposalsManager = artifacts.require("ProposalsManager");
-const AventitiesManager = artifacts.require("AventitiesManager");
+const MembersManager = artifacts.require("MembersManager");
 const AventusStorage = artifacts.require("AventusStorage");
-const testHelper = require("./testHelper");
 const web3Utils = require('web3-utils');
 
 const oneDay = new web3.BigNumber(86400);  // seconds in one day. Solidity uses uint256.
 const oneWeek = oneDay.times(7);
-let eventsManager, proposalsManager, avt, avtManager, storage;
+let testHelper, eventsManager, proposalsManager, storage;
 
 let validEventId, eventDeposit;
 
 let brokerAddress;
 let eventOwner;
-
-let aventities = {};
 
 const eventCapacity = 5;
 const eventSupportURL = "my support url that is really just a non-empty string";
@@ -23,37 +20,25 @@ let ticketSaleStartTime, eventTime, eventDesc;
 const eventDescBase = "This is NOT an event id: this is event number: ";
 let eventCount = 1;
 
-const ticketDetailsBase = "Unallocated seating. Ticket number: ";
+const vendorTicketRefBase = "UniqueVendorTicketRef ";
 let ticketCount = 1;
 
-async function before(_brokerAddress, _eventOwner) {
-  await testHelper.before();
+async function before(_testHelper, _brokerAddress, _eventOwner) {
+  testHelper = _testHelper;
 
   brokerAddress = _brokerAddress;
   eventOwner = _eventOwner;
 
   eventsManager = await EventsManager.deployed();
-  aventitiesManager = await AventitiesManager.deployed();
+  membersManager = await MembersManager.deployed();
   storage = await AventusStorage.deployed();
   proposalsManager = testHelper.getProposalsManager();
-  avtManager =  testHelper.getAVTManager();
-
-  avt = testHelper.getAVTContract();
 };
 
 after(async () => await testHelper.checkFundsEmpty());
 
-async function makeDeposit(_amount, _depositer) {
-  if (_depositer != testHelper.getAccount(0)) {
-    // Any other account will not have any AVT: give them what they need.
-    await avt.transfer(_depositer, _amount);
-  }
-  await avt.approve(storage.address, _amount, {from: _depositer});
-  await avtManager.deposit("deposit", _amount, {from: _depositer});
-}
-
 async function withdrawDeposit(_depositAmount, _withdrawer) {
-  await avtManager.withdraw("deposit", _depositAmount, {from: _withdrawer});
+  await testHelper.withdrawAVTFromFund(_depositAmount, _withdrawer, "deposit");
 }
 
 function setupUniqueEventParameters() {
@@ -64,25 +49,10 @@ function setupUniqueEventParameters() {
   eventTime = ticketSaleStartTime.plus(oneWeek);
 }
 
-async function depositAndRegisterAventityMember(_brokerAddress, _type, _evidenceUrl, _desc) {
-  let amount = await aventitiesManager.getAventityMemberDeposit(_type);
-  await makeDeposit(amount, _brokerAddress);
-  await aventitiesManager.registerAventityMember(_brokerAddress, _type, _evidenceUrl, _desc);
-  let eventArgs = await testHelper.getEventArgs(aventitiesManager.LogAventityMemberRegistered);
-  let aventityId = eventArgs.aventityId.toNumber();
-  aventities[_brokerAddress+_type] = aventityId;
-}
-
-async function deregisterAventityAndWithdrawDeposit(_brokerAddress, _type) {
-  await aventitiesManager.deregisterAventity(aventities[_brokerAddress+_type]);
-  let deposit = await aventitiesManager.getAventityMemberDeposit(_type);
-  await withdrawDeposit(deposit, _brokerAddress);
-}
-
 async function makeEventDeposit() {
-  let deposits = await eventsManager.getEventDeposit(eventCapacity, averageTicketPriceInUSCents, ticketSaleStartTime);
+  let deposits = await eventsManager.getNewEventDeposit(averageTicketPriceInUSCents);
   eventDeposit = deposits[1];
-  await makeDeposit(eventDeposit, eventOwner);
+  await testHelper.addAVTToFund(eventDeposit, eventOwner, "deposit");
 }
 
 async function withdrawEventDeposit() {
@@ -97,28 +67,26 @@ async function endEventAndWithdrawDeposit() {
 
 
 async function doCreateEvent(_useSignedCreateEvent, _eventTime, _ticketSaleStartTime, _eventSupportURL) {
+  let sender, ownerProof;
   if (_useSignedCreateEvent) {
     // Hash the variable length parameters to create fixed length parameters.
     // See: http://solidity.readthedocs.io/en/v0.4.21/abi-spec.html#abi-packed-mode
-    let keccak256Msg = await web3Utils.soliditySha3(await web3Utils.soliditySha3(eventDesc), _eventTime, eventCapacity,
-        averageTicketPriceInUSCents, _ticketSaleStartTime, await web3Utils.soliditySha3(_eventSupportURL), eventOwner);
-    let signedMessage = testHelper.createSignedMessage(eventOwner, keccak256Msg);
-    await eventsManager.signedCreateEvent(signedMessage, eventDesc, _eventTime, eventCapacity, averageTicketPriceInUSCents,
-        _ticketSaleStartTime, _eventSupportURL, eventOwner, {from: brokerAddress});
+    let keccak256Msg = await web3Utils.soliditySha3(await web3Utils.soliditySha3(eventDesc),
+        await web3Utils.soliditySha3(_eventSupportURL), _ticketSaleStartTime, _eventTime, eventCapacity,
+        averageTicketPriceInUSCents);
+    sender = brokerAddress;
+    ownerProof = testHelper.createSignedMessage(eventOwner, keccak256Msg);
   } else {
-    await eventsManager.createEvent( eventDesc, _eventTime, eventCapacity, averageTicketPriceInUSCents,
-       _ticketSaleStartTime, _eventSupportURL, {from: eventOwner});
+    sender = eventOwner;
+    ownerProof = '0x';
   }
+  await eventsManager.createEvent(eventDesc, _eventSupportURL, _ticketSaleStartTime, _eventTime, eventCapacity,
+      averageTicketPriceInUSCents, ownerProof, {from: sender});
 }
 
 async function createValidEvent(_useSignedCreateEvent) {
   await doCreateEvent(_useSignedCreateEvent, eventTime, ticketSaleStartTime, eventSupportURL);
-  let eventArgs;
-  if (_useSignedCreateEvent) {
-    eventArgs = await testHelper.getEventArgs(eventsManager.LogSignedEventCreated);
-  } else {
-    eventArgs = await testHelper.getEventArgs(eventsManager.LogEventCreated);
-  }
+  let eventArgs = await testHelper.getEventArgs(eventsManager.LogEventCreated);
   assert.equal(eventArgs.eventDesc, eventDesc);
   assert.equal(eventArgs.ticketSaleStartTime.toNumber(), ticketSaleStartTime.toNumber());
   assert.equal(eventArgs.eventTime.toNumber(), eventTime.toNumber());
@@ -133,6 +101,28 @@ async function makeEventDepositAndCreateValidEvent(_useSignedCreateEvent) {
   await createValidEvent(_useSignedCreateEvent);
 }
 
+// selling tickets
+async function sellTicketSucceeds(_eventId, _vendorTicketRefHash, _ticketMetadata, _buyer, _sellerProof, _doorData, _seller) {
+  await eventsManager.sellTicket(_eventId, _vendorTicketRefHash, _ticketMetadata, _buyer, _sellerProof, _doorData, {from: _seller});
+  const eventArgs = await testHelper.getEventArgs(eventsManager.LogTicketSale);
+  assert.equal(eventArgs.vendorTicketRefHash, _vendorTicketRefHash);
+  assert.equal(eventArgs.ticketMetadata, _ticketMetadata);
+  assert.equal(eventArgs.buyer, _buyer);
+  assert.equal(eventArgs.sellerProof, _sellerProof);
+  assert.equal(eventArgs.doorData, _doorData);
+  return eventArgs.ticketId.toNumber();
+}
+
+
+// Refunding tickets
+async function refundTicketSucceeds(_eventId, _ticketId, _sender, _vendorProof) {
+  await eventsManager.refundTicket(_eventId, _ticketId, _vendorProof, {from: _sender});
+  const eventArgs = await testHelper.getEventArgs(eventsManager.LogTicketRefund);
+  assert.equal(_ticketId, eventArgs.ticketId.toNumber());
+  assert.equal(_vendorProof, eventArgs.vendorProof);
+};
+
+
 module.exports = {
   before,
   getTicketSaleStartTime: () => ticketSaleStartTime,
@@ -142,17 +132,16 @@ module.exports = {
   getEventSupportURL: () => eventSupportURL,
   getEventCapacity: () => eventCapacity,
   getEventsManager: () => eventsManager,
-  getAventitiesManager: () => aventitiesManager,
+  getMembersManager: () => membersManager,
 
-  makeDeposit,
   makeEventDeposit,
   withdrawDeposit,
   withdrawEventDeposit,
   setupUniqueEventParameters,
-  depositAndRegisterAventityMember,
-  deregisterAventityAndWithdrawDeposit,
   doCreateEvent,
   createValidEvent,
   makeEventDepositAndCreateValidEvent,
-  endEventAndWithdrawDeposit
+  endEventAndWithdrawDeposit,
+  sellTicketSucceeds,
+  refundTicketSucceeds
 }

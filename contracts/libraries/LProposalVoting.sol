@@ -31,13 +31,15 @@ library LProposalVoting {
     // no modifier checked, because it should have been checked at the top-level
   {
     bytes32 secretKey = keccak256(abi.encodePacked("Voting", msg.sender, "secrets", _proposalId));
-    // TODO: Consider allowing users to change their vote before reveal period.
     require(
       _storage.getBytes32(secretKey) == 0,
-      "Sender can vote only once for this proposal"
+      "Must cancel existing vote for this proposal"
     );
     _storage.setBytes32(secretKey, _secret);
 
+    bytes32 key = keccak256(abi.encodePacked("Proposal", _proposalId, "unrevealedVotesCount"));
+    uint value = _storage.getUInt(key) + 1;
+    _storage.setUInt(key, value);
     addSendersVoteToDLL(_storage, _proposalId, _prevTime);
   }
 
@@ -63,7 +65,7 @@ library LProposalVoting {
       "Sender must have a non revealed vote"
     );
 
-    removeSendersVoteFromDLL(_storage, _proposalId);
+    doRemoveVote(_storage, _proposalId);
   }
 
   /**
@@ -112,13 +114,13 @@ library LProposalVoting {
       _storage.setUInt(totalStakeForOptionKey, _storage.getUInt(totalStakeForOptionKey) + stake);
 
       // ...and store it so we can use it later to calculate winnings.
-      bytes32 revealedVotersCountKey = keccak256(abi.encodePacked("Proposal", _proposalId, "revealedVotersCount", _optId));
-      uint revealedVotersCount = _storage.getUInt(revealedVotersCountKey) + 1;
-      _storage.setUInt(revealedVotersCountKey, revealedVotersCount);
+      bytes32 key = keccak256(abi.encodePacked("Proposal", _proposalId, "revealedVotersCount", _optId));
+      uint value = _storage.getUInt(key) + 1;
+      _storage.setUInt(key, value);
       _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedVoter", _optId, voter, "stake")), stake);
     }
 
-    removeSendersVoteFromDLL(_storage, _proposalId);
+    doRemoveVote(_storage, _proposalId);
   }
 
   /**
@@ -207,9 +209,17 @@ library LProposalVoting {
       _storage.setUInt(keccak256(abi.encodePacked("Voting", voter, proposalRevealTime, "count")), numVotes - 1);
     }
 
+  }
+
+  function doRemoveVote(IAventusStorage _storage, uint _proposalId) private {
+    bytes32 key = keccak256(abi.encodePacked("Proposal", _proposalId, "unrevealedVotesCount"));
+    uint value = _storage.getUInt(key) - 1;
+    _storage.setUInt(key, value);
+    removeSendersVoteFromDLL(_storage, _proposalId);
     _storage.setBytes32(
-      keccak256(abi.encodePacked("Voting", voter, "secrets", _proposalId)),
+      keccak256(abi.encodePacked("Voting", msg.sender, "secrets", _proposalId)),
       0
     );
   }
+
 }

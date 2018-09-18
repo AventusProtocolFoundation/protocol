@@ -1,12 +1,9 @@
-// This file is a copy of ProposalsManagerChallengesTest.js.
-
 const testHelper = require("./helpers/testHelper");
 const votingTestHelper = require("./helpers/votingTestHelper");
-const AventitiesManager = artifacts.require("AventitiesManager");
+const MembersManager = artifacts.require("MembersManager");
 
-contract('ProposalsManager - Aventity challenges', async () => {
-  let validAventityId = 0;
-  let validAventityDeposit = new web3.BigNumber(0);
+contract('Member challenges', async () => {
+  let validMemberDeposit = new web3.BigNumber(0);
   let validChallengeDeposit = new web3.BigNumber(0);
   let validChallengeProposalId = 0;
 
@@ -19,63 +16,57 @@ contract('ProposalsManager - Aventity challenges', async () => {
   const fraudulentMemberAddress = testHelper.getAccount(6);
 
   const memberTypes = [
-      testHelper.brokerAventityType,
-      testHelper.primaryDelegateAventityType,
-      testHelper.secondaryDelegateAventityType
+      testHelper.brokerMemberType,
+      testHelper.primaryDelegateMemberType,
+      testHelper.secondaryDelegateMemberType,
+      testHelper.tokenBondingCurveMemberType,
+      testHelper.scalingProviderMemberType
   ];
 
   const stake = testHelper.oneAVT;
 
   before(async () => {
-    await votingTestHelper.before();
+    await testHelper.before();
+    await votingTestHelper.before(testHelper);
 
     proposalsManager = testHelper.getProposalsManager();
-    avtManager = testHelper.getAVTManager();
-    aventitiesManager = await AventitiesManager.deployed();
-
-    avt = testHelper.getAVTContract();
+    membersManager = await MembersManager.deployed();
   });
 
-  async function registerAventityMember(_aventityAddress, _type) {
-    validAventityDeposit = await aventitiesManager.getAventityMemberDeposit(_type);
-    await makeDeposit(validAventityDeposit, _aventityAddress);
-    await aventitiesManager.registerAventityMember(_aventityAddress, _type, testHelper.evidenceURL, "Registering aventity");
-    const eventArgs = await testHelper.getEventArgs(aventitiesManager.LogAventityMemberRegistered);
-    validAventityId = eventArgs.aventityId.toNumber();
+  async function registerMember(_memberAddress, _memberType) {
+    validMemberDeposit = await membersManager.getNewMemberDeposit(_memberType);
+    await makeDeposit(validMemberDeposit, _memberAddress);
+    await membersManager.registerMember(_memberAddress, _memberType, testHelper.evidenceURL, "Registering member");
   }
 
-  async function deregisterAventityAndWithdrawDeposit(_aventityAddress, _type) {
-    await aventitiesManager.deregisterAventity(validAventityId);
-    // check that this action was properly logged
-    const eventArgs = await testHelper.getEventArgs(aventitiesManager.LogAventityMemberDeregistered);
-    assert.equal(eventArgs.aventityAddress, _aventityAddress, "wrong address");
-
-    let deposit = await aventitiesManager.getAventityMemberDeposit(_type);
-    await avtManager.withdraw("deposit", deposit, {from: _aventityAddress});
+  async function deregisterMemberAndWithdrawDeposit(_memberAddress, _memberType) {
+    await membersManager.deregisterMember(_memberAddress, _memberType);
+    let deposit = await membersManager.getNewMemberDeposit(_memberType);
+    await withdrawDeposit(deposit, _memberAddress);
   }
 
-  async function getExistingAventityDeposit(_aventityId) {
-    return await aventitiesManager.getExistingAventityDeposit(_aventityId);
+  async function getExistingMemberDeposit(_memberAddress, _memberType) {
+    return await membersManager.getExistingMemberDeposit(_memberAddress, _memberType);
   }
 
-  async function createAventityChallengeSucceeds() {
-    validChallengeDeposit = await getExistingAventityDeposit(validAventityId);
+  async function challengeMemberSucceeds(_memberAddress, _memberType) {
+    validChallengeDeposit = await getExistingMemberDeposit(_memberAddress, _memberType);
     await makeDeposit(validChallengeDeposit, challengeOwner);
-    await proposalsManager.createAventityChallenge(validAventityId, {from: challengeOwner});
-    const eventArgs = await testHelper.getEventArgs(proposalsManager.LogCreateAventityChallenge);
+    await membersManager.challengeMember(_memberAddress, _memberType, {from: challengeOwner});
+    const eventArgs = await testHelper.getEventArgs(membersManager.LogMemberChallenged);
 
     const oldChallengeProposalId = validChallengeProposalId;
     validChallengeProposalId = eventArgs.proposalId.toNumber();
     assert.equal(validChallengeProposalId, oldChallengeProposalId + 1);
   }
 
-  async function createAventityChallengeFails(_deposit, _aventityId) {
+  async function challengeMemberFails(_deposit, _memberAddress, _memberType) {
     await makeDeposit(_deposit, challengeOwner);
-    await testHelper.expectRevert(() => proposalsManager.createAventityChallenge(_aventityId, {from: challengeOwner}));
+    await testHelper.expectRevert(() => membersManager.challengeMember(_memberAddress, _memberType, {from: challengeOwner}));
     await withdrawDeposit(_deposit, challengeOwner);
   }
 
-  async function endChallengeAventity(votesFor, votesAgainst) {
+  async function endChallengeMember(votesFor, votesAgainst) {
     await testHelper.advanceTimeToEndOfProposal(validChallengeProposalId);
     await proposalsManager.endProposal(validChallengeProposalId, {from: challengeEnder});
     const eventArgs = await testHelper.getEventArgs(proposalsManager.LogEndProposal);
@@ -85,36 +76,26 @@ contract('ProposalsManager - Aventity challenges', async () => {
   }
 
   async function withdrawDepositsAfterChallengeEnds() {
-    // No one voted. The aventity owner wins their fixed amount...
+    // No one voted. The member wins their fixed amount...
     await withdrawDeposit(fixedAmountToWinner(), memberAddress);
     // ...the challenge ender gets the rest.
     await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()), challengeEnder);
   }
 
   async function makeDeposit(_depositAmount, _depositer) {
-    if (_depositer != testHelper.getAccount(0)) {
-      // Any other account will not have any AVT: give them what they need.
-      await avt.transfer(_depositer, _depositAmount);
-    }
-    await avt.approve(testHelper.getStorage().address, _depositAmount, {from: _depositer});
-    await avtManager.deposit('deposit', _depositAmount, {from: _depositer});
+    await testHelper.addAVTToFund(_depositAmount, _depositer, 'deposit');
   }
 
   async function withdrawDeposit(_withdrawlAmount, _withdrawer) {
-    await avtManager.withdraw('deposit', _withdrawlAmount, {from: _withdrawer});
+    await testHelper.withdrawAVTFromFund(_withdrawlAmount, _withdrawer, 'deposit');
   }
 
   async function depositStake(_stakeAmount, _depositer) {
-    if (_depositer != testHelper.getAccount(0)) {
-      // Any other account will not have any AVT: give them what they need.
-      await avt.transfer(_depositer, _stakeAmount);
-    }
-    await avt.approve(testHelper.getStorage().address, _stakeAmount, {from: _depositer});
-    await avtManager.deposit('stake', _stakeAmount, {from: _depositer});
+    await testHelper.addAVTToFund(_stakeAmount, _depositer, "stake");
   }
 
   async function withdrawStake(_withdrawlAmount, _withdrawer) {
-    await avtManager.withdraw('stake', _withdrawlAmount, {from: _withdrawer});
+    await testHelper.withdrawAVTFromFund(_withdrawlAmount, _withdrawer, 'stake');
   }
 
   function fixedAmountToWinner() {
@@ -132,47 +113,47 @@ contract('ProposalsManager - Aventity challenges', async () => {
 
     context(`Create and end ${memberType} challenge - no votes`, async () => {
       beforeEach(async () => {
-        await registerAventityMember(memberAddress, memberType);
+        await registerMember(memberAddress, memberType);
       });
 
       afterEach(async () => {
-        await deregisterAventityAndWithdrawDeposit(memberAddress, memberType);
+        await deregisterMemberAndWithdrawDeposit(memberAddress, memberType);
       });
 
       after(async () => await testHelper.checkFundsEmpty());
 
-      it("can create and end a challenge to a valid aventity", async () => {
-        await createAventityChallengeSucceeds();
-        await endChallengeAventity(0, 0);
+      it("can create and end a challenge to a valid member", async () => {
+        await challengeMemberSucceeds(memberAddress, memberType);
+        await endChallengeMember(0, 0);
         await withdrawDepositsAfterChallengeEnds();
       });
 
-      it("cannot create a challenge to an aventity without sufficient deposit", async () => {
-        const insufficientDeposit = (await getExistingAventityDeposit(validAventityId)).minus(new web3.BigNumber(1));
-        await createAventityChallengeFails(insufficientDeposit, validAventityId);
+      it("cannot create a challenge to a member without sufficient deposit", async () => {
+        const insufficientDeposit = (await getExistingMemberDeposit(memberAddress, memberType)).minus(new web3.BigNumber(1));
+        await challengeMemberFails(insufficientDeposit, memberAddress, memberType);
       });
 
-      it("cannot create a challenge to deregistered aventity", async () => {
-        await deregisterAventityAndWithdrawDeposit(memberAddress, memberType);
-        validChallengeDeposit = await aventitiesManager.getAventityMemberDeposit(memberType);
+      it("cannot create a challenge to deregistered member", async () => {
+        await deregisterMemberAndWithdrawDeposit(memberAddress, memberType);
+        validChallengeDeposit = await membersManager.getNewMemberDeposit(memberType);
         await makeDeposit(validChallengeDeposit, challengeOwner);
-        await testHelper.expectRevert(() => proposalsManager.createAventityChallenge(validAventityId, {from: challengeOwner}));
+        await testHelper.expectRevert(() => membersManager.challengeMember(memberAddress, memberType, {from: challengeOwner}));
         await withdrawDeposit(validChallengeDeposit, challengeOwner);
         // registering again so the AfterEach block doesn't break for this test
-        await registerAventityMember(memberAddress, memberType);
+        await registerMember(memberAddress, memberType);
       });
 
-      it("can get the correct aventity deposit", async () => {
-        let deposit = await getExistingAventityDeposit(validAventityId);
+      it("can get the correct member deposit", async () => {
+        let deposit = await getExistingMemberDeposit(memberAddress, memberType);
         assert.notEqual(deposit.toNumber(), 0);
-        assert.equal(deposit.toString(), validAventityDeposit.toString());
+        assert.equal(deposit.toString(), validMemberDeposit.toString());
       });
     });
 
     context(`Create and end ${memberType} challenge - with votes`, async () => {
       beforeEach(async () => {
-        await registerAventityMember(memberAddress, memberType);
-        await createAventityChallengeSucceeds();
+        await registerMember(memberAddress, memberType);
+        await challengeMemberSucceeds(memberAddress, memberType);
         await depositStake(stake, voter1);
         await depositStake(stake, voter2);
       });
@@ -192,8 +173,8 @@ contract('ProposalsManager - Aventity challenges', async () => {
         await testHelper.advanceTimeToRevealingStart(validChallengeProposalId);
         await votingTestHelper.revealVote(signedMessage, validChallengeProposalId, 2, voter1);
 
-        await endChallengeAventity(0, stake);
-        // Challenge lost, the winner is the aventity owner.
+        await endChallengeMember(0, stake);
+        // Challenge lost, the winner is the member.
         await withdrawDeposit(fixedAmountToWinner(), memberAddress);
         // The challenge ender gets their bit.
 
@@ -201,7 +182,7 @@ contract('ProposalsManager - Aventity challenges', async () => {
         // Winning voter gets the rest.
         await proposalsManager.claimVoterWinnings(validChallengeProposalId, {from: voter1});
         await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()).minus(fixedAmountToChallengeEnder()), voter1);
-        await deregisterAventityAndWithdrawDeposit(memberAddress, memberType);
+        await deregisterMemberAndWithdrawDeposit(memberAddress, memberType);
       });
 
       it("pays the correct winnings in the case of disagreement winning via a 'score draw'", async () => {
@@ -212,8 +193,8 @@ contract('ProposalsManager - Aventity challenges', async () => {
         await votingTestHelper.revealVote(signedMessage1, validChallengeProposalId, 1, voter1);
         await votingTestHelper.revealVote(signedMessage2, validChallengeProposalId, 2, voter2);
 
-        await endChallengeAventity(stake, stake);
-        // Challenge lost, the winner is the aventity.
+        await endChallengeMember(stake, stake);
+        // Challenge lost, the winner is the member.
         await withdrawDeposit(fixedAmountToWinner(), memberAddress);
         // The challenge ender gets their bit.
         await withdrawDeposit(fixedAmountToChallengeEnder(), challengeEnder);
@@ -221,7 +202,7 @@ contract('ProposalsManager - Aventity challenges', async () => {
         await proposalsManager.claimVoterWinnings(validChallengeProposalId, {from: voter2});
         await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()).minus(fixedAmountToChallengeEnder()), voter2);
 
-        await deregisterAventityAndWithdrawDeposit(memberAddress, memberType);
+        await deregisterMemberAndWithdrawDeposit(memberAddress, memberType);
       });
 
       it("pays the correct winnings in the case of disagreement winning via a 'no-score draw'", async () => {
@@ -230,34 +211,35 @@ contract('ProposalsManager - Aventity challenges', async () => {
         const signedMessage2 = await votingTestHelper.castVote(validChallengeProposalId, 2, voter2);
         // No-one reveals their votes before the deadline.
 
-        await endChallengeAventity(0, 0);
+        await endChallengeMember(0, 0);
 
         await votingTestHelper.revealVote(signedMessage1, validChallengeProposalId, 1, voter1);
         await votingTestHelper.revealVote(signedMessage2, validChallengeProposalId, 2, voter2);
 
-        // Challenge lost, the winner is the aventity.
+        // Challenge lost, the winner is the member.
         await withdrawDeposit(fixedAmountToWinner(), memberAddress);
         // The challenge ender gets the rest.
         await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()), challengeEnder);
 
-        await deregisterAventityAndWithdrawDeposit(memberAddress, memberType);
+        await deregisterMemberAndWithdrawDeposit(memberAddress, memberType);
       });
 
-      // TODO: Implement test: "can only sell and refund tickets if aventity has not been deemed fraudulent" (issue #552)
+      // TODO: Implement test: "can only sell and refund tickets if member has not been deemed fraudulent" (issue #552)
     });
   }
 
   context(`Create and end challenge - fraudulent`, async () => {
     let winningsRemainder = 0;
 
-    async function voteToMarkAventityAsFraudulentAndWithdrawWinnings() {
+    // TODO: Move to MembersHelper and reduce to only one voter.
+    async function voteToMarkMemberAsFraudulentAndWithdrawWinnings() {
       await testHelper.advanceTimeToVotingStart(validChallengeProposalId);
       const signedMessage1 = await votingTestHelper.castVote(validChallengeProposalId, 1, voter1);
       const signedMessage2 = await votingTestHelper.castVote(validChallengeProposalId, 1, voter2);
       await testHelper.advanceTimeToRevealingStart(validChallengeProposalId);
       await votingTestHelper.revealVote(signedMessage1, validChallengeProposalId, 1, voter1);
       await votingTestHelper.revealVote(signedMessage2, validChallengeProposalId, 1, voter2);
-      await endChallengeAventity(stake * 2, 0);
+      await endChallengeMember(stake * 2, 0);
       // Challenge won, the winner is the challenge owner.
       await withdrawDeposit(fixedAmountToWinner(), challengeOwner);
       // The challenge ender gets their bit.
@@ -265,7 +247,7 @@ contract('ProposalsManager - Aventity challenges', async () => {
       // Winning voters get the rest.
       await proposalsManager.claimVoterWinnings(validChallengeProposalId, {from: voter1});
       await proposalsManager.claimVoterWinnings(validChallengeProposalId, {from: voter2});
-      const totalVoterWinnings = validAventityDeposit.minus(fixedAmountToWinner()).minus(fixedAmountToChallengeEnder());
+      const totalVoterWinnings = validMemberDeposit.minus(fixedAmountToWinner()).minus(fixedAmountToChallengeEnder());
       await withdrawDeposit(totalVoterWinnings.dividedToIntegerBy(2), voter1);
       await withdrawDeposit(totalVoterWinnings.dividedToIntegerBy(2), voter2);
       // Challenge is over, withdraw the deposit.
@@ -274,11 +256,11 @@ contract('ProposalsManager - Aventity challenges', async () => {
     }
 
     before(async () => {
-      await registerAventityMember(fraudulentMemberAddress, testHelper.brokerAventityType);
-      await createAventityChallengeSucceeds();
+      await registerMember(fraudulentMemberAddress, testHelper.brokerMemberType);
+      await challengeMemberSucceeds(fraudulentMemberAddress, testHelper.brokerMemberType);
       await depositStake(stake, voter1);
       await depositStake(stake, voter2);
-      await voteToMarkAventityAsFraudulentAndWithdrawWinnings();
+      await voteToMarkMemberAsFraudulentAndWithdrawWinnings();
     });
 
     after(async () => {
@@ -292,24 +274,24 @@ contract('ProposalsManager - Aventity challenges', async () => {
       }
     });
 
-    it("cannot deregister aventity if fraudulent", async () => {
-      // Aventity is now marked as fraudulent - we can not deregister it.
-      await testHelper.expectRevert(() => aventitiesManager.deregisterAventity(validAventityId));
+    it("cannot deregister member if fraudulent", async () => {
+      // Member is now marked as fraudulent - we can not deregister it.
+      await testHelper.expectRevert(() => membersManager.deregisterMember(fraudulentMemberAddress, testHelper.brokerMemberType));
     });
 
-    it("cannot re-register aventity if fraudulent", async () => {
-      validAventityDeposit = await aventitiesManager.getAventityMemberDeposit(testHelper.brokerAventityType);
-      await makeDeposit(validAventityDeposit, fraudulentMemberAddress);
+    it("cannot re-register member if fraudulent", async () => {
+      validMemberDeposit = await membersManager.getNewMemberDeposit(testHelper.brokerMemberType);
+      await makeDeposit(validMemberDeposit, fraudulentMemberAddress);
 
-      // Aventity is now marked as fraudulent - we can not re-register it.
-      await testHelper.expectRevert(() => aventitiesManager.registerAventityMember(fraudulentMemberAddress, testHelper.brokerAventityType, testHelper.evidenceURL, "Registering aventity"));
-      await withdrawDeposit(validAventityDeposit, fraudulentMemberAddress);
+      // Member is now marked as fraudulent - we can not re-register it.
+      await testHelper.expectRevert(() => membersManager.registerMember(fraudulentMemberAddress, testHelper.brokerMemberType, testHelper.evidenceURL, "Registering member"));
+      await withdrawDeposit(validMemberDeposit, fraudulentMemberAddress);
     });
 
-    it("cannot challenge aventity if fraudulent", async () => {
+    it("cannot challenge member if fraudulent", async () => {
       await makeDeposit(validChallengeDeposit, challengeOwner);
-      // Aventity is now marked as fraudulent - we can not challenge it.
-      await testHelper.expectRevert(() => proposalsManager.createAventityChallenge(validAventityId, {from: challengeOwner}));
+      // Member is now marked as fraudulent - we can not challenge it.
+      await testHelper.expectRevert(() => membersManager.challengeMember(fraudulentMemberAddress, testHelper.brokerMemberType, {from: challengeOwner}));
       await withdrawDeposit(validChallengeDeposit, challengeOwner);
     });
 
@@ -317,44 +299,43 @@ contract('ProposalsManager - Aventity challenges', async () => {
 
   context("Create and end challenge - general", async () => {
     beforeEach(async () => {
-      await registerAventityMember(memberAddress, testHelper.brokerAventityType);
+      await registerMember(memberAddress, testHelper.brokerMemberType);
     });
 
     afterEach(async () => {
-      await deregisterAventityAndWithdrawDeposit(memberAddress, testHelper.brokerAventityType);
+      await deregisterMemberAndWithdrawDeposit(memberAddress, testHelper.brokerMemberType);
     });
 
     after(async () => await testHelper.checkFundsEmpty());
 
-    it("cannot get the aventity deposit for non-existent aventities", async () => {
-      let deposit = await getExistingAventityDeposit(999999);
+    it("cannot get the member deposit for non-existent members", async () => {
+      let deposit = await getExistingMemberDeposit(challengeOwner, "banana");
       assert.equal(deposit.toNumber(), 0);
     });
 
-    it("cannot create a challenge to a non-existing aventity", async () => {
-      const correctDeposit = await getExistingAventityDeposit(validAventityId);
-      const wrongAventityId = 99999;
-      await createAventityChallengeFails(correctDeposit, wrongAventityId);
+    it("cannot challenge a non-existent member", async () => {
+      const correctDeposit = await getExistingMemberDeposit(memberAddress, testHelper.brokerMemberType);
+      await challengeMemberFails(correctDeposit, memberAddress, "penguin");
     });
 
-    it("cannot create more than one challenge to an aventity", async () => {
-      await createAventityChallengeSucceeds();
-      await createAventityChallengeFails(validChallengeDeposit, validAventityId);
-      await endChallengeAventity(0, 0);
+    it("cannot create more than one challenge for a member", async () => {
+      await challengeMemberSucceeds(memberAddress, testHelper.brokerMemberType);
+      await challengeMemberFails(validChallengeDeposit, memberAddress, testHelper.brokerMemberType);
+      await endChallengeMember(0, 0);
       await withdrawDepositsAfterChallengeEnds();
     });
 
     it("cannot end a non-existent challenge", async () => {
-      await createAventityChallengeSucceeds();
+      await challengeMemberSucceeds(memberAddress, testHelper.brokerMemberType);
       await testHelper.expectRevert(() => proposalsManager.endProposal(99999999, {from: challengeEnder}));
-      await endChallengeAventity(0, 0);
+      await endChallengeMember(0, 0);
       await withdrawDepositsAfterChallengeEnds();
     });
 
-    it ("cannot deregister an aventity when under challenge", async () => {
-      await createAventityChallengeSucceeds();
-      await testHelper.expectRevert(() => aventitiesManager.deregisterAventity(validAventityId));
-      await endChallengeAventity(0, 0);
+    it ("cannot deregister a member when under challenge", async () => {
+      await challengeMemberSucceeds(memberAddress, testHelper.brokerMemberType);
+      await testHelper.expectRevert(() => membersManager.deregisterMember(memberAddress, testHelper.brokerMemberType));
+      await endChallengeMember(0, 0);
       await withdrawDepositsAfterChallengeEnds();
     });
   });

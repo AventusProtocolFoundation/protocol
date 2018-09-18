@@ -2,6 +2,7 @@
 const AventusStorage = artifacts.require('AventusStorage.sol');
 const AventusStorageForTesting = artifacts.require('AventusStorageForTesting');
 const testHelper = require('./helpers/testHelper');
+const web3Utils = require('web3-utils');
 
 contract('AventusStorage', async () => {
   const owner = testHelper.getAccount(0);
@@ -373,7 +374,7 @@ contract('AventusStorage', async () => {
 
       await testHelper.expectRevert(() => avtStorageForTestingAsDelegate.setTestValue(testValue));
 
-      keccak256Msg = web3.sha3("StorageInstance");
+      keccak256Msg = web3Utils.soliditySha3("StorageInstance");
       await avtStorage.setAddress(keccak256Msg, avtStorageForTesting.address);
 
       await avtStorageForTestingAsDelegate.setTestValue(testValue);

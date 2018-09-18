@@ -4,13 +4,12 @@ import "../interfaces/IAventusStorage.sol";
 import "./LAVTManager.sol";
 
 /**
- * Library for dealing with the winnings of a challenge.
+ * Library for dealing with the winnings of an aventity challenge.
  *
- * This only used by, and is separate to, LProposals because of size limitations when deploying.
+ * This is only used by, and is separate to, LAventities because of size limitations when deploying.
  * There is no proxy for this library.
- *
- * NOTE: Do NOT put anything in here specific to events as this will also be used for aventity challenges.
  */
+ // TODO: Rename to LChallengeWinnings.
 library LProposalWinnings {
   bytes32 constant winningsForChallengeWinnerPercentageKey =
       keccak256(abi.encodePacked("Events", "winningsForChallengeWinnerPercentage"));
