@@ -20,14 +20,14 @@
     </h1>
     <div class='clearfix'>
       <div class='fl pad1y space-right2'>
-        <span class="strong">100% </span>
+        <span class="strong">66.67% </span>
         <span class="quiet">Statements</span>
-        <span class='fraction'>1/1</span>
+        <span class='fraction'>2/3</span>
       </div>
       <div class='fl pad1y space-right2'>
-        <span class="strong">100% </span>
+        <span class="strong">50% </span>
         <span class="quiet">Branches</span>
-        <span class='fraction'>0/0</span>
+        <span class='fraction'>1/2</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
@@ -37,11 +37,11 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Lines</span>
-        <span class='fraction'>18/18</span>
+        <span class='fraction'>22/22</span>
       </div>
     </div>
   </div>
-  <div class='status-line high'></div>
+  <div class='status-line medium'></div>
 <pre><table class="coverage">
 <tr><td class="line-count quiet">1
 2
@@ -109,9 +109,11 @@
 64
 65
 66
-67</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+67
+68
+69
+70
+71</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -155,6 +157,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -167,10 +172,13 @@
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1×</span>
@@ -193,51 +201,55 @@ contract ParameterRegistry is Owned, Versioned {
   uint private constant AVENTITY_CHALLENGE_REVEALING_PERIOD_DAYS = 7;
 &nbsp;
   // Events default values.
-  uint private constant EVENT_MINIMUM_DEPOSIT_US_CENTS = 1000;
-  uint private constant EVENT_FIXED_DEPOSIT_US_CENTS = 100000;
-  uint private constant EVENT_MAXIMUM_DEPOSIT_US_CENTS = 1000000;
+  uint private constant EVENT_FREE_DEPOSIT_US_CENTS = 1000;
+  uint private constant EVENT_PAID_DEPOSIT_US_CENTS = 100000;
   uint private constant EVENT_MINIMUM_REPORTING_PERIOD_DAYS = 30;
-  uint8 private constant EVENT_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE = 10;
-  uint8 private constant EVENT_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE = 10;
+  uint private constant EVENT_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE = 10;
+  uint private constant EVENT_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE = 10;
 &nbsp;
   // Aventity default values.
   uint private constant BROKER_DEPOSIT = 100000; // In US cents
-  uint private constant PRIMARY_DELEGATE_DEPOSIT = 100000; // In US cents
-  uint private constant SECONDARY_DELEGATE_DEPOSIT = 100000; // In US cents
+  uint private constant PRIMARY_DEPOSIT = 100000; // In US cents
+  uint private constant SECONDARY_DEPOSIT = 100000; // In US cents
+  uint private constant TOKEN_BONDING_CURVE_DEPOSIT = 100000; // In US cents
+  uint private constant SCALING_PROVIDER_DEPOSIT = 100000; // In US cents
+  uint private constant MERKLE_ROOT_DEPOSIT = 10000; // In US cents
 &nbsp;
   uint private constant AVT_IN_US_CENTS = 97;
 &nbsp;
   IAventusStorage public s;
 &nbsp;
-  /**
-  * @dev Constructor
-  * @param _s Persistent storage contract
-  */
   constructor(IAventusStorage _s) public {
     s = _s;
   }
 &nbsp;
-  // TODO: Consider pre-calculating any fixed keccaks - will save gas - here and elsewhere in the code.
-  function setupDefaultParameters() external onlyOwner {
+  // @dev This must be called ONCE and ONCE ONLY, after the permission is given to write to storage as part of migration.
+  function init() external onlyOwner {
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (s.getBoolean(keccak256(abi.encodePacked("ParameterRegistry", "init")))) <span class="cstat-no" title="statement not covered" >return;</span>
+    s.setBoolean(keccak256(abi.encodePacked("ParameterRegistry", "init")), true);
+&nbsp;
     s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalLobbyingPeriodDays")), GOVERNANCE_PROPOSAL_LOBBYING_PERIOD_DAYS);
     s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalVotingPeriodDays")), GOVERNANCE_PROPOSAL_VOTING_PERIOD_DAYS);
     s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalRevealingPeriodDays")), GOVERNANCE_PROPOSAL_REVEALING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalFixedDepositInUsCents")), GOVERNANCE_PROPOSAL_DEPOSIT_US_CENTS);
+    s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalFixedDepositInUSCents")), GOVERNANCE_PROPOSAL_DEPOSIT_US_CENTS);
 &nbsp;
-    s.setUInt(keccak256(abi.encodePacked("Proposal", "aventityChallengeLobbyingPeriodDays")), AVENTITY_CHALLENGE_LOBBYING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Proposal", "aventityChallengeVotingPeriodDays")), AVENTITY_CHALLENGE_VOTING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Proposal", "aventityChallengeRevealingPeriodDays")), AVENTITY_CHALLENGE_REVEALING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked("Aventities", "challengeLobbyingPeriodDays")), AVENTITY_CHALLENGE_LOBBYING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked("Aventities", "challengeVotingPeriodDays")), AVENTITY_CHALLENGE_VOTING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked("Aventities", "challengeRevealingPeriodDays")), AVENTITY_CHALLENGE_REVEALING_PERIOD_DAYS);
 &nbsp;
-    s.setUInt(keccak256(abi.encodePacked("Events", "minimumDepositAmountUsCents")), EVENT_MINIMUM_DEPOSIT_US_CENTS);
-    s.setUInt(keccak256(abi.encodePacked("Events", "fixedDepositAmountUsCents")), EVENT_FIXED_DEPOSIT_US_CENTS);
-    s.setUInt(keccak256(abi.encodePacked("Events", "maximumDepositAmountUsCents")), EVENT_MAXIMUM_DEPOSIT_US_CENTS);
+    s.setUInt(keccak256(abi.encodePacked("Events", "freeEventDepositAmountUSCents")), EVENT_FREE_DEPOSIT_US_CENTS);
+    s.setUInt(keccak256(abi.encodePacked("Events", "paidEventDepositAmountUSCents")), EVENT_PAID_DEPOSIT_US_CENTS);
     s.setUInt(keccak256(abi.encodePacked("Events", "minimumEventReportingPeriodDays")), EVENT_MINIMUM_REPORTING_PERIOD_DAYS);
-    s.setUInt8(keccak256(abi.encodePacked("Events", "winningsForChallengeEnderPercentage")), EVENT_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE);
-    s.setUInt8(keccak256(abi.encodePacked("Events", "winningsForChallengeWinnerPercentage")), EVENT_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE);
+    s.setUInt(keccak256(abi.encodePacked("Events", "winningsForChallengeEnderPercentage")), EVENT_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE);
+    s.setUInt(keccak256(abi.encodePacked("Events", "winningsForChallengeWinnerPercentage")), EVENT_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE);
 &nbsp;
-    s.setUInt(keccak256(abi.encodePacked("Aventity", "Broker", "fixedDepositAmount")), BROKER_DEPOSIT);
-    s.setUInt(keccak256(abi.encodePacked("Aventity", "PrimaryDelegate", "fixedDepositAmount")), PRIMARY_DELEGATE_DEPOSIT);
-    s.setUInt(keccak256(abi.encodePacked("Aventity", "SecondaryDelegate", "fixedDepositAmount")), SECONDARY_DELEGATE_DEPOSIT);
+    s.setUInt(keccak256(abi.encodePacked("Members", "Broker", "fixedDepositAmount")), BROKER_DEPOSIT);
+    s.setUInt(keccak256(abi.encodePacked("Members", "Primary", "fixedDepositAmount")), PRIMARY_DEPOSIT);
+    s.setUInt(keccak256(abi.encodePacked("Members", "Secondary", "fixedDepositAmount")), SECONDARY_DEPOSIT);
+    s.setUInt(keccak256(abi.encodePacked("Members", "TokenBondingCurve", "fixedDepositAmount")), TOKEN_BONDING_CURVE_DEPOSIT);
+    s.setUInt(keccak256(abi.encodePacked("Members", "ScalingProvider", "fixedDepositAmount")), SCALING_PROVIDER_DEPOSIT);
+&nbsp;
+    s.setUInt(keccak256(abi.encodePacked("MerkleRoots", "fixedDepositAmount")), MERKLE_ROOT_DEPOSIT);
 &nbsp;
     s.setUInt(keccak256(abi.encodePacked("OneAVTInUSCents")), AVT_IN_US_CENTS);
   }
@@ -247,7 +259,7 @@ contract ParameterRegistry is Owned, Versioned {
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Wed Aug 08 2018 16:21:04 GMT+0100 (GMT Daylight Time)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Oct 18 2018 13:27:15 GMT+0100 (GMT Daylight Time)
 </div>
 </div>
 <script src="../prettify.js"></script>

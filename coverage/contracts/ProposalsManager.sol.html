@@ -22,7 +22,7 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Statements</span>
-        <span class='fraction'>8/8</span>
+        <span class='fraction'>4/4</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
@@ -32,12 +32,12 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Functions</span>
-        <span class='fraction'>12/12</span>
+        <span class='fraction'>10/10</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Lines</span>
-        <span class='fraction'>12/12</span>
+        <span class='fraction'>10/10</span>
       </div>
     </div>
   </div>
@@ -97,23 +97,7 @@
 52
 53
 54
-55
-56
-57
-58
-59
-60
-61
-62
-63
-64
-65
-66
-67</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+55</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -131,31 +115,27 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">33×</span>
+<span class="cline-any cline-yes">43×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">13×</span>
+<span class="cline-any cline-yes">44×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">13×</span>
+<span class="cline-any cline-yes">97×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">54×</span>
+<span class="cline-any cline-yes">11×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">56×</span>
+<span class="cline-any cline-yes">80×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">48×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">14×</span>
+<span class="cline-any cline-yes">31×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -163,11 +143,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">14×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">53×</span>
+<span class="cline-any cline-yes">94×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -188,48 +164,36 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
 &nbsp;
   IAventusStorage public s;
 &nbsp;
-  /**
-  * @dev Constructor
-  * @param _s Persistent storage contract
-  */
   constructor(IAventusStorage _s) public {
     s = _s;
   }
 &nbsp;
-  function createGovernanceProposal(string _desc) external returns (uint proposalId_) {
-    proposalId_ = LProposal.createGovernanceProposal(s, _desc);
+  function createGovernanceProposal(string _desc) external {
+    LProposal.createGovernanceProposal(s, _desc);
   }
 &nbsp;
-  function createEventChallenge(uint _eventId) external returns (uint proposalId_) {
-    proposalId_ = LProposal.createEventChallenge(s, _eventId);
-  }
-&nbsp;
-  function createAventityChallenge(uint _aventityId) external returns (uint challengeProposalId_) {
-    challengeProposalId_ = LProposal.createAventityChallenge(s, _aventityId);
-  }
-&nbsp;
-  function endProposal(uint _proposalId) external {
-    LProposal.endProposal(s, _proposalId);
+  function endGovernanceProposal(uint _proposalId) external {
+    LProposal.endGovernanceProposal(s, _proposalId);
   }
 &nbsp;
   function castVote(uint _proposalId, bytes32 _secret, uint _prevTime) external {
     LProposal.castVote(s, _proposalId, _secret, _prevTime);
   }
 &nbsp;
-  function revealVote(bytes _signedMessage, uint _proposalId, uint8 _optId) external {
+  function cancelVote(uint _proposalId) external {
+    LProposal.cancelVote(s, _proposalId);
+  }
+&nbsp;
+  function revealVote(bytes _signedMessage, uint _proposalId, uint _optId) external {
     LProposal.revealVote(s, _signedMessage, _proposalId, _optId);
   }
 &nbsp;
   function claimVoterWinnings(uint _proposalId) external {
-    LProposal.claimVoterWinnings(s, _proposalId);
+    LAventities.claimVoterWinnings(s, _proposalId);
   }
 &nbsp;
   function getGovernanceProposalDeposit() external view returns (uint proposalDeposit_) {
     proposalDeposit_ = LProposal.getGovernanceProposalDeposit(s);
-  }
-&nbsp;
-  function getExistingEventDeposit(uint _eventId) external view returns(uint eventDeposit_) {
-    eventDeposit_ = LEvents.getExistingEventDeposit(s, _eventId);
   }
 &nbsp;
   function getPrevTimeParamForCastVote(uint _proposalId) external view returns (uint prevTime_) {
@@ -247,7 +211,7 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Wed Aug 08 2018 16:21:04 GMT+0100 (GMT Daylight Time)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Oct 18 2018 13:27:15 GMT+0100 (GMT Daylight Time)
 </div>
 </div>
 <script src="../prettify.js"></script>

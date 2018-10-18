@@ -235,57 +235,7 @@
 190
 191
 192
-193
-194
-195
-196
-197
-198
-199
-200
-201
-202
-203
-204
-205
-206
-207
-208
-209
-210
-211
-212
-213
-214
-215
-216
-217
-218</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+193</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -482,225 +432,200 @@
 interface IEventsManager {
 &nbsp;
   /**
-   * Event emitted for a createEvent transaction.
+   * @notice Event emitted for a createEvent transaction.
    */
-  event LogEventCreated(uint indexed eventId, string eventDesc, uint ticketSaleStartTime, uint eventTime, uint averageTicketPriceInUSCents, uint depositInAVTDecimals);
+  event LogEventCreated(uint indexed eventId, string eventDesc, string eventSupportURL, uint onSaleTime, uint offSaleTime,
+      uint averageTicketPriceInUSCents, uint depositInAVTDecimals);
 &nbsp;
   /**
-   * Event emitted for a signedCreateEvent transaction.
+   * @notice Event emitted for a endEvent transaction.
    */
-  event LogSignedEventCreated(uint indexed eventId, string eventDesc, uint ticketSaleStartTime, uint eventTime, uint averageTicketPriceInUSCents, uint depositInAVTDecimals);
+  event LogEventEnded(uint indexed eventId);
 &nbsp;
   /**
-   * Event emitted for a unlockEventDeposit transaction.
+   * @notice Event emitted for a cancelEvent transaction.
    */
-  event LogUnlockEventDeposit(uint indexed eventId);
+  event LogEventCancelled(uint indexed eventId);
 &nbsp;
   /**
-   * Event emitted for a cancelEvent transaction.
+   * @notice Event emitted for a sellTicket transaction.
    */
-  event LogEventCancellation(uint indexed eventId);
+  event LogTicketSale(uint indexed eventId, uint indexed ticketId, bytes32 vendorTicketRefHash, string ticketMetadata,
+      bytes vendorProof, bytes doorData, address indexed buyer);
 &nbsp;
   /**
-   * Event emitted for a signedCancelEvent transaction.
+   * @notice Event emitted for a resellTicket transaction.
    */
-  event LogSignedEventCancellation(uint indexed eventId);
+  event LogTicketResale(uint indexed eventId, uint indexed ticketId, address indexed newBuyer, bytes resellerProof);
 &nbsp;
   /**
-   * Event emitted for a sellTicket transaction.
+   * @notice Event emitted for a returnTicket transaction.
    */
-  event LogTicketSale(uint indexed eventId, uint indexed ticketId, address indexed buyer);
+  event LogTicketReturn(uint indexed eventId, uint indexed ticketId, bytes vendorProof);
 &nbsp;
   /**
-   * Event emitted for a signedSellTicket transaction.
+   * @notice Event emitted for a listTicket transaction.
    */
-  event LogSignedTicketSale(uint indexed eventId, uint indexed ticketId, address indexed buyer);
+  event LogTicketListed(uint indexed eventId, uint ticketId, address indexed ticketOwner, bytes32 indexed leafHash);
 &nbsp;
   /**
-   * Event emitted for a resellTicket transaction.
+   * @notice Event emitted for a sendTicketToFriend transaction.
    */
-  event LogTicketResale(uint indexed eventId, uint indexed ticketId, address indexed newBuyer);
+  event LogTicketSentToFriend(uint indexed eventId, uint indexed ticketId, bytes newDoorData);
 &nbsp;
   /**
-   * Event emitted for a signedResellTicket transaction.
+   * @notice Event emitted for a registerMemberOnEvent transaction.
    */
-  event LogSignedTicketResale(uint indexed eventId, uint indexed ticketId, address indexed newBuyer);
+  event LogMemberRegisteredOnEvent(uint indexed eventId, address indexed memberAddress, string memberType);
 &nbsp;
   /**
-   * Event emitted for a refundTicket transaction.
+   * @notice Event emitted for a deregisterMemberFromEvent transaction.
    */
-  event LogTicketRefund(uint indexed eventId, uint indexed ticketId);
+  event LogMemberDeregisteredFromEvent(uint indexed eventId, address indexed memberAddress, string memberType);
 &nbsp;
   /**
-   * Event emitted for a signedRefundTicket transaction.
+   * @notice Event emitted for a challengeEvent transaction.
    */
-  event LogSignedTicketRefund(uint indexed eventId, uint indexed ticketId);
+  event LogEventChallenged(uint indexed eventId, uint indexed proposalId, uint lobbyingStart, uint votingStart,
+      uint revealingStart, uint revealingEnd);
 &nbsp;
   /**
-   * Event emitted for a registerRole transaction.
+   * Event emitted for a endEventChallenge transaction.
    */
-  event LogRegisterRole(uint indexed eventId, string role, address indexed delegate);
+  event LogEventChallengeEnded(uint indexed eventId, uint indexed proposalId, uint votesFor, uint votesAgainst);
 &nbsp;
   /**
-   * Event emitted for a deregisterRole transaction.
+   * @notice Create an event
+   * @param _eventDesc Description of the event
+   * @param _eventSupportURL Verifiable official supporting url for the event
+   * @param _onSaleTime The start timestamp for ticket sales
+   * @param _offSaleTime The end timestamp for ticket sales
+   * @param _averageTicketPriceInUSCents Average ticket price in US Cents
+   * @param _ownerProof The event details signed by the owner
    */
-  event LogDeregisterRole(uint indexed eventId, string role, address indexed delegate);
+  function createEvent(string _eventDesc, string _eventSupportURL, uint _onSaleTime, uint _offSaleTime,
+      uint _averageTicketPriceInUSCents, bytes _ownerProof) external;
 &nbsp;
   /**
-  * @dev Create an event
-  * @param _eventDesc description or title of the event
-  * @param _eventTime - the actual event time
-  * @param _capacity - number of tickets (capacity) for the event
-  * @param _averageTicketPriceInUSCents  - average ticket price in US Cents
-  * @param _ticketSaleStartTime - expected ticket sale start time
-  * @param _eventSupportURL - verifiable official supporting url for the event
-  * @return eventId_ - id of newly created event
-  */
-  function createEvent(
-      string _eventDesc, uint _eventTime, uint _capacity,
-      uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime, string _eventSupportURL)
-    external
-    returns (uint eventId_);
+   * @notice Cancel an event
+   * @param _eventId Event id for the event to end
+   * @param _ownerProof Proof from event owner
+   */
+  function cancelEvent(uint _eventId, bytes _ownerProof) external;
 &nbsp;
   /**
-  * @dev Create an event on behalf of a signer
-  * @param _signedMessage a signed message
-  * @param _eventDesc description or title of the event
-  * @param _eventTime - the actual event time
-  * @param _capacity - number of tickets (capacity) for the event
-  * @param _averageTicketPriceInUSCents  - average ticket price in US Cents
-  * @param _ticketSaleStartTime - expected ticket sale start time
-  * @param _eventSupportURL - verifiable official supporting url for the event
-  * @param _owner - address of the event owner
-  * @return uint eventId_ of newly created event
-  */
-  function signedCreateEvent(
-      bytes _signedMessage,
-      string _eventDesc, uint _eventTime,  uint _capacity,
-      uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime, string _eventSupportURL,
-      address _owner)
-    external
-    returns (uint eventId_);
+   * @notice Complete the process of event ending to balance the deposits
+   * @param _eventId event id for the event to end
+   */
+  function endEvent(uint _eventId) external;
 &nbsp;
   /**
-  * @dev Cancel an event
-  * @param _eventId - event id for the event to end
-  */
-  function cancelEvent(uint _eventId) external;
+   * @notice Sell ticket on behalf of a signer to a buyer specified by the signer
+   * @param _eventId event id for the event to end
+   * @param _vendorTicketRefHash hash of the vendor (event owner or primary) generated unique ticket reference for the event
+   * @param _ticketMetadata ticket details
+   * @param _buyer address of the ticket buyer (can be empty address)
+   * @param _vendorProof the details signed by the vendor
+   * @param _doorData the credentials necessary to be authenticated at the event's entrance (can be empty bytes)
+   */
+  function sellTicket(uint _eventId, bytes32 _vendorTicketRefHash, string _ticketMetadata, address _buyer, bytes _vendorProof,
+      bytes _doorData) external;
 &nbsp;
   /**
-  * @dev Cancel an event on behalf of a signer
-  * @param _signedMessage a signed message
-  * @param _eventId - event id for the event to end
-  */
-  function signedCancelEvent(bytes _signedMessage, uint _eventId) external;
+   * @notice Return ticket to event owner
+   * @param _eventId event id for the event in context
+   * @param _ticketId ticket Id for the ticket to be returned
+   * @param _vendorProof signed proof from the event owner/primary if returning via a broker
+   */
+  function returnTicket(uint _eventId, uint _ticketId, bytes _vendorProof) external;
 &nbsp;
   /**
-  * @dev Complete the process of event ending to balance the deposits
-  * @param _eventId - event id for the event to end
-  */
-  function unlockEventDeposit(uint _eventId) external;
+   * @notice Register a member for an event
+   * @param _eventId ID of the event
+   * @param _memberAddress member address
+   * @param _memberType must be a member type of either "Primary", "Secondary" or "Broker"
+   */
+  function registerMemberOnEvent(uint _eventId, address _memberAddress, string _memberType) external;
 &nbsp;
   /**
-  * @dev Sell ticket
-  * @param _eventId - event id for the event to end
-  * @param _ticketDetails - ticket details
-  * @param _buyer - address of the ticket buyer
-  */
-  function sellTicket(uint _eventId, string _ticketDetails, address _buyer) external;
+   * @notice Deregister a member from an event
+   * @param _eventId ID of the event
+   * @param _memberAddress member address
+   * @param _memberType must be a member type of either "Primary", "Secondary" or "Broker"
+   */
+  function deregisterMemberFromEvent(uint _eventId, address _memberAddress, string _memberType) external;
 &nbsp;
   /**
-  * @dev Sell ticket on behalf of a signer
-  * @param _signedMessage a signed message
-  * @param _eventId - event id for the event to end
-  * @param _ticketDetails - ticket details
-  * @param _buyer - address of the ticket buyer
-  */
-  function signedSellTicket(bytes _signedMessage, uint _eventId, string _ticketDetails, address _buyer) external;
-&nbsp;
-  /**
-  * @dev Refund sale of a ticket
-  * @param _eventId - event id for the event in context
-  * @param _ticketId - ticket Id for the ticket to be refunded
-  */
-  function refundTicket(uint _eventId, uint _ticketId) external;
-&nbsp;
-  /**
-  * @dev Refund sale of a ticket on behalf of a signer
-  * @param _signedMessage a signed message
-  * @param _eventId - event id for the event in context
-  * @param _ticketId - ticket Id for the ticket to be refunded
-  */
-  function signedRefundTicket(bytes _signedMessage, uint _eventId, uint _ticketId) external;
-&nbsp;
-  /**
-  * @dev Register a delegate for an event
-  * @param _eventId - ID of the event
-  * @param _role - role must be an aventity type of either "PrimaryDelegate", "SecondaryDelegate" or "Broker"
-  * @param _delegate - delegate address
-  */
-  function registerRole(uint _eventId, string _role, address _delegate) external;
-&nbsp;
-  /**
-  * @dev Deregister a delegate to an event
-  * @param _eventId - ID of the event
-  * @param _role - role must be an aventity type of either "PrimaryDelegate", "SecondaryDelegate" or "Broker"
-  * @param _delegate - delegate of the event
-  */
-  function deregisterRole(uint _eventId, string _role, address _delegate) external;
-&nbsp;
-  /**
-   * Sell a ticket on the secondary market.
-   * @param _eventId - ID of the event
+   * @notice Sell a ticket on the secondary market.
+   * @param _eventId ID of the event
    * @param _ticketId identifier for the ticket: unique to this event.
-   * @param _ownerPermission - signed by the owner
+   * @param _ticketOwnerPermission signed by the owner
    * @param _newBuyer address of the new buyer of the ticket.
+   * @param _resellerProof the details signed by the reseller
+   * @param _doorData the credentials necessary to be authenticated at the event's entrance (can be empty bytes)
    */
-  function resellTicket(uint _eventId, uint _ticketId, bytes _ownerPermission, address _newBuyer)
-    external;
+  function resellTicket(uint _eventId, uint _ticketId, bytes _ticketOwnerPermission, address _newBuyer, bytes _resellerProof,
+      bytes _doorData) external;
 &nbsp;
   /**
-   * Sell a ticket on the secondary market on behalf of a signer.
-   * @param _signedMessage a signed message
-   * @param _eventId - ID of the event
+   * @notice Allow a friend to use the door data, but retain ownership of the ticket
+   * @param _eventId ID of the event
    * @param _ticketId identifier for the ticket: unique to this event.
-   * @param _ownerPermission - signed by the owner
-   * @param _newBuyer address of the new buyer of the ticket.
+   * @param _ticketOwnerPermission a proof signed by the current owner authorizing a transfer of this ticket
+   * @param _newDoorData the credentials necessary for the friend to be authenticated at the event's entrance
    */
-  function signedResellTicket(bytes _signedMessage, uint _eventId, uint _ticketId, bytes _ownerPermission, address _newBuyer)
-    external;
+  function sendTicketToFriend(uint _eventId, uint _ticketId, bytes _ticketOwnerPermission, bytes _newDoorData) external;
 &nbsp;
   /**
-  * @dev Check if a delegate is registered for an event
-  * @param _eventId - ID of the event
-  * @param _role - role must be an aventity type of either "PrimaryDelegate", "SecondaryDelegate" or "Broker"
-  * @param _delegate - Delegate to check
-  * @return _registered - returns true if the supplied delegate is registered
-  */
-  function addressIsDelegate(uint _eventId, string _role, address _delegate)
-    external
-    view
-    returns (bool registered_);
+   * @notice List a ticket for resale on the protocol which was originally a merkle tree sale.
+   * @param _eventId ID of the event
+   * @param _vendorTicketRefHash hash of vendor-generated (event owner or primary) unique ticket reference for the event
+   * @param _ticketMetadata ticket details as stored in the merkle tree
+   * @param _vendorProof the vendor (event owner or primary) signed details from the original sale
+   * @param _doorData the credentials necessary to be authenticated at the event's entrance (can be empty bytes)
+   * @param _ticketOwnerProof vendorTicketRefHash signed by the ticket owner
+   * @param _merklePath sibling hash path of the merkle tree
+   */
+  function listTicket(uint _eventId, bytes32 _vendorTicketRefHash, string _ticketMetadata, bytes _vendorProof,
+    bytes _doorData, bytes _ticketOwnerProof, bytes32[] _merklePath) external;
 &nbsp;
   /**
-  * @dev Calculate the appropriate event deposit In USCents and in AVT
-  * @param _capacity - number of tickets (capacity) for the event
-  * @param _averageTicketPriceInUSCents  - average ticket price in US Cents
-  * @param _ticketSaleStartTime - expected ticket sale start time
-  * @return uint depositInUSCents_ calculated deposit in US cents
-  * @return uint depositInAVTDecimals_ calculated deposit in AVT Decimals
-  */
-  function getEventDeposit(uint _capacity, uint _averageTicketPriceInUSCents, uint _ticketSaleStartTime)
+   * @notice Calculate the appropriate event deposit In USCents and in AVT
+   * @dev the parameter list WILL change when the deposit calculation is more mature
+   * @param _averageTicketPriceInUSCents average ticket price in US Cents
+   * @return depositInUSCents_ calculated deposit in US cents
+   * @return depositInAVTDecimals_ calculated deposit in AVT Decimals
+   */
+  function getNewEventDeposit(uint _averageTicketPriceInUSCents)
     external
     view
     returns (uint depositInUSCents_, uint depositInAVT_);
+&nbsp;
+  /**
+   * @notice Get the deposit that was made for the specified event
+   * @param _eventId unique identifer for the event
+   * @return eventDeposit_ the deposit that was made for the specified event
+   */
+  function getExistingEventDeposit(uint _eventId) external view returns(uint eventDeposit_);
+&nbsp;
+  /**
+   * @notice Create a challenge for the specified event.
+   * @param _eventId id for the event to be challenged
+   */
+  function challengeEvent(uint _eventId) external;
+&nbsp;
+  /**
+   * @notice Ends a challenge on the specified event.
+   * @param _eventId id of the event to be cleared of challenge
+   */
+  function endEventChallenge(uint _eventId) external;
 }</pre></td></tr>
 </table></pre>
 <div class='push'></div><!-- for sticky footer -->
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Wed Aug 08 2018 16:21:04 GMT+0100 (GMT Daylight Time)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Oct 18 2018 13:27:15 GMT+0100 (GMT Daylight Time)
 </div>
 </div>
 <script src="../../prettify.js"></script>
