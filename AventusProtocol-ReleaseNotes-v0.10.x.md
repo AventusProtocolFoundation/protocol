@@ -23,7 +23,7 @@ New functionality:
 * Added IEventsManager.listTicket and sendTicketToFriend for transfer of merkle tree tickets on the blockchain.
 * Test timing profiling
 * Fraudulent events and members can now be re-registered
-* Resale of "blank" tickets (vendor proof omits buyer addres)
+* Resale of "blank" tickets (vendor proof omits buyer address)
 * Primary and Secondary members can now act as a Broker on the protocol without registering as a Broker member
 * Event owners, Primary and Secondary members can now act as a Broker on the event without registering as a Broker member
 
