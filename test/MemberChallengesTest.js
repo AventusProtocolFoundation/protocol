@@ -1,8 +1,10 @@
 const testHelper = require("./helpers/testHelper");
 const votingTestHelper = require("./helpers/votingTestHelper");
-const MembersManager = artifacts.require("MembersManager");
+const membersTestHelper = require("./helpers/membersTestHelper");
 
 contract('Member challenges', async () => {
+  testHelper.profilingHelper.addTimeReports('Member challenges');
+
   let validMemberDeposit = new web3.BigNumber(0);
   let validChallengeDeposit = new web3.BigNumber(0);
   let validChallengeProposalId = 0;
@@ -14,11 +16,12 @@ contract('Member challenges', async () => {
 
   const memberAddress = testHelper.getAccount(5);
   const fraudulentMemberAddress = testHelper.getAccount(6);
+  const challengeFreeMemberAddress = testHelper.getAccount(7);
 
   const memberTypes = [
       testHelper.brokerMemberType,
-      testHelper.primaryDelegateMemberType,
-      testHelper.secondaryDelegateMemberType,
+      testHelper.primaryMemberType,
+      testHelper.secondaryMemberType,
       testHelper.tokenBondingCurveMemberType,
       testHelper.scalingProviderMemberType
   ];
@@ -28,9 +31,10 @@ contract('Member challenges', async () => {
   before(async () => {
     await testHelper.before();
     await votingTestHelper.before(testHelper);
+    await membersTestHelper.before(testHelper);
 
     proposalsManager = testHelper.getProposalsManager();
-    membersManager = await MembersManager.deployed();
+    membersManager = membersTestHelper.getMembersManager();
   });
 
   async function registerMember(_memberAddress, _memberType) {
@@ -66,13 +70,13 @@ contract('Member challenges', async () => {
     await withdrawDeposit(_deposit, challengeOwner);
   }
 
-  async function endChallengeMember(votesFor, votesAgainst) {
+  async function endChallengeMember(_memberAddress, _memberType, _expectedVotesFor, _expectedVotesAgainst) {
     await testHelper.advanceTimeToEndOfProposal(validChallengeProposalId);
-    await proposalsManager.endProposal(validChallengeProposalId, {from: challengeEnder});
-    const eventArgs = await testHelper.getEventArgs(proposalsManager.LogEndProposal);
+    await membersManager.endMemberChallenge(_memberAddress, _memberType, {from: challengeEnder});
+    const eventArgs = await testHelper.getEventArgs(membersManager.LogMemberChallengeEnded);
     assert.equal(validChallengeProposalId, eventArgs.proposalId.toNumber());
-    assert.equal(votesFor, eventArgs.votesFor.toNumber());
-    assert.equal(votesAgainst, eventArgs.votesAgainst.toNumber());
+    assert.equal(_expectedVotesFor, eventArgs.votesFor.toNumber());
+    assert.equal(_expectedVotesAgainst, eventArgs.votesAgainst.toNumber());
   }
 
   async function withdrawDepositsAfterChallengeEnds() {
@@ -124,7 +128,7 @@ contract('Member challenges', async () => {
 
       it("can create and end a challenge to a valid member", async () => {
         await challengeMemberSucceeds(memberAddress, memberType);
-        await endChallengeMember(0, 0);
+        await endChallengeMember(memberAddress, memberType, 0, 0);
         await withdrawDepositsAfterChallengeEnds();
       });
 
@@ -168,12 +172,9 @@ contract('Member challenges', async () => {
       });
 
       it("pays the correct winnings in the case of disagreement winning", async () => {
-        await testHelper.advanceTimeToVotingStart(validChallengeProposalId);
-        const signedMessage = await votingTestHelper.castVote(validChallengeProposalId, 2, voter1);
-        await testHelper.advanceTimeToRevealingStart(validChallengeProposalId);
-        await votingTestHelper.revealVote(signedMessage, validChallengeProposalId, 2, voter1);
+        await votingTestHelper.advanceTimeCastAndRevealVotes(validChallengeProposalId, [{voter: voter1, option: 2}]);
 
-        await endChallengeMember(0, stake);
+        await endChallengeMember(memberAddress, memberType, 0, stake);
         // Challenge lost, the winner is the member.
         await withdrawDeposit(fixedAmountToWinner(), memberAddress);
         // The challenge ender gets their bit.
@@ -186,14 +187,10 @@ contract('Member challenges', async () => {
       });
 
       it("pays the correct winnings in the case of disagreement winning via a 'score draw'", async () => {
-        await testHelper.advanceTimeToVotingStart(validChallengeProposalId);
-        const signedMessage1 = await votingTestHelper.castVote(validChallengeProposalId, 1, voter1);
-        const signedMessage2 = await votingTestHelper.castVote(validChallengeProposalId, 2, voter2);
-        await testHelper.advanceTimeToRevealingStart(validChallengeProposalId);
-        await votingTestHelper.revealVote(signedMessage1, validChallengeProposalId, 1, voter1);
-        await votingTestHelper.revealVote(signedMessage2, validChallengeProposalId, 2, voter2);
+        await votingTestHelper.advanceTimeCastAndRevealVotes(validChallengeProposalId,
+            [{voter: voter1, option: 1}, {voter: voter2, option: 2}]);
 
-        await endChallengeMember(stake, stake);
+        await endChallengeMember(memberAddress, memberType, stake, stake);
         // Challenge lost, the winner is the member.
         await withdrawDeposit(fixedAmountToWinner(), memberAddress);
         // The challenge ender gets their bit.
@@ -211,7 +208,7 @@ contract('Member challenges', async () => {
         const signedMessage2 = await votingTestHelper.castVote(validChallengeProposalId, 2, voter2);
         // No-one reveals their votes before the deadline.
 
-        await endChallengeMember(0, 0);
+        await endChallengeMember(memberAddress, memberType, 0, 0);
 
         await votingTestHelper.revealVote(signedMessage1, validChallengeProposalId, 1, voter1);
         await votingTestHelper.revealVote(signedMessage2, validChallengeProposalId, 2, voter2);
@@ -224,7 +221,7 @@ contract('Member challenges', async () => {
         await deregisterMemberAndWithdrawDeposit(memberAddress, memberType);
       });
 
-      // TODO: Implement test: "can only sell and refund tickets if member has not been deemed fraudulent" (issue #552)
+      // TODO: Implement test: "can only sell and return tickets if member has not been deemed fraudulent" (issue #552)
     });
   }
 
@@ -232,14 +229,10 @@ contract('Member challenges', async () => {
     let winningsRemainder = 0;
 
     // TODO: Move to MembersHelper and reduce to only one voter.
-    async function voteToMarkMemberAsFraudulentAndWithdrawWinnings() {
-      await testHelper.advanceTimeToVotingStart(validChallengeProposalId);
-      const signedMessage1 = await votingTestHelper.castVote(validChallengeProposalId, 1, voter1);
-      const signedMessage2 = await votingTestHelper.castVote(validChallengeProposalId, 1, voter2);
-      await testHelper.advanceTimeToRevealingStart(validChallengeProposalId);
-      await votingTestHelper.revealVote(signedMessage1, validChallengeProposalId, 1, voter1);
-      await votingTestHelper.revealVote(signedMessage2, validChallengeProposalId, 1, voter2);
-      await endChallengeMember(stake * 2, 0);
+    async function voteToMarkMemberAsFraudulentAndWithdrawWinnings(_memberAddress, _memberType) {
+      await votingTestHelper.advanceTimeCastAndRevealVotes(validChallengeProposalId,
+          [{voter: voter1, option: 1}, {voter: voter2, option: 1}]);
+      await endChallengeMember(_memberAddress, _memberType, stake * 2, 0);
       // Challenge won, the winner is the challenge owner.
       await withdrawDeposit(fixedAmountToWinner(), challengeOwner);
       // The challenge ender gets their bit.
@@ -260,7 +253,7 @@ contract('Member challenges', async () => {
       await challengeMemberSucceeds(fraudulentMemberAddress, testHelper.brokerMemberType);
       await depositStake(stake, voter1);
       await depositStake(stake, voter2);
-      await voteToMarkMemberAsFraudulentAndWithdrawWinnings();
+      await voteToMarkMemberAsFraudulentAndWithdrawWinnings(fraudulentMemberAddress, testHelper.brokerMemberType);
     });
 
     after(async () => {
@@ -277,15 +270,6 @@ contract('Member challenges', async () => {
     it("cannot deregister member if fraudulent", async () => {
       // Member is now marked as fraudulent - we can not deregister it.
       await testHelper.expectRevert(() => membersManager.deregisterMember(fraudulentMemberAddress, testHelper.brokerMemberType));
-    });
-
-    it("cannot re-register member if fraudulent", async () => {
-      validMemberDeposit = await membersManager.getNewMemberDeposit(testHelper.brokerMemberType);
-      await makeDeposit(validMemberDeposit, fraudulentMemberAddress);
-
-      // Member is now marked as fraudulent - we can not re-register it.
-      await testHelper.expectRevert(() => membersManager.registerMember(fraudulentMemberAddress, testHelper.brokerMemberType, testHelper.evidenceURL, "Registering member"));
-      await withdrawDeposit(validMemberDeposit, fraudulentMemberAddress);
     });
 
     it("cannot challenge member if fraudulent", async () => {
@@ -321,21 +305,21 @@ contract('Member challenges', async () => {
     it("cannot create more than one challenge for a member", async () => {
       await challengeMemberSucceeds(memberAddress, testHelper.brokerMemberType);
       await challengeMemberFails(validChallengeDeposit, memberAddress, testHelper.brokerMemberType);
-      await endChallengeMember(0, 0);
+      await endChallengeMember(memberAddress, testHelper.brokerMemberType, 0, 0);
       await withdrawDepositsAfterChallengeEnds();
     });
 
     it("cannot end a non-existent challenge", async () => {
       await challengeMemberSucceeds(memberAddress, testHelper.brokerMemberType);
-      await testHelper.expectRevert(() => proposalsManager.endProposal(99999999, {from: challengeEnder}));
-      await endChallengeMember(0, 0);
+      await testHelper.expectRevert(() => membersManager.endMemberChallenge(challengeFreeMemberAddress, testHelper.brokerMemberType, {from: challengeEnder}));
+      await endChallengeMember(memberAddress, testHelper.brokerMemberType, 0, 0);
       await withdrawDepositsAfterChallengeEnds();
     });
 
     it ("cannot deregister a member when under challenge", async () => {
       await challengeMemberSucceeds(memberAddress, testHelper.brokerMemberType);
       await testHelper.expectRevert(() => membersManager.deregisterMember(memberAddress, testHelper.brokerMemberType));
-      await endChallengeMember(0, 0);
+      await endChallengeMember(memberAddress, testHelper.brokerMemberType, 0, 0);
       await withdrawDepositsAfterChallengeEnds();
     });
   });

@@ -14,7 +14,7 @@ const LAventities = artifacts.require("LAventities");
 const LMembers = artifacts.require("LMembers");
 const LAventusTime = artifacts.require("LAventusTime");
 const LAventusTimeMock = artifacts.require("LAventusTimeMock");
-const LProposalWinnings = artifacts.require("LProposalWinnings");
+const LAventitiesChallenges = artifacts.require("LAventitiesChallenges");
 const LProposalsEnact = artifacts.require("LProposalsEnact");
 const LEventsCommon = artifacts.require("LEventsCommon");
 const LEventsEnact = artifacts.require("LEventsEnact");
@@ -25,6 +25,12 @@ const LProposalVoting = artifacts.require("LProposalVoting");
 const LProposal = artifacts.require("LProposal");
 const LProposalForTesting = artifacts.require("LProposalForTesting");
 const LMerkleRoots = artifacts.require("LMerkleRoots");
+const LProposalsStorage = artifacts.require("LProposalsStorage");
+const LEventsStorage = artifacts.require("LEventsStorage");
+const LAventitiesStorage = artifacts.require("LAventitiesStorage");
+const LMembersStorage = artifacts.require("LMembersStorage");
+const LMerkleRootsStorage = artifacts.require("LMerkleRootsStorage");
+const LAVTStorage = artifacts.require("LAVTStorage");
 
 // Proxies
 const PAventities = artifacts.require("PAventities");
@@ -77,8 +83,8 @@ function deployLibraries(deployer, network) {
   .then(() => doDeployLProposal(deployer, s))
   .then(() => doDeployLAventities(deployer, s))
   .then(() => doDeployLMembers(deployer, s))
-  .then(() => doDeployLEvents(deployer, s))
-  .then(() => doDeployLMerkleRoots(deployer, s));
+  .then(() => doDeployLMerkleRoots(deployer, s))
+  .then(() => doDeployLEvents(deployer, s));
 }
 
 function doDeployVersion(_deployer) {
@@ -117,7 +123,7 @@ function doDeployLAVTManager(_deployer, _storage) {
   const library = LAVTManager;
   const proxy = PAVTManager;
   const deployLibraryAndProxy = deployLAVTManager;
-  const dependents = [LProposal, LProposalWinnings, LProposalVoting, LEventsCommon, LEventsEnact, LAventities, LMembers, AVTManager, LProposalsEnact, LMerkleRoots];
+  const dependents = [LProposal, LAventitiesChallenges, LProposalVoting, LEventsCommon, LEventsEnact, LAventities, LMembers, AVTManager, LProposalsEnact, LMerkleRoots];
 
   return doDeployLibraryAndProxy(_deployer, _storage, libraryName, proxyName, library, proxy, deployLibraryAndProxy, dependents);
 }
@@ -128,7 +134,7 @@ function doDeployLAventities(_deployer, _storage) {
   const library = LAventities;
   const proxy = PAventities;
   const deployLibraryAndProxy = deployLAventities;
-  const dependents = [LEventsCommon, LEventsEnact, LMembers, LMerkleRoots, ProposalsManager];
+  const dependents = [LEventsCommon, LEventsEnact, LMembers, LMerkleRoots, ProposalsManager, LEvents];
 
   return doDeployLibraryAndProxy(_deployer, _storage, libraryName, proxyName, library, proxy, deployLibraryAndProxy, dependents);
 }
@@ -139,7 +145,7 @@ function doDeployLMembers(_deployer, _storage) {
   const library = LMembers;
   const proxy = PMembers;
   const deployLibraryAndProxy = deployLMembers;
-  const dependents = [LEvents, LEventsCommon, MembersManager, LMerkleRoots, ProposalsManager];
+  const dependents = [LEventsCommon, MembersManager, LMerkleRoots];
 
   return doDeployLibraryAndProxy(_deployer, _storage, libraryName, proxyName, library, proxy, deployLibraryAndProxy, dependents);
 }
@@ -161,7 +167,7 @@ function doDeployLProposal(_deployer, _storage) {
   const library = LProposal;
   const proxy = PProposal;
   const deployLibraryAndProxy = deployLProposal;
-  const dependents = [ProposalsManager, LAventities, LEvents, LEventsEnact, LMembers, LMerkleRoots];
+  const dependents = [ProposalsManager, LAventities, LEvents, LMembers, LMerkleRoots, LAventitiesChallenges];
 
   return doDeployLibraryAndProxy(_deployer, _storage, libraryName, proxyName, library, proxy, deployLibraryAndProxy, dependents)
     .then(() => deployLProposalForTesting ? _deployer.deploy(LProposalForTesting) : _deployer);
@@ -173,7 +179,7 @@ function doDeployLMerkleRoots(_deployer, _storage) {
   const library = LMerkleRoots;
   const proxy = PMerkleRoots;
   const deployLibraryAndProxy = deployLMerkleRoots;
-  const dependents = MerkleRootsManager;
+  const dependents = [MerkleRootsManager, LEvents];
 
   return doDeployLibraryAndProxy(_deployer, _storage, libraryName, proxyName, library, proxy, deployLibraryAndProxy, dependents);
 }
@@ -203,19 +209,35 @@ function doDeployLibraryAndProxy(_deployer, _storage, libraryName, proxyName, li
 
 function doDeploySubLibraries(_deployer, library) {
   if (library === LProposal) {
-    return _deployer.deploy(LProposalWinnings)
-    .then(() => _deployer.link(LProposalWinnings, LAventities))
+    return _deployer.deploy(LProposalsStorage)
+    .then(() => _deployer.link(LProposalsStorage, [LProposal, LProposalsEnact, LProposalVoting]))
     .then(() => _deployer.deploy(LProposalsEnact))
     .then(() => _deployer.link(LProposalsEnact, [LProposal, LProposalVoting]))
     .then(() => _deployer.deploy(LProposalVoting))
     .then(() => _deployer.link(LProposalVoting, LProposal));
   } else if (library === LEvents) {
-    return _deployer.deploy(LEventsCommon)
+    return _deployer.deploy(LEventsStorage)
+    .then(() => _deployer.link(LEventsStorage, [LEvents, LEventsCommon, LEventsEnact, LEventsTickets]))
+    .then(() => _deployer.deploy(LEventsCommon))
     .then(() => _deployer.link(LEventsCommon, [LEvents, LEventsEnact, LEventsTickets]))
     .then(() => _deployer.deploy(LEventsEnact))
     .then(() => _deployer.link(LEventsEnact, LEvents))
     .then(() => _deployer.deploy(LEventsTickets))
     .then(() => _deployer.link(LEventsTickets, LEvents));
+  } else if (library === LAventities) {
+    return _deployer.deploy(LAventitiesStorage)
+    .then(() => _deployer.link(LAventitiesStorage, [LAventities, LAventitiesChallenges]))
+    .then(() => _deployer.deploy(LAventitiesChallenges))
+    .then(() => _deployer.link(LAventitiesChallenges, LAventities));
+  } else if (library === LMembers) {
+    return _deployer.deploy(LMembersStorage)
+    .then(() => _deployer.link(LMembersStorage, LMembers));
+  } else if (library === LMerkleRoots) {
+    return _deployer.deploy(LMerkleRootsStorage)
+    .then(() => _deployer.link(LMerkleRootsStorage, LMerkleRoots));
+  } else if (library === LAVTManager) {
+    return _deployer.deploy(LAVTStorage)
+    .then(() => _deployer.link(LAVTStorage, LAVTManager));
   }
   return _deployer;
 }

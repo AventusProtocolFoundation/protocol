@@ -6,6 +6,7 @@ const LAventusTimeMock = artifacts.require("LAventusTimeMock");
 const Versioned = artifacts.require("Versioned");
 const IERC20 = artifacts.require("IERC20");
 const web3Utils = require('web3-utils');
+const profilingHelper = require("./profilingHelper");
 
 const accounts = web3.eth.accounts;
 
@@ -13,9 +14,10 @@ const oneDay = 86400;    // seconds in one day.
 const oneWeek = 7 * oneDay;
 const mockTimeKey = web3Utils.soliditySha3("MockCurrentTime");
 
+// TODO: make these member types an object
 const brokerMemberType = 'Broker';
-const primaryDelegateMemberType = 'PrimaryDelegate';
-const secondaryDelegateMemberType = 'SecondaryDelegate';
+const primaryMemberType = 'Primary';
+const secondaryMemberType = 'Secondary';
 const tokenBondingCurveMemberType = 'TokenBondingCurve';
 const scalingProviderMemberType = 'ScalingProvider';
 const invalidMemberType = 'invalid';
@@ -27,15 +29,23 @@ let blockChainTime = new web3.BigNumber(0);
 let aventusStorage, avtAddress, proposalsManager, realTimeInstance, mockTimeInstance, avt;
 let lastEventBlockNumber = -1;
 
+let profiledEventArgs = profilingHelper.profileFunction("TestHelper.getEventArgs", getEventArgs);
+
 async function before() {
   aventusStorage = await AventusStorage.deployed();
+  aventusStorage = profilingHelper.profileContract(aventusStorage, "aventusStorage");
   versioned = await Versioned.deployed();
+  versioned = profilingHelper.profileContract(versioned, "versioned");
   avtAddress = await aventusStorage.getAddress(web3Utils.soliditySha3("AVTERC20Instance"));
   avt = IERC20.at(avtAddress);
   proposalsManager = await ProposalsManager.deployed();
+  proposalsManager = profilingHelper.profileContract(proposalsManager, "proposalsManager");
   avtManager = await AVTManager.deployed();
+  avtManager = profilingHelper.profileContract(avtManager, "avtManager");
   realTimeInstance = await LAventusTime.deployed();
+  realTimeInstance = profilingHelper.profileContract(realTimeInstance, "realTimeInstance");
   mockTimeInstance = await LAventusTimeMock.deployed();
+  mockTimeInstance = profilingHelper.profileContract(mockTimeInstance, "mockTimeInstance");
 
   blockChainTime = new web3.BigNumber(web3.eth.getBlock(web3.eth.blockNumber).timestamp);
   await initMockTime();
@@ -79,21 +89,24 @@ async function initMockTime() {
   await aventusStorage.setUInt(mockTimeKey, blockChainTime);
 }
 
-async function setMockTime(_timeStamp) {
- await aventusStorage.setUInt(mockTimeKey, _timeStamp);
+async function setMockTime(_timestamp) {
+ await aventusStorage.setUInt(mockTimeKey, _timestamp);
  blockChainTime = await aventusStorage.getUInt(mockTimeKey);
 }
 
+// TODO: Remove this. Use advanceTo<...>Period instead.
 async function advanceByDays(days) {
   let currentTime = await aventusStorage.getUInt(mockTimeKey);
   await advanceToTime(currentTime.plus(days * oneDay));
 }
 
-async function advanceToTime(_timeStamp) {
- let currentTime = await aventusStorage.getUInt(mockTimeKey);
- assert(_timeStamp >= currentTime);
- await setMockTime(_timeStamp);
+async function advanceToTime(_timestamp) {
+  let currentTime = await aventusStorage.getUInt(mockTimeKey);
+  assert(_timestamp >= currentTime);
+  await setMockTime(_timestamp);
 }
+
+// TODO: Move to votingTestHelper.
 async function advanceToProposalPeriod(_proposalId, _period) {
   const periodKey = web3Utils.soliditySha3("Proposal", _proposalId, _period);
   const period = await aventusStorage.getUInt(periodKey);
@@ -103,14 +116,17 @@ async function advanceTimeToVotingStart(_proposalId) { await advanceToProposalPe
 async function advanceTimeToRevealingStart(_proposalId) { await advanceToProposalPeriod(_proposalId, "revealingStart"); }
 async function advanceTimeToEndOfProposal(_proposalId) { await advanceToProposalPeriod(_proposalId, "revealingEnd"); }
 
-async function advanceToEventPeriod(_eventId, _period) {
-  const periodKey = web3Utils.soliditySha3("Event", _eventId, _period);
-  const period = await aventusStorage.getUInt(periodKey);
-  await advanceToTime(parseInt(period));
+// TODO: Move these to eventsTestHelper.
+async function advanceToEventPeriod(_eventId, _timestampLabel) {
+  const timestampKey = web3Utils.soliditySha3("Event", _eventId, _timestampLabel);
+  const timestamp = await aventusStorage.getUInt(timestampKey);
+  await advanceToTime(parseInt(timestamp));
 }
-async function advanceTimeToEventTicketSaleStart(_eventId) { await advanceToEventPeriod(_eventId, "ticketSaleStartTime"); }
-async function advanceTimeToEventEnd(_eventId) { await advanceToEventPeriod(_eventId, "eventTime"); }
+async function advanceTimeToEventOnSaleTime(_eventId) { await advanceToEventPeriod(_eventId, "onSaleTime"); }
+// TODO: Rename to advanceTimeToEventOffSaleTime
+async function advanceTimeToEventEnd(_eventId) { await advanceToEventPeriod(_eventId, "offSaleTime"); }
 
+//TODO: Rename to getLogArgs - "Event" is an overloaded term in our protocol.
 function getEventArgs(eventListenerFunction) {
   return new Promise((resolve, reject) => {
     let eventListener = eventListenerFunction({}, {fromBlock: lastEventBlockNumber + 1});
@@ -189,18 +205,42 @@ async function withdrawAVTFromFund(_depositAmount, _withdrawer, _fund) {
   await avtManager.withdraw(_fund, _depositAmount, {from: _withdrawer});
 }
 
+// TODO: Move to eventsTestHelper.
+function createVendorTicketProof(_eventId, _vendorTicketRefHash, _vendor, _buyer, _isPrimaryIntegrated) {
+  let msgHash;
+  if (_isPrimaryIntegrated) {
+    msgHash = web3Utils.soliditySha3(_eventId, _vendorTicketRefHash, _buyer);
+  } else {
+    msgHash = web3Utils.soliditySha3(_eventId, _vendorTicketRefHash);
+  }
+  return createSignedMessage(_vendor, msgHash);
+}
+
+// TODO: Move to eventsTestHelper.
+async function getFreeEventDepositUSCents() {
+  return await aventusStorage.getUInt(web3Utils.soliditySha3("Events", "freeEventDepositAmountUSCents"));
+}
+
+// TODO: Move to eventsTestHelper.
+async function getPaidEventDepositUSCents() {
+  return await aventusStorage.getUInt(web3Utils.soliditySha3("Events", "paidEventDepositAmountUSCents"));
+}
+
+async function getOneAVTUSCents() {
+  return await aventusStorage.getUInt(web3Utils.soliditySha3("OneAVTInUSCents"));
+}
+
+async function expectRevert(myFunc) {
+  try {
+    await myFunc();
+    assert.fail("TEST FAILED");
+  } catch (error) {
+    assert(error.toString().includes(ganacheRevert) || error.toString().includes(gethRevert), "ERROR: " + error.toString());
+  }
+}
+
 module.exports = {
-    expectRevert: async (myFunc) => {
-        try {
-            await myFunc();
-            assert.fail("TEST FAILED");
-        } catch (error) {
-            assert(
-              error.toString().includes(ganacheRevert) ||
-              error.toString().includes(gethRevert),
-              "Was not expecting: " + error.toString());
-        }
-    },
+    expectRevert,
     now: () => blockChainTime,
     getStorage: () => aventusStorage,
     getProposalsManager: () => proposalsManager,
@@ -211,21 +251,25 @@ module.exports = {
     getAccount,
     useRealTime,
     useMockTime,
-    getEventArgs,
+    getEventArgs: profiledEventArgs,
     advanceByDays,
     advanceTimeToVotingStart,
     advanceTimeToRevealingStart,
     advanceTimeToEndOfProposal,
-    advanceTimeToEventTicketSaleStart,
+    advanceTimeToEventOnSaleTime,
     advanceTimeToEventEnd,
     createSignedMessage,
     createSignedSecret,
+    createVendorTicketProof,
+    getFreeEventDepositUSCents,
+    getOneAVTUSCents,
+    getPaidEventDepositUSCents,
     getVersion,
     getVersionMajorMinor,
     convertToAVTDecimal,
     brokerMemberType,
-    primaryDelegateMemberType,
-    secondaryDelegateMemberType,
+    primaryMemberType,
+    secondaryMemberType,
     tokenBondingCurveMemberType,
     scalingProviderMemberType,
     invalidMemberType,
@@ -234,5 +278,6 @@ module.exports = {
     oneDay,
     oneAVT: ONE_AVT,
     addAVTToFund,
-    withdrawAVTFromFund
+    withdrawAVTFromFund,
+    profilingHelper,
 }

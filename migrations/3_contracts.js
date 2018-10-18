@@ -125,7 +125,7 @@ function doDeployParameterRegistry(_deployer, _storage) {
   return _deployer.deploy(ParameterRegistry, _storage.address)
   .then(() => _storage.allowAccess("write", ParameterRegistry.address))
   .then(() => ParameterRegistry.deployed())
-  .then(parameterRegistry => parameterRegistry.setupDefaultParameters());
+  .then(parameterRegistry => parameterRegistry.init());
 }
 
 function saveInterfaceToStorage(s, interfaceName, interfaceInstance, implementation) {

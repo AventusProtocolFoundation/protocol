@@ -1,9 +1,11 @@
-const MerkleRootsManager = artifacts.require("MerkleRootsManager");
-const MembersManager = artifacts.require("MembersManager");
 const testHelper = require("./helpers/testHelper");
+const membersTestHelper = require("./helpers/membersTestHelper");
+const merkleProofTestHelper = require("./helpers/merkleProofTestHelper.js");
 const web3Utils = require('web3-utils');
 
 contract('MerkleRootsManager - de/registration', async () => {
+  testHelper.profilingHelper.addTimeReports('MerkleRootsManager - de/registration');
+
   let merkleRootsManager, membersManager;
   let depositForScalingProvider;
   let depositForMerkleRoot;
@@ -14,8 +16,11 @@ contract('MerkleRootsManager - de/registration', async () => {
 
   before(async () => {
     await testHelper.before();
-    merkleRootsManager = await MerkleRootsManager.deployed();
-    membersManager = await MembersManager.deployed();
+    await membersTestHelper.before(testHelper);
+    await merkleProofTestHelper.before(testHelper);
+
+    merkleRootsManager = merkleProofTestHelper.getMerkleRootsManager();
+    membersManager = membersTestHelper.getMembersManager();
 
     depositForScalingProvider = await membersManager.getNewMemberDeposit(testHelper.scalingProviderMemberType);
     depositForMerkleRoot = await merkleRootsManager.getNewMerkleRootDeposit();
@@ -83,19 +88,29 @@ contract('MerkleRootsManager - de/registration', async () => {
       await deregisterMerkleRootFails(scalingProvider, defaultRootHash);
     });
 
-    it("can only be deregistered by its owner", async () => {
-      await deregisterMerkleRootFails(alternateScalingProvider, defaultRootHash);
-      await deregisterMerkleRootSucceeds(scalingProvider, defaultRootHash);
+    context("cannot be deregistered", async () => {
+
+      afterEach(async () => {
+        await deregisterMerkleRootSucceeds(scalingProvider, defaultRootHash);
+      });
+
+      it("by anyone but the owner", async () => {
+        await deregisterMerkleRootFails(alternateScalingProvider, defaultRootHash);
+      });
+
+      it("if the scaling provider is no longer active", async () => {
+        await deregisterScalingProviderSucceeds(scalingProvider);
+        await deregisterMerkleRootFails(scalingProvider, defaultRootHash);
+
+        // Restore setup state
+        await registerScalingProviderSucceeds(scalingProvider);
+      });
+
+      it("if it does not exist", async () => {
+        const nonExistingHash = web3Utils.soliditySha3("I do not exist");
+        await deregisterMerkleRootFails(scalingProvider, nonExistingHash);
+      });
     });
-
-    it("can only be deregistered if it exists", async () => {
-      const nonExistingHash = web3Utils.soliditySha3("I do not exist");
-      await deregisterMerkleRootFails(scalingProvider, nonExistingHash);
-
-      // Clean up
-      await deregisterMerkleRootSucceeds(scalingProvider, defaultRootHash);
-    });
-
   });
 
   context("A Merkle root cannot be registered", async () => {

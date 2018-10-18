@@ -3,6 +3,8 @@ const testHelper = require("./helpers/testHelper");
 const votingTestHelper = require("./helpers/votingTestHelper");
 
 contract('ProposalsManager - Voting:', async () => {
+    testHelper.profilingHelper.addTimeReports('ProposalsManager - Voting:');
+
     let proposalsManager;
     let deposit;
     const BIGZERO = new web3.BigNumber(0);
@@ -40,7 +42,7 @@ contract('ProposalsManager - Voting:', async () => {
       await depositDeposit(deposit);
       await proposalsManager.createGovernanceProposal(desc);
 
-      const eventArgs = await testHelper.getEventArgs(proposalsManager.LogCreateProposal);
+      const eventArgs = await testHelper.getEventArgs(proposalsManager.LogGovernanceProposalCreated);
       proposalId = eventArgs.proposalId;
 
       return proposalId.toNumber();
@@ -87,205 +89,142 @@ contract('ProposalsManager - Voting:', async () => {
     }
 
     context("Tests for voting on governance proposals", async () => {
-      it("cannot vote on a governance proposal which is not in the voting period.", async () => {
-          let proposalId = await createGovernanceProposal("A governance proposal");
-          await testHelper.expectRevert(() => votingTestHelper.castVote(proposalId, 2));
+      context("For an existing governance proposal", async () => {
+        let proposalId;
+        let optionId = 1;
+        let wrongOptionId = 2;
+        let invalidOptionId = 3;
+        let signedMessage;
 
+        beforeEach(async () => {
+          proposalId = await createGovernanceProposal("A governance proposal");
+        });
+
+        afterEach(async () => {
           await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await proposalsManager.endProposal(proposalId);
-      });
+          await proposalsManager.endGovernanceProposal(proposalId);
+        });
 
-      it("can vote on a governance proposal which is in the voting period", async () => {
-          let proposalId = await createGovernanceProposal("A governance proposal");
+        context("can vote", async () => {
+          beforeEach(async () => {
+            await testHelper.advanceTimeToVotingStart(proposalId);
+          });
 
-          await testHelper.advanceTimeToVotingStart(proposalId);
-          const signedMessage = await votingTestHelper.castVote(proposalId, 2);
+          afterEach(async () => {
+            await testHelper.advanceTimeToRevealingStart(proposalId);
+            await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
+          });
 
-          // Clear up before the next test.
-          await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await proposalsManager.endProposal(proposalId)
-          // Must reveal any cast votes so that the stake can be withdran before the next test.
-          await votingTestHelper.revealVote(signedMessage, proposalId, 2);
-      });
+          it("on a governance proposal which is in the voting period", async () => {
+            signedMessage = await votingTestHelper.castVote(proposalId, optionId);
+          });
 
-      it("cannot vote on a governance proposal at the revealing stage", async () => {
-          let proposalId = await createGovernanceProposal("A governance proposal");
+          it("but not twice", async () => {
+            signedMessage = await votingTestHelper.castVote(proposalId, optionId);
+            await testHelper.expectRevert(() => votingTestHelper.castVote(proposalId, optionId));
+          });
+        });
 
-          await testHelper.advanceTimeToRevealingStart(proposalId);
-          await testHelper.expectRevert(() => votingTestHelper.castVote(proposalId, 2));
+        context("cannot vote", async () => {
+          it("on a governance proposal which is not in the voting period", async () => {
+            await testHelper.expectRevert(() => votingTestHelper.castVote(proposalId, 2));
+          });
 
-          await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await proposalsManager.endProposal(proposalId);
-      });
+          it("on a governance proposal at the revealing stage", async () => {
+            await testHelper.advanceTimeToRevealingStart(proposalId);
+            await testHelper.expectRevert(() => votingTestHelper.castVote(proposalId, 2));
+          });
+        });
 
-      it("cannot reveal vote before the revealing period.", async () => {
-          let proposalId = await createGovernanceProposal("A governance proposal");
+        context("having voted", async () => {
+          beforeEach(async () => {
+            await testHelper.advanceTimeToVotingStart(proposalId);
+            signedMessage = await votingTestHelper.castVote(proposalId, optionId);
+          });
 
-          await testHelper.advanceTimeToVotingStart(proposalId);
-          let optionId = 2;
-          const signedMessage = await votingTestHelper.castVote(proposalId, optionId);
+          it("can reveal vote in the revealing period.", async () => {
+            await testHelper.advanceTimeToRevealingStart(proposalId);
+            await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
+          });
 
-          await testHelper.expectRevert(() => votingTestHelper.revealVote(signedMessage, proposalId, optionId));
+          context("cannot reveal vote", async () => {
+            afterEach(async () => {
+              await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
+            });
 
-          await testHelper.advanceTimeToRevealingStart(proposalId);
-          await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
+            it("before the revealing period.", async () => {
+              await testHelper.expectRevert(() => votingTestHelper.revealVote(signedMessage, proposalId, optionId));
+              await testHelper.advanceTimeToRevealingStart(proposalId);
+            });
 
-          await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await proposalsManager.endProposal(proposalId);
-      });
+            context("in the revealing period", async () => {
+              beforeEach(async () => {
+                await testHelper.advanceTimeToRevealingStart(proposalId);
+              });
 
-      it("can reveal vote in the revealing period.", async () => {
-          let proposalId = await createGovernanceProposal("A governance proposal");
+              it("with an invalid option id.", async () => {
+                await testHelper.expectRevert(() => votingTestHelper.revealVote(signedMessage, proposalId, invalidOptionId));
+              });
 
-          await testHelper.advanceTimeToVotingStart(proposalId);
-          let optionId = 2;
-          const signedMessage = await votingTestHelper.castVote(proposalId, optionId);
+              it("with the wrong optionId", async () => {
+                await testHelper.expectRevert(() => votingTestHelper.revealVote(signedMessage, proposalId, wrongOptionId));
+              });
 
-          await testHelper.advanceTimeToRevealingStart(proposalId);
-          await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
-          await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await proposalsManager.endProposal(proposalId);
-      });
+              it("with the wrong signature", async () => {
+                const wrongSignedMessage = await votingTestHelper.getSignedMessage(proposalId, wrongOptionId);
+                await testHelper.expectRevert(() => votingTestHelper.revealVote(wrongSignedMessage, proposalId, optionId));
+              });
 
-      it("cannot reveal vote with an invalid option id.", async () => {
-          let proposalId = await createGovernanceProposal("A governance proposal");
+              it("from wrong voter", async () => {
+                let wrongAddress = testHelper.getAccount(1);
+                await testHelper.expectRevert(() => votingTestHelper.revealVote(signedMessage, proposalId, optionId, wrongAddress));
+              });
+            });
+          });
+        });
 
-          await testHelper.advanceTimeToVotingStart(proposalId);
-          let optionId = 2;
-          const signedMessage = await votingTestHelper.castVote(proposalId, optionId);
+        it("can deposit and withdraw tokens within any period, without any votes.", async () => {
+            await depositStake(10);
+            await withdrawStake(5);
 
-          await testHelper.advanceTimeToRevealingStart(proposalId);
-          await testHelper.expectRevert(() => votingTestHelper.revealVote(signedMessage, proposalId, 3));
-          await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
-          await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await proposalsManager.endProposal(proposalId);
-      });
+            await testHelper.advanceTimeToVotingStart(proposalId);
+            await depositStake(10);
+            await withdrawStake(5);
 
-      it("cannot reveal vote with the wrong optionId or signature.", async () => {
-          let proposalId = await createGovernanceProposal("A governance proposal");
+            await testHelper.advanceTimeToRevealingStart(proposalId);
+            await depositStake(10);
+            await withdrawStake(5);
+        });
 
-          await testHelper.advanceTimeToVotingStart(proposalId);
-          const signedMessage = await votingTestHelper.castVote(proposalId, 1);
+        it("can deposit and withdraw tokens in the voting period.", async () => {
+            await testHelper.advanceTimeToVotingStart(proposalId);
+            let optionId = 1;
+            const signedMessage = await votingTestHelper.castVote(proposalId, optionId);
 
-          await testHelper.advanceTimeToRevealingStart(proposalId);
-          // Wrong optionId, right signedMessage.
-          await testHelper.expectRevert(() => votingTestHelper.revealVote(signedMessage, proposalId, 2));
-          // Wrong signedMessage, right optionId.
-          const wrongSignedMessage = await votingTestHelper.getSignedMessage(proposalId, 2);
-          await testHelper.expectRevert(() => votingTestHelper.revealVote(wrongSignedMessage, proposalId, 1));
+            await depositStake(10);
+            await withdrawStake(5);
 
-          await votingTestHelper.revealVote(signedMessage, proposalId, 1);
+            await testHelper.advanceTimeToRevealingStart(proposalId);
+            await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
+        });
 
-          await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await proposalsManager.endProposal(proposalId);
-      });
+        it("cannot deposit or withdraw stake until your vote is revealed.", async () => {
+            await depositStake(10);
 
-      it("cannot reveal vote with short signature.", async () => {
-          let proposalId = await createGovernanceProposal("A governance proposal");
+            let optionId = 2;
+            await testHelper.advanceTimeToVotingStart(proposalId);
+            const signedMessage = await votingTestHelper.castVote(proposalId, optionId);
 
-          await testHelper.advanceTimeToVotingStart(proposalId);
-          const signedMessage = await votingTestHelper.castVote(proposalId, 1);
+            await depositStake(10);
+            await testHelper.advanceTimeToRevealingStart(proposalId);
 
-          await testHelper.advanceTimeToRevealingStart(proposalId);
+            await testHelper.expectRevert(() => depositStake(2));
+            await testHelper.expectRevert(() => withdrawStake(1));
 
-          const corruptSignedMessage = signedMessage.slice(0,40); // curtail signature
-          await testHelper.expectRevert(() => votingTestHelper.revealVote(corruptSignedMessage, proposalId, 1));
-
-          await votingTestHelper.revealVote(signedMessage, proposalId, 1);
-
-          await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await proposalsManager.endProposal(proposalId);
-      });
-
-      it("cannot reveal vote with an invalid signature version.", async () => {
-          let proposalId = await createGovernanceProposal("A governance proposal");
-
-          await testHelper.advanceTimeToVotingStart(proposalId);
-          const signedMessage = await votingTestHelper.castVote(proposalId, 1);
-
-          await testHelper.advanceTimeToRevealingStart(proposalId);
-
-          let corruptSignedMessage = signedMessage.split('');
-          corruptSignedMessage[130] = 2; //changes signature version to 32 - LECRecovery only accepts 0, 1, 27 or 28 as valid
-          corruptSignedMessage = corruptSignedMessage.join('');
-          await testHelper.expectRevert(() => votingTestHelper.revealVote(corruptSignedMessage, proposalId, 1));
-
-          await votingTestHelper.revealVote(signedMessage, proposalId, 1);
-
-          await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await proposalsManager.endProposal(proposalId);
-      });
-
-      it("can reveal vote after the revealing period.", async () => {
-          let proposalId = await createGovernanceProposal("A governance proposal");
-
-          await testHelper.advanceTimeToVotingStart(proposalId);
-          let optionId = 2;
-          const signedMessage = await votingTestHelper.castVote(proposalId, optionId);
-
-          await testHelper.advanceTimeToRevealingStart(proposalId);
-          await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
-
-          await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await proposalsManager.endProposal(proposalId);
-      });
-
-      it("can deposit and withdraw tokens within any period, without any votes.", async () => {
-          let proposalId = await createGovernanceProposal("A governance proposal");
-
-          await depositStake(10);
-          await withdrawStake(5);
-
-          await testHelper.advanceTimeToVotingStart(proposalId);
-          await depositStake(10);
-          await withdrawStake(5);
-
-          await testHelper.advanceTimeToRevealingStart(proposalId);
-          await depositStake(10);
-          await withdrawStake(5);
-
-          await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await proposalsManager.endProposal(proposalId);
-      });
-
-      it("can deposit and withdraw tokens in the voting period.", async () => {
-          let proposalId = await createGovernanceProposal("A governance proposal");
-
-          await testHelper.advanceTimeToVotingStart(proposalId);
-          let optionId = 1;
-          const signedMessage = await votingTestHelper.castVote(proposalId, optionId);
-
-          await depositStake(10);
-          await withdrawStake(5);
-
-          await testHelper.advanceTimeToRevealingStart(proposalId);
-          await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
-
-          await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await proposalsManager.endProposal(proposalId);
-      });
-
-      it("cannot deposit or withdraw stake until your vote is revealed.", async () => {
-          let proposalId = await createGovernanceProposal("A governance proposal");
-
-          await depositStake(10);
-
-          let optionId = 2;
-          await testHelper.advanceTimeToVotingStart(proposalId);
-          const signedMessage = await votingTestHelper.castVote(proposalId, optionId);
-
-          await depositStake(10);
-          await testHelper.advanceTimeToRevealingStart(proposalId);
-
-          await testHelper.expectRevert(() => depositStake(2));
-          await testHelper.expectRevert(() => withdrawStake(1));
-
-          await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
-          await depositStake(2);
-          await withdrawStake(1);
-
-          await testHelper.advanceTimeToEndOfProposal(proposalId);
-          await proposalsManager.endProposal(proposalId);
+            await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
+            await depositStake(2);
+            await withdrawStake(1);
+        });
       });
 
       it("can deposit or withdraw tokens after a proposal is ended, if not within a revealing period of another proposal.", async () => {
@@ -320,9 +259,9 @@ contract('ProposalsManager - Voting:', async () => {
           await withdrawStake(10);
 
           await testHelper.advanceTimeToEndOfProposal(thirdProposal);
-          await proposalsManager.endProposal(firstProposal);
-          await proposalsManager.endProposal(secondProposal);
-          await proposalsManager.endProposal(thirdProposal);
+          await proposalsManager.endGovernanceProposal(firstProposal);
+          await proposalsManager.endGovernanceProposal(secondProposal);
+          await proposalsManager.endGovernanceProposal(thirdProposal);
       });
 
       it("can vote on, deposit stake to and withdraw from, a few proposals with overlapping periods.", async () => {
@@ -417,7 +356,7 @@ contract('ProposalsManager - Voting:', async () => {
 
           // Finally done! Close 'em all down.
           for (i = 0; i < 4; ++i) {
-            await proposalsManager.endProposal(proposalIds[i]);
+            await proposalsManager.endGovernanceProposal(proposalIds[i]);
           }
       });
 
@@ -466,29 +405,16 @@ contract('ProposalsManager - Voting:', async () => {
         await votingTestHelper.revealVote(signedMessage3, proposalId3, 1);
 
         await testHelper.advanceTimeToEndOfProposal(proposalId3);
-        await proposalsManager.endProposal(proposalId1);
-        await proposalsManager.endProposal(proposalId2);
-        await proposalsManager.endProposal(proposalId3);
+        await proposalsManager.endGovernanceProposal(proposalId1);
+        await proposalsManager.endGovernanceProposal(proposalId2);
+        await proposalsManager.endGovernanceProposal(proposalId3);
       });
 
-      it("cannot vote if we have already voted", async () => {
-        const proposalId = await createGovernanceProposal("A proposal");
-        await testHelper.advanceTimeToVotingStart(proposalId);
-        let signedMessage = await votingTestHelper.castVote(proposalId, 1);
-        await testHelper.expectRevert(() => votingTestHelper.castVote(proposalId, 1));
-        await testHelper.expectRevert(() => votingTestHelper.castVote(proposalId, 2));
-        await testHelper.advanceTimeToRevealingStart(proposalId);
-        await votingTestHelper.revealVote(signedMessage, proposalId, 1);
-
-        await testHelper.advanceTimeToEndOfProposal(proposalId);
-        await proposalsManager.endProposal(proposalId);
-      });
-
-      it("cannot endProposal more than once for the same proposal", async () => {
+      it("cannot end governance proposal more than once for the same proposal", async () => {
         const proposalId = await createGovernanceProposal("A proposal");
         await testHelper.advanceTimeToEndOfProposal(proposalId);
-        await proposalsManager.endProposal(proposalId);
-        await testHelper.expectRevert(() => proposalsManager.endProposal(proposalId));
+        await proposalsManager.endGovernanceProposal(proposalId);
+        await testHelper.expectRevert(() => proposalsManager.endGovernanceProposal(proposalId));
       });
 
       it("can get the blockchain time", async () => {
@@ -500,136 +426,101 @@ contract('ProposalsManager - Voting:', async () => {
 
       // TODO: Put tests into sub-contexts based on time periods.
       context("Cancelling votes", async () => {
-        const optionId = 2;
+        const optionId = 1;
+        const otherOptionId = 2;
 
         let proposalId;
 
         beforeEach(async () => {
           proposalId = await createGovernanceProposal("A governance proposal");
-        })
+          await testHelper.advanceTimeToVotingStart(proposalId);
+        });
 
         afterEach(async () => {
-          // Clear up before the next test unless we are told otherwise.
-          await proposalsManager.endProposal(proposalId)
-        })
+          await testHelper.advanceTimeToEndOfProposal(proposalId);
+          await proposalsManager.endGovernanceProposal(proposalId)
+        });
 
-        async function cancelVote(_proposalId) {
-          await votingTestHelper.cancelVote(proposalId);
-          const eventArgs = await testHelper.getEventArgs(proposalsManager.LogCancelVote);
-          return eventArgs.proposalId;
+        async function cancelVoteSucceeds(_proposalId) {
+          await votingTestHelper.cancelVote(_proposalId);
         }
 
-        it("can cancel vote after revealing period ends", async () => {
-          await testHelper.advanceTimeToVotingStart(proposalId);
-          await votingTestHelper.castVote(proposalId, optionId);
+        async function cancelVoteFails(_proposalId) {
+          await testHelper.expectRevert(() => votingTestHelper.cancelVote(_proposalId));
+        }
 
-          // end proposal
-          await testHelper.advanceTimeToEndOfProposal(proposalId);
-
-          // cancel vote after proposal has ended
-          const cancelledProposalId = await cancelVote(proposalId);
-          assert.equal(proposalId, cancelledProposalId);
+        it("cannot cancel vote without voting first", async () => {
+          await cancelVoteFails(proposalId);
         });
 
-        it("cannot cancel vote after reveal period and the user has already revealed", async () => {
-          await testHelper.advanceTimeToVotingStart(proposalId);
-          const signedMessage = await votingTestHelper.castVote(proposalId, optionId);
-          await testHelper.advanceTimeToRevealingStart(proposalId);
-          await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
-          await testHelper.advanceTimeToEndOfProposal(proposalId);
+        context("having voted", async () => {
+          let signedMessage;
+          beforeEach(async () => {
+            signedMessage = await votingTestHelper.castVote(proposalId, optionId);
+          });
 
-          await testHelper.expectRevert(() => votingTestHelper.cancelVote(proposalId));
-        });
-
-        context("Cancelling votes - before reveal period ends", async () => {
           afterEach(async () => {
-            // Clear up before the next test unless we are told otherwise.
             await testHelper.advanceTimeToEndOfProposal(proposalId);
-          })
-
-          it("can cancel vote before the reveal period", async () => {
-            await depositStake(10);
-
-            await testHelper.advanceTimeToVotingStart(proposalId);
-            await votingTestHelper.castVote(proposalId, optionId);
-
-            //cancel the vote while in the voting period
-            const cancelledProposalId = await cancelVote(proposalId);
-            assert.equal(proposalId, cancelledProposalId);
-
-            // can withdraw stake at any time because vote has been cancelled.
-            await testHelper.advanceTimeToRevealingStart(proposalId);
-            await withdrawStake(10);
           });
 
-          it("can cancel vote and vote again with the same option before the reveal period", async () => {
-            await testHelper.advanceTimeToVotingStart(proposalId);
-            await votingTestHelper.castVote(proposalId, optionId);
+          context("before reveal period starts", async () => {
+            it("can cancel vote", async () => {
+              await cancelVoteSucceeds(proposalId);
+              const eventArgs = await testHelper.getEventArgs(proposalsManager.LogCancelVote);
+              assert.equal(proposalId, eventArgs.proposalId,
+                "Emitted proposal id should be the same as that which was cancelled");
+            });
 
-            //cancel the vote while in the voting period
-            const cancelledProposalId = await cancelVote(proposalId);
-            assert.equal(proposalId, cancelledProposalId);
+            it("can cancel vote and vote again with the same option", async () => {
+              await cancelVoteSucceeds(proposalId);
+              await votingTestHelper.castVote(proposalId, optionId);
+            });
 
-            // vote again with the same option
-            await votingTestHelper.castVote(proposalId, optionId);
+            it("can cancel vote and vote again with a different option", async () => {
+              await cancelVoteSucceeds(proposalId);
+              await votingTestHelper.castVote(proposalId, otherOptionId);
+            });
+
+            it("cannot cancel vote for a proposal that doesn't exist", async () => {
+              await cancelVoteFails(999);
+            });
+
+            it("cannot cancel vote after it has been cancelled already", async () => {
+              await cancelVoteSucceeds(proposalId);
+              await cancelVoteFails(proposalId);
+            });
           });
 
-          it("can cancel vote and vote again with a different option before the reveal period", async () => {
-            await testHelper.advanceTimeToVotingStart(proposalId);
-            await votingTestHelper.castVote(proposalId, optionId);
+          context("after reveal period starts", async () => {
+            beforeEach(async () => {
+              await testHelper.advanceTimeToRevealingStart(proposalId);
+            });
 
-            //cancel the vote while in the voting period
-            const cancelledProposalId = await cancelVote(proposalId);
-            assert.equal(proposalId, cancelledProposalId);
+            it("cannot cancel vote if the user has already revealed", async () => {
+              await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
+              await cancelVoteFails(proposalId);
+            });
 
-            // vote again with a different option
-            await votingTestHelper.castVote(proposalId, 1);
+            it("cannot cancel vote if the user has not yet revealed", async () => {
+              await cancelVoteFails(proposalId);
+            });
           });
 
-          it("cannot cancel vote without voting first", async () => {
-            await testHelper.advanceTimeToVotingStart(proposalId);
-            await testHelper.expectRevert(() => votingTestHelper.cancelVote(proposalId));
-          });
+          context("after revealing period ends", async () => {
+            beforeEach(async () => {
+              await testHelper.advanceTimeToEndOfProposal(proposalId);
+            });
 
-          it("cannot cancel vote for a proposal that doesn't exist", async () => {
-            await testHelper.advanceTimeToVotingStart(proposalId);
-            await votingTestHelper.castVote(proposalId, optionId);
+            it("can cancel vote", async () => {
+              await cancelVoteSucceeds(proposalId);
+            });
 
-            await testHelper.expectRevert(() => votingTestHelper.cancelVote(999));
-
-            const cancelledProposalId = await cancelVote(proposalId);
-            assert.equal(proposalId, cancelledProposalId);
-          });
-
-          it("cannot cancel vote after it has been cancelled already", async () => {
-            await testHelper.advanceTimeToVotingStart(proposalId);
-            await votingTestHelper.castVote(proposalId, optionId);
-
-            const cancelledProposalId = await cancelVote(proposalId);
-            assert.equal(proposalId, cancelledProposalId);
-
-            await testHelper.expectRevert(() => votingTestHelper.cancelVote(proposalId));
-          });
-
-          it("cannot cancel vote during reveal period and the user has already revealed", async () => {
-            await testHelper.advanceTimeToVotingStart(proposalId);
-            const signedMessage = await votingTestHelper.castVote(proposalId, optionId);
-            await testHelper.advanceTimeToRevealingStart(proposalId);
-            await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
-
-            await testHelper.expectRevert(() => votingTestHelper.cancelVote(proposalId));
-          });
-
-          it("cannot cancel vote during reveal period and the user has not yet revealed", async () => {
-            await testHelper.advanceTimeToVotingStart(proposalId);
-            await votingTestHelper.castVote(proposalId, optionId);
-            await testHelper.advanceTimeToRevealingStart(proposalId);
-
-            await testHelper.expectRevert(() => votingTestHelper.cancelVote(proposalId));
+            it("cannot cancel if the user has already revealed", async () => {
+              await votingTestHelper.revealVote(signedMessage, proposalId, optionId);
+              await await cancelVoteFails(proposalId);
+            });
           });
         });
-
-
       });
     });
 });

@@ -1,3 +1,5 @@
+// TODO: Rename this file to proposalsTestHelper.js
+
 const ProposalsManager = artifacts.require("ProposalsManager.sol");
 const web3Utils = require('web3-utils');
 
@@ -26,7 +28,6 @@ function getSignatureSecret(_signedMessage) {
   return web3Utils.soliditySha3(_signedMessage);
 }
 
-
 async function castVote(_proposalId, _optionId, _address) {
   let address = _address || testHelper.getAccount(0);
   const signedMessage = await getSignedMessage(_proposalId, _optionId, _address);
@@ -45,6 +46,23 @@ async function revealVote(_signedMessage, _proposalId, _optionId, _address) {
   await proposalsManager.revealVote(_signedMessage, _proposalId, _optionId, {from: address});
 }
 
+async function advanceTimeCastAndRevealVotes(_proposalId, _votes) {
+  await testHelper.advanceTimeToVotingStart(_proposalId);
+  let signedMessages = {};
+  _votes.forEach(async vote => {
+    let signedMessage = await castVote(_proposalId, vote.option, vote.voter);
+    signedMessages[vote.voter+vote.option] = signedMessage;
+  });
+
+  await testHelper.advanceTimeToRevealingStart(_proposalId);
+
+  _votes.forEach(async vote => await revealVote(signedMessages[vote.voter+vote.option], _proposalId, vote.option, vote.voter));
+}
+
+async function claimVoterWinnings(proposalId_, voterAddress_) {
+  await proposalsManager.claimVoterWinnings(proposalId_, {from: voterAddress_});
+}
+
 /**
  * Returns the current blockchain time on the main net or the mock time on a test network
  */
@@ -59,5 +77,7 @@ module.exports = {
   getSignatureSecret,
   getSignedMessage,
   revealVote,
-  getAventusTime
+  getAventusTime,
+  advanceTimeCastAndRevealVotes,
+  claimVoterWinnings
 }

@@ -10,10 +10,6 @@ contract MerkleRootsManager is IMerkleRootsManager, Owned, Versioned {
 
     IAventusStorage public s;
 
-    /**
-    * @dev Constructor
-    * @param _s Persistent storage contract
-    */
     constructor(IAventusStorage _s) public {
       s = _s;
     }
@@ -30,19 +26,12 @@ contract MerkleRootsManager is IMerkleRootsManager, Owned, Versioned {
       LMerkleRoots.deregisterMerkleRoot(s, _rootHash);
     }
 
-    function challengeMerkleRoot(bytes32 _rootHash)
-      external
-      returns (uint proposalId_)
-    {
-      proposalId_ = LMerkleRoots.challengeMerkleRoot(s, _rootHash);
+    function challengeMerkleRoot(bytes32 _rootHash) external {
+      LMerkleRoots.challengeMerkleRoot(s, _rootHash);
     }
 
-    function merkleRootIsActive(bytes32 _rootHash)
-      external
-      view
-      returns (bool isActive_)
-    {
-      isActive_ = LMerkleRoots.merkleRootIsActive(s, _rootHash);
+    function endMerkleRootChallenge(bytes32 _rootHash) external {
+      LMerkleRoots.endMerkleRootChallenge(s, _rootHash);
     }
 
     function getNewMerkleRootDeposit() external view returns (uint merkleRootDepositInAVT_) {
@@ -51,13 +40,5 @@ contract MerkleRootsManager is IMerkleRootsManager, Owned, Versioned {
 
     function getExistingMerkleRootDeposit(bytes32 _rootHash) external view returns (uint merkleRootDepositInAVT_) {
       merkleRootDepositInAVT_ = LMerkleRoots.getExistingMerkleRootDeposit(s, _rootHash);
-    }
-
-    function generateMerkleRoot(bytes32[] _merklePath, bytes32 _leaf)
-      external
-      view
-      returns (bytes32 rootHash_)
-    {
-      rootHash_ = LMerkleRoots.generateMerkleRoot(s, _merklePath, _leaf);
     }
 }

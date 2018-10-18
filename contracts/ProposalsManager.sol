@@ -11,21 +11,16 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
 
   IAventusStorage public s;
 
-  /**
-  * @dev Constructor
-  * @param _s Persistent storage contract
-  */
   constructor(IAventusStorage _s) public {
     s = _s;
   }
 
-  function createGovernanceProposal(string _desc) external returns (uint proposalId_) {
-    proposalId_ = LProposal.createGovernanceProposal(s, _desc);
+  function createGovernanceProposal(string _desc) external {
+    LProposal.createGovernanceProposal(s, _desc);
   }
 
-  function endProposal(uint _proposalId) external {
-    LAventities.finaliseChallenge(s, _proposalId);
-    LProposal.endProposal(s, _proposalId);
+  function endGovernanceProposal(uint _proposalId) external {
+    LProposal.endGovernanceProposal(s, _proposalId);
   }
 
   function castVote(uint _proposalId, bytes32 _secret, uint _prevTime) external {
@@ -36,7 +31,7 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
     LProposal.cancelVote(s, _proposalId);
   }
 
-  function revealVote(bytes _signedMessage, uint _proposalId, uint8 _optId) external {
+  function revealVote(bytes _signedMessage, uint _proposalId, uint _optId) external {
     LProposal.revealVote(s, _signedMessage, _proposalId, _optId);
   }
 

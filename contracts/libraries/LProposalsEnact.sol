@@ -3,21 +3,20 @@ pragma solidity ^0.4.24;
 import "../interfaces/IAventusStorage.sol";
 import "./LAventusTime.sol";
 import './LAVTManager.sol';
+import './LProposalsStorage.sol';
 
 // Library for extending voting protocol functionality
 library LProposalsEnact {
   enum ProposalStatus {NonExistent, Lobbying, Voting, Revealing, RevealingFinishedProposalNotEnded, Ended}
 
-  bytes32 constant proposalCountKey = keccak256(abi.encodePacked("ProposalCount"));
-
   function doUnlockProposalDeposit(IAventusStorage _storage, uint _proposalId) external {
     address proposalOwner = getProposalOwner(_storage, _proposalId);
-    bytes32 expectedDepositsKey = keccak256(abi.encodePacked("ExpectedDeposits", proposalOwner));
-    uint expectedDeposits = _storage.getUInt(expectedDepositsKey);
     uint proposalDeposit = getProposalDeposit(_storage, _proposalId);
+    // TODO: Move this get/check/set to LAVTManager.unlockDeposit.
+    uint expectedDeposits = LAVTManager.getExpectedDeposits(_storage, proposalOwner);
     assert(expectedDeposits >= proposalDeposit);
-    _storage.setUInt(expectedDepositsKey, expectedDeposits - proposalDeposit);
-    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "deposit")), 0);
+    LAVTManager.setExpectedDeposits(_storage, proposalOwner, expectedDeposits - proposalDeposit);
+    LProposalsStorage.setDeposit(_storage, _proposalId, 0);
   }
 
   /**
@@ -33,22 +32,62 @@ library LProposalsEnact {
   {
     address owner = msg.sender;
 
-    bytes32 expectedDepositsKey = keccak256(abi.encodePacked("ExpectedDeposits", owner));
-    _storage.setUInt(expectedDepositsKey, _storage.getUInt(expectedDepositsKey) + _deposit);
+    // TODO: Move this get/set/check to LAVTManager.lockDeposit.
+    uint expectedDeposits = LAVTManager.getExpectedDeposits(_storage, owner) + _deposit;
+    LAVTManager.setExpectedDeposits(_storage, owner, expectedDeposits);
 
-    uint expectedDeposits = _storage.getUInt(expectedDepositsKey);
     uint actualDeposits = LAVTManager.getBalance(_storage, owner, "deposit");
     require(
       actualDeposits >= expectedDeposits,
       "Owner has insufficient deposit funds to create a proposal"
     );
 
-    uint proposalCount = _storage.getUInt(proposalCountKey);
+    uint proposalCount = LProposalsStorage.getProposalCount(_storage);
     proposalId_ = proposalCount + 1;
-    _storage.setAddress(keccak256(abi.encodePacked("Proposal", proposalId_, "owner")), owner);
-    _storage.setUInt(keccak256(abi.encodePacked("Proposal", proposalId_, "deposit")), _deposit);
-    _storage.setUInt(proposalCountKey, proposalId_);
+    LProposalsStorage.setOwner(_storage, proposalId_, owner);
+    LProposalsStorage.setDeposit(_storage, proposalId_, _deposit);
+    LProposalsStorage.setProposalCount(_storage, proposalId_);
     setProposalTimes(_storage, proposalId_, numDaysInLobbyingPeriod, numDaysInVotingPeriod, numDaysInRevealingPeriod);
+  }
+
+  function inRevealingPeriodOrLater(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (bool result_)
+  {
+    ProposalStatus proposalStatus = doGetProposalStatus(_storage, _proposalId);
+    result_ =
+      (proposalStatus == ProposalStatus.Revealing) ||
+      (proposalStatus == ProposalStatus.RevealingFinishedProposalNotEnded) ||
+      (proposalStatus == ProposalStatus.Ended);
+  }
+
+  function inRevealingPeriod(IAventusStorage _storage, uint _proposalId) external view returns (bool result_) {
+    return doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.Revealing;
+  }
+
+  function inVotingPeriodOrAfterRevealingFinished(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (bool result_)
+  {
+    ProposalStatus proposalStatus = doGetProposalStatus(_storage, _proposalId);
+    result_ =
+      proposalStatus == LProposalsEnact.ProposalStatus.Voting ||
+      (proposalStatus == LProposalsEnact.ProposalStatus.RevealingFinishedProposalNotEnded) ||
+      (proposalStatus == LProposalsEnact.ProposalStatus.Ended);
+  }
+
+  function inVotingPeriod(IAventusStorage _storage, uint _proposalId) external view returns (bool result_) {
+    return doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.Voting;
+  }
+
+  function afterRevealingFinishedAndProposalNotEnded(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (bool result_)
+  {
+    return doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.RevealingFinishedProposalNotEnded;
   }
 
   /**
@@ -62,9 +101,9 @@ library LProposalsEnact {
     view
     returns (ProposalStatus status_)
   {
-    uint votingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "votingStart")));
-    uint revealingStart = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingStart")));
-    uint revealingEnd = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingEnd")));
+    uint votingStart = LProposalsStorage.getVotingStart(_storage, _proposalId);
+    uint revealingStart = LProposalsStorage.getRevealingStart(_storage, _proposalId);
+    uint revealingEnd = LProposalsStorage.getRevealingEnd(_storage, _proposalId);
     uint deposit = getProposalDeposit(_storage, _proposalId);
 
     uint currentTime = LAventusTime.getCurrentTime(_storage);
@@ -83,29 +122,8 @@ library LProposalsEnact {
       status_ = ProposalStatus.Ended;
   }
 
-  function onlyInRevealingPeriodOrLater(ProposalStatus _proposalStatus) public pure returns (bool result_) {
-    result_ =
-      (_proposalStatus == ProposalStatus.Revealing) ||
-      (_proposalStatus == ProposalStatus.RevealingFinishedProposalNotEnded) ||
-      (_proposalStatus == ProposalStatus.Ended);
-  }
-
-  function onlyInVotingPeriodOrAfterRevealingFinished(ProposalStatus _proposalStatus) public pure returns (bool result_) {
-    result_ =
-      _proposalStatus == LProposalsEnact.ProposalStatus.Voting ||
-      (_proposalStatus == LProposalsEnact.ProposalStatus.RevealingFinishedProposalNotEnded) ||
-      (_proposalStatus == LProposalsEnact.ProposalStatus.Ended);
-  }
-
-  function inVotingPeriod(IAventusStorage _storage, uint _proposalId) public view returns (bool result_) {
-    return doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.Voting;
-  }
-
-  function afterRevealingFinishedAndProposalNotEnded(IAventusStorage _storage, uint _proposalId) public view returns (bool result_) {
-    return doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.RevealingFinishedProposalNotEnded;
-  }
-
-  function setProposalTimes(IAventusStorage _storage, uint _proposalId, uint numDaysInLobbyingPeriod, uint numDaysInVotingPeriod, uint numDaysInRevealingPeriod)
+  function setProposalTimes(IAventusStorage _storage, uint _proposalId, uint numDaysInLobbyingPeriod,
+      uint numDaysInVotingPeriod, uint numDaysInRevealingPeriod)
     private
   {
     uint lobbyingStart = LAventusTime.getCurrentTime(_storage);
@@ -113,10 +131,10 @@ library LProposalsEnact {
     uint revealingStart = votingStart + (1 days * numDaysInVotingPeriod);
     uint revealingEnd = revealingStart + (1 days * numDaysInRevealingPeriod);
 
-    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "lobbyingStart")), lobbyingStart);
-    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "votingStart")), votingStart);
-    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingStart")), revealingStart);
-    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealingEnd")), revealingEnd);
+    LProposalsStorage.setLobbyingStart(_storage, _proposalId, lobbyingStart);
+    LProposalsStorage.setVotingStart(_storage, _proposalId, votingStart);
+    LProposalsStorage.setRevealingStart(_storage, _proposalId, revealingStart);
+    LProposalsStorage.setRevealingEnd(_storage, _proposalId, revealingEnd);
   }
 
   function getProposalDeposit(IAventusStorage _storage, uint _proposalId)
@@ -124,7 +142,7 @@ library LProposalsEnact {
     view
     returns (uint deposit_)
   {
-    deposit_ = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "deposit")));
+    deposit_ = LProposalsStorage.getDeposit(_storage, _proposalId);
   }
 
   function getProposalOwner(IAventusStorage _storage, uint _proposalId)
@@ -132,11 +150,10 @@ library LProposalsEnact {
     view
     returns (address owner_)
   {
-    owner_ = _storage.getAddress(keccak256(abi.encodePacked("Proposal", _proposalId, "owner")));
+    owner_ = LProposalsStorage.getOwner(_storage, _proposalId);
   }
 
   function thereAreUnrevealedVotes(IAventusStorage _storage, uint _proposalId) private view returns (bool result_) {
-    bytes32 unrevealedVotesCountKey = keccak256(abi.encodePacked("Proposal", _proposalId, "unrevealedVotesCount"));
-    result_ = _storage.getUInt(unrevealedVotesCountKey) > 0;
+    result_ = LProposalsStorage.getUnrevealedVotesCount(_storage, _proposalId) > 0;
   }
 }
