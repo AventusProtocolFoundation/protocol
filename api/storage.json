@@ -1,0 +1,413 @@
+{
+    "address": "0xA1A6eFbC28D6F2E0165474Ec822Ab30290267661",
+    "abi": [
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "_owner",
+                    "type": "address"
+                }
+            ],
+            "name": "setOwner",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "_accessType",
+                    "type": "string"
+                },
+                {
+                    "name": "_address",
+                    "type": "address"
+                }
+            ],
+            "name": "allowAccess",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [],
+            "name": "owner",
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "_accessType",
+                    "type": "string"
+                },
+                {
+                    "name": "_address",
+                    "type": "address"
+                }
+            ],
+            "name": "denyAccess",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "payable": true,
+            "stateMutability": "payable",
+            "type": "fallback"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": false,
+                    "name": "accessType",
+                    "type": "string"
+                },
+                {
+                    "indexed": true,
+                    "name": "accessAddress",
+                    "type": "address"
+                }
+            ],
+            "name": "LogAllowAccess",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": false,
+                    "name": "accessType",
+                    "type": "string"
+                },
+                {
+                    "indexed": true,
+                    "name": "accessAddress",
+                    "type": "address"
+                }
+            ],
+            "name": "LogDenyAccess",
+            "type": "event"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "_to",
+                    "type": "address"
+                },
+                {
+                    "name": "_tokens",
+                    "type": "uint256"
+                }
+            ],
+            "name": "transferAVTTo",
+            "outputs": [
+                {
+                    "name": "retVal_",
+                    "type": "bool"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "_from",
+                    "type": "address"
+                },
+                {
+                    "name": "_tokens",
+                    "type": "uint256"
+                }
+            ],
+            "name": "transferAVTFrom",
+            "outputs": [
+                {
+                    "name": "retVal_",
+                    "type": "bool"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [
+                {
+                    "name": "_record",
+                    "type": "bytes32"
+                }
+            ],
+            "name": "getUInt",
+            "outputs": [
+                {
+                    "name": "value_",
+                    "type": "uint256"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "_record",
+                    "type": "bytes32"
+                },
+                {
+                    "name": "_value",
+                    "type": "uint256"
+                }
+            ],
+            "name": "setUInt",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [
+                {
+                    "name": "_record",
+                    "type": "bytes32"
+                }
+            ],
+            "name": "getString",
+            "outputs": [
+                {
+                    "name": "value_",
+                    "type": "string"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "_record",
+                    "type": "bytes32"
+                },
+                {
+                    "name": "_value",
+                    "type": "string"
+                }
+            ],
+            "name": "setString",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [
+                {
+                    "name": "_record",
+                    "type": "bytes32"
+                }
+            ],
+            "name": "getAddress",
+            "outputs": [
+                {
+                    "name": "value_",
+                    "type": "address"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "_record",
+                    "type": "bytes32"
+                },
+                {
+                    "name": "_value",
+                    "type": "address"
+                }
+            ],
+            "name": "setAddress",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [
+                {
+                    "name": "_record",
+                    "type": "bytes32"
+                }
+            ],
+            "name": "getBytes",
+            "outputs": [
+                {
+                    "name": "value_",
+                    "type": "bytes"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "_record",
+                    "type": "bytes32"
+                },
+                {
+                    "name": "_value",
+                    "type": "bytes"
+                }
+            ],
+            "name": "setBytes",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [
+                {
+                    "name": "_record",
+                    "type": "bytes32"
+                }
+            ],
+            "name": "getBytes32",
+            "outputs": [
+                {
+                    "name": "value_",
+                    "type": "bytes32"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "_record",
+                    "type": "bytes32"
+                },
+                {
+                    "name": "_value",
+                    "type": "bytes32"
+                }
+            ],
+            "name": "setBytes32",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [
+                {
+                    "name": "_record",
+                    "type": "bytes32"
+                }
+            ],
+            "name": "getBoolean",
+            "outputs": [
+                {
+                    "name": "value_",
+                    "type": "bool"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "_record",
+                    "type": "bytes32"
+                },
+                {
+                    "name": "_value",
+                    "type": "bool"
+                }
+            ],
+            "name": "setBoolean",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [
+                {
+                    "name": "_record",
+                    "type": "bytes32"
+                }
+            ],
+            "name": "getInt",
+            "outputs": [
+                {
+                    "name": "value_",
+                    "type": "int256"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "_record",
+                    "type": "bytes32"
+                },
+                {
+                    "name": "_value",
+                    "type": "int256"
+                }
+            ],
+            "name": "setInt",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        }
+    ]
+}

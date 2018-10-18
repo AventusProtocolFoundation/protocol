@@ -1,68 +1,61 @@
-const EventsManager = artifacts.require("EventsManager");
 const testHelper = require("./helpers/testHelper");
+const eventsTestHelper = require("./helpers/eventsTestHelper");
 const votingTestHelper = require("./helpers/votingTestHelper");
 const web3Utils = require('web3-utils');
 
 contract('Event challenges', async () => {
-  const oneDay = new web3.BigNumber(86400);  // seconds in one day. Solidity uses uint256.
-  const oneWeek = oneDay.times(7);
-  const emptyOptionalData = "0x";
-  let validEventId = 0;
-  let validEventDeposit = new web3.BigNumber(0);
+  testHelper.profilingHelper.addTimeReports('Event challenges');
+
+  const emptyDoorData = "0x";
+  // TODO: Rename all these to "good" instead of "valid".
+
   let validChallengeDeposit = new web3.BigNumber(0);
   let validChallengeProposalId = 0;
+  let validOwnerProof;
+  let ticketCount = 0;
 
   const eventOwner = testHelper.getAccount(0);
   const challengeOwner = testHelper.getAccount(1);
   const voter1 =  testHelper.getAccount(2);
   const voter2 =  testHelper.getAccount(3);
   const challengeEnder = testHelper.getAccount(4);
+  const isViaBroker = false;
+  const noBrokerAddress = '0x';
   const stake = testHelper.oneAVT;
-  const fixedPercentageToWinner = 10;
-  const fixedPercentageToChallengeEnder = 10;
+
+  let eventsManager;
 
   before(async () => {
     await testHelper.before();
     await votingTestHelper.before(testHelper);
+    await eventsTestHelper.before(testHelper, noBrokerAddress, eventOwner);
 
-    eventsManager = await EventsManager.deployed();
-    proposalsManager = testHelper.getProposalsManager();
+    eventsManager = eventsTestHelper.getEventsManager();
   });
 
-  // Create an event: always owned by account 0.
   async function createValidEvent() {
-    const eventDesc = "My event " + (validEventId + 1);
-    const eventTime = testHelper.now().plus(oneWeek * 20);
-    const ticketSaleStartTime = testHelper.now().plus(oneWeek * 6);
-    const eventSupportURL = "http://www.eventbrite.com/events?eventid=27110";
-    const capacity = 10000;
-    const averageTicketPriceInUSCents = 675;
-
-    // TODO: use eventstTestHelper.makeEventDepositAndCreateValidEvent instead of all this.
-    const deposits = await eventsManager.getNewEventDeposit(averageTicketPriceInUSCents, {from: eventOwner});
-    validEventDeposit = deposits[1];
-
-    await makeDeposit(validEventDeposit, eventOwner);
-
-    await eventsManager.createEvent(eventDesc, eventSupportURL, ticketSaleStartTime, eventTime, capacity, averageTicketPriceInUSCents, '0x', {from: eventOwner});
-    const eventArgs = await testHelper.getEventArgs(eventsManager.LogEventCreated);
-    validEventId = eventArgs.eventId.toNumber();
+    let eventData;
+    eventData = await eventsTestHelper.makeEventDepositAndCreateValidEvent(isViaBroker);
+    validOwnerProof = await eventsTestHelper.generateOwnerProof(eventData.id, eventOwner);
+    return eventData;
   }
 
-  async function endEventAndWithdrawDeposit() {
-    await testHelper.advanceTimeToEventEnd(validEventId);
-    await eventsManager.unlockEventDeposit(validEventId);
-    await withdrawDeposit(validEventDeposit, eventOwner);
+  // TODO: replace by call to this function in eventsTestHelper,
+  // once the latter does not use a global state
+  async function advanceTimeEndEventAndWithdrawDeposit(eventId, eventDeposit) {
+    await testHelper.advanceTimeToEventEnd(eventId);
+    await eventsManager.endEvent(eventId);
+    await withdrawDeposit(eventDeposit, eventOwner);
   }
 
   async function getExistingEventDeposit(_eventId) {
     return await eventsManager.getExistingEventDeposit(_eventId);
   }
 
-  async function challengeEventSucceeds() {
-    validChallengeDeposit = await getExistingEventDeposit(validEventId);
+  async function challengeEventSucceeds(eventId) {
+    validChallengeDeposit = await getExistingEventDeposit(eventId);
     await makeDeposit(validChallengeDeposit, challengeOwner);
-    await eventsManager.challengeEvent(validEventId, {from: challengeOwner});
+    await eventsManager.challengeEvent(eventId, {from: challengeOwner});
     const eventArgs = await testHelper.getEventArgs(eventsManager.LogEventChallenged);
 
     const oldChallengeProposalId = validChallengeProposalId;
@@ -76,13 +69,16 @@ contract('Event challenges', async () => {
     await withdrawDeposit(_deposit, challengeOwner);
   }
 
-  async function endChallengeEvent(votesFor, votesAgainst) {
+  async function advanceTimeAndEndEventChallenge(eventId) {
     await testHelper.advanceTimeToEndOfProposal(validChallengeProposalId);
-    await proposalsManager.endProposal(validChallengeProposalId, {from: challengeEnder});
-    const eventArgs = await testHelper.getEventArgs(proposalsManager.LogEndProposal);
+    await eventsManager.endEventChallenge(eventId, {from: challengeEnder});
+  }
+
+  async function assertChallengeVotes(_expectedFor, _expectedAgainst) {
+    const eventArgs = await testHelper.getEventArgs(eventsManager.LogEventChallengeEnded);
     assert.equal(validChallengeProposalId, eventArgs.proposalId.toNumber());
-    assert.equal(votesFor, eventArgs.votesFor.toNumber());
-    assert.equal(votesAgainst, eventArgs.votesAgainst.toNumber());
+    assert.equal(_expectedFor, eventArgs.votesFor.toNumber());
+    assert.equal(_expectedAgainst, eventArgs.votesAgainst.toNumber());
   }
 
   async function makeDeposit(_depositAmount, _depositer) {
@@ -103,11 +99,11 @@ contract('Event challenges', async () => {
 
   context("Challenge deposit", async () => {
     it("can get the correct event deposit", async () => {
-      await createValidEvent();
-      let deposit = await getExistingEventDeposit(validEventId);
-      assert.notEqual(deposit.toNumber(), 0);
-      assert.equal(deposit.toString(), validEventDeposit.toString());
-      await endEventAndWithdrawDeposit();
+      let testEvent  = await createValidEvent();
+      let existingEventDeposit = await getExistingEventDeposit(testEvent.id);
+      assert.notEqual(existingEventDeposit.toNumber(), 0);
+      assert.equal(testEvent.deposit.toString(), existingEventDeposit.toString());
+      await advanceTimeEndEventAndWithdrawDeposit(testEvent.id, testEvent.deposit);
     });
 
     it("cannot get the event deposit for non-existent event", async () => {
@@ -126,14 +122,16 @@ contract('Event challenges', async () => {
     return validChallengeDeposit.dividedToIntegerBy(10);
   }
 
+  // TODO: Add futher sub-contexts and before/after methods to extract common code between tests
   context("Create and end challenge - no votes", async () => {
+    let goodEvent;
 
     beforeEach(async () => {
-      await createValidEvent();
+      goodEvent = await createValidEvent();
     });
 
     afterEach(async () => {
-      await endEventAndWithdrawDeposit();
+      await advanceTimeEndEventAndWithdrawDeposit(goodEvent.id, goodEvent.deposit);
     });
 
     after(async () => await testHelper.checkFundsEmpty());
@@ -146,58 +144,83 @@ contract('Event challenges', async () => {
     }
 
     it("can create and end a challenge to a valid event", async () => {
-      await challengeEventSucceeds();
-      await endChallengeEvent(0, 0);
+      await challengeEventSucceeds(goodEvent.id);
+      await advanceTimeAndEndEventChallenge(goodEvent.id);
+      await assertChallengeVotes(0, 0);
 
       await withdrawDepositsAfterChallengeEnds();
     });
 
-    it("cannot create a challenge to a non-existing event", async () => {
-      const correctDeposit = await getExistingEventDeposit(validEventId);
-      const wrongEventId = 99999;
-      await challengeEventFails(correctDeposit, wrongEventId);
+    context("cannot create a challenge", async () => {
+      it("to a non-existing event", async () => {
+        const correctDeposit = await getExistingEventDeposit(goodEvent.id);
+        const wrongEventId = 99999;
+        await challengeEventFails(correctDeposit, wrongEventId);
+      });
+
+      it("to an event without sufficient deposit", async () => {
+        const insufficientDeposit = (await getExistingEventDeposit(goodEvent.id)).minus(new web3.BigNumber(1));
+        await challengeEventFails(insufficientDeposit, goodEvent.id);
+      });
+
+      it("to an event that has ended", async() => {
+        const correctDeposit = await getExistingEventDeposit(goodEvent.id);
+        await testHelper.advanceTimeToEventEnd(goodEvent.id);
+        await challengeEventFails(correctDeposit, goodEvent.id);
+      });
     });
 
-    it("cannot create a challenge to an event without sufficient deposit", async () => {
-      const insufficientDeposit = (await getExistingEventDeposit(validEventId)).minus(new web3.BigNumber(1));
-      await challengeEventFails(insufficientDeposit, validEventId);
+    context("given an event is under challenge", async () => {
+      beforeEach(async () => {
+        await challengeEventSucceeds(goodEvent.id);
+      });
+
+      afterEach(async () => {
+        await assertChallengeVotes(0, 0);
+        await withdrawDepositsAfterChallengeEnds();
+      });
+
+      context("and in reporting period", async () => {
+        afterEach(async () => {
+          await advanceTimeAndEndEventChallenge(goodEvent.id);
+        });
+
+        it("cannot create another challenge to the same event", async () => {
+          await challengeEventFails(validChallengeDeposit, goodEvent.id);
+        });
+
+        it("cannot end a non-existent challenge", async () => {
+          await testHelper.expectRevert(() => eventsManager.endEventChallenge(99999999, {from: challengeEnder}));
+        });
+
+        it("cannot cancel the event", async () => {
+          await testHelper.expectRevert(() => eventsManager.cancelEvent(goodEvent.id, validOwnerProof, {from: eventOwner}));
+        });
+      });
+
+      context("and after off sale time", async () => {
+        beforeEach(async () => {
+          await testHelper.advanceTimeToEventEnd(goodEvent.id);
+        });
+
+        afterEach(async () => {
+          await eventsManager.endEventChallenge(goodEvent.id, {from: challengeEnder});
+        });
+
+        it("cannot end the event", async () => {
+          await testHelper.expectRevert(() => eventsManager.endEvent(goodEvent.id, {from: eventOwner}));
+        });
+      });
     });
 
-    it("cannot create more than one challenge to an event", async () => {
-      await challengeEventSucceeds();
-      await challengeEventFails(validChallengeDeposit, validEventId);
-      await endChallengeEvent(0, 0);
-      await withdrawDepositsAfterChallengeEnds();
-    });
-
-    it("cannot end a non-existent challenge", async () => {
-      await challengeEventSucceeds();
-      await testHelper.expectRevert(() => proposalsManager.endProposal(99999999, {from: challengeEnder}));
-      await endChallengeEvent(0, 0);
-      await withdrawDepositsAfterChallengeEnds();
-    });
-
-    it("cannot cancel an event when under challenge", async () => {
-      await challengeEventSucceeds();
-      await testHelper.expectRevert(() => eventsManager.cancelEvent(validEventId, '0x', {from: eventOwner}));
-      await endChallengeEvent(0, 0);
-      await withdrawDepositsAfterChallengeEnds();
-    });
-
-    it("cannot create a challenge to an event that has ended", async() => {
-      const correctDeposit = await getExistingEventDeposit(validEventId);
-      await testHelper.advanceTimeToEventEnd(validEventId);
-      await challengeEventFails(correctDeposit, validEventId);
-    });
   });
 
   context("End challenge - with votes", async () => {
     let winningsRemainder = 0;
+    let goodEvent;
 
     beforeEach(async () => {
-      await createValidEvent();
-      await testHelper.advanceTimeToEventTicketSaleStart(validEventId);
-      await challengeEventSucceeds(challengeOwner);
+      goodEvent = await createValidEvent();
       await depositStake(stake, voter1);
       await depositStake(stake, voter2);
     });
@@ -215,22 +238,24 @@ contract('Event challenges', async () => {
       }
     });
 
-    async function voteToMarkEventAsFraudulentAndWithdrawWinnings() {
-      await testHelper.advanceTimeToVotingStart(validChallengeProposalId);
-      const signedMessage1 = await votingTestHelper.castVote(validChallengeProposalId, 1, voter1);
-      const signedMessage2 = await votingTestHelper.castVote(validChallengeProposalId, 1, voter2);
-      await testHelper.advanceTimeToRevealingStart(validChallengeProposalId);
-      await votingTestHelper.revealVote(signedMessage1, validChallengeProposalId, 1, voter1);
-      await votingTestHelper.revealVote(signedMessage2, validChallengeProposalId, 1, voter2);
-      await endChallengeEvent(stake * 2, 0);
+    function claimVoterWinnings(_voterAddress) {
+      return votingTestHelper.claimVoterWinnings(validChallengeProposalId, _voterAddress);
+    }
+
+    async function voteToMarkEventAsFraudulentAndWithdrawWinnings(eventId, eventDeposit) {
+      assert(eventDeposit !== undefined, "[eventChallengesTest.voteToMarkEventAsFraudulentAndWithdrawWinnings] eventDeposit must be defined");
+      await votingTestHelper.advanceTimeCastAndRevealVotes(validChallengeProposalId,
+          [{voter: voter1, option: 1}, {voter: voter2, option: 1}]);
+      await advanceTimeAndEndEventChallenge(eventId);
+      await assertChallengeVotes(stake * 2, 0);
       // Challenge won, the winner is the challenge owner.
       await withdrawDeposit(fixedAmountToWinner(), challengeOwner);
       // The challenge ender gets their bit.
       await withdrawDeposit(fixedAmountToChallengeEnder(), challengeEnder);
       // Winning voters get the rest.
-      await proposalsManager.claimVoterWinnings(validChallengeProposalId, {from: voter1});
-      await proposalsManager.claimVoterWinnings(validChallengeProposalId, {from: voter2});
-      const totalVoterWinnings = validEventDeposit.minus(fixedAmountToWinner()).minus(fixedAmountToChallengeEnder());
+      await claimVoterWinnings(voter1);
+      await claimVoterWinnings(voter2);
+      const totalVoterWinnings = eventDeposit.minus(fixedAmountToWinner()).minus(fixedAmountToChallengeEnder());
       await withdrawDeposit(totalVoterWinnings.dividedToIntegerBy(2), voter1);
       await withdrawDeposit(totalVoterWinnings.dividedToIntegerBy(2), voter2);
       // Challenge is over, withdraw the deposit.
@@ -238,90 +263,119 @@ contract('Event challenges', async () => {
       winningsRemainder += totalVoterWinnings.mod(2).toNumber();
     }
 
-    it("pays the correct winnings in the case of agreement winning", async () => {
-      await voteToMarkEventAsFraudulentAndWithdrawWinnings();
+    context("clears the event challenge by", async () => {
+      beforeEach(async () => {
+        await challengeEventSucceeds(goodEvent.id);
+      });
+
+      afterEach(async () => {
+        await advanceTimeEndEventAndWithdrawDeposit(goodEvent.id, goodEvent.deposit);
+      });
+
+      it("winning the vote", async () => {
+        await votingTestHelper.advanceTimeCastAndRevealVotes(validChallengeProposalId, [{voter: voter1, option: 2}]);
+
+        await advanceTimeAndEndEventChallenge(goodEvent.id);
+        await assertChallengeVotes(0, stake);
+        // Challenge lost, the winner is the event owner.
+        await withdrawDeposit(fixedAmountToWinner(), eventOwner);
+        // The challenge ender gets their bit.
+
+        await withdrawDeposit(fixedAmountToChallengeEnder(), challengeEnder);
+        // Winning voter gets the rest.
+        await claimVoterWinnings(voter1);
+        await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()).minus(fixedAmountToChallengeEnder()), voter1);
+      });
+
+      it("a 'score draw'", async () => {
+        await votingTestHelper.advanceTimeCastAndRevealVotes(validChallengeProposalId,
+            [{voter: voter1, option: 1}, {voter: voter2, option: 2}]);
+
+        await advanceTimeAndEndEventChallenge(goodEvent.id);
+        await assertChallengeVotes(stake, stake);
+        // Challenge lost, the winner is the event owner.
+        await withdrawDeposit(fixedAmountToWinner(), eventOwner);
+        // The challenge ender gets their bit.
+        await withdrawDeposit(fixedAmountToChallengeEnder(), challengeEnder);
+        // Winning voter gets the rest.
+        await claimVoterWinnings(voter2);
+        await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()).minus(fixedAmountToChallengeEnder()), voter2);
+      });
+
+      it("a 'no-score draw'", async () => {
+        await testHelper.advanceTimeToVotingStart(validChallengeProposalId);
+        const signedMessage1 = await votingTestHelper.castVote(validChallengeProposalId, 1, voter1);
+        const signedMessage2 = await votingTestHelper.castVote(validChallengeProposalId, 2, voter2);
+        // No-one reveals their votes before the deadline.
+
+        await advanceTimeAndEndEventChallenge(goodEvent.id);
+        assertChallengeVotes(0, 0);
+
+        await votingTestHelper.revealVote(signedMessage1, validChallengeProposalId, 1, voter1);
+        await votingTestHelper.revealVote(signedMessage2, validChallengeProposalId, 2, voter2);
+
+        // Challenge lost, the winner is the event owner.
+        await withdrawDeposit(fixedAmountToWinner(), eventOwner);
+        // The challenge ender gets the rest.
+        await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()), challengeEnder);
+      });
     });
 
-    it("pays the correct winnings in the case of disagreement winning", async () => {
-      await testHelper.advanceTimeToVotingStart(validChallengeProposalId);
-      const signedMessage = await votingTestHelper.castVote(validChallengeProposalId, 2, voter1);
-      await testHelper.advanceTimeToRevealingStart(validChallengeProposalId);
-      await votingTestHelper.revealVote(signedMessage, validChallengeProposalId, 2, voter1);
+    context("marks the event as fraudulent then", async () => {
 
-      await endChallengeEvent(0, stake);
-      // Challenge lost, the winner is the event owner.
-      await withdrawDeposit(fixedAmountToWinner(), eventOwner);
-      // The challenge ender gets their bit.
+      beforeEach(async () => {
+        await challengeEventSucceeds(goodEvent.id);
+        await voteToMarkEventAsFraudulentAndWithdrawWinnings(goodEvent.id, goodEvent.deposit);
+      });
 
-      await withdrawDeposit(fixedAmountToChallengeEnder(), challengeEnder);
-      // Winning voter gets the rest.
-      await proposalsManager.claimVoterWinnings(validChallengeProposalId, {from: voter1});
-      await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()).minus(fixedAmountToChallengeEnder()), voter1);
-      await endEventAndWithdrawDeposit();
+      it("cannot cancel the event", async () => {
+        await testHelper.expectRevert(() => eventsManager.cancelEvent(goodEvent.id, validOwnerProof, {from: eventOwner}));
+      });
+
+      it("cannot end the event", async () => {
+        // TODO: add test.
+      });
+
+      it("cannot get the event deposit back", async () => {
+        // TODO: add test.
+      });
+
+      it("can recreate the event ", async () => {
+        // TODO: add test when marking as fraudulent clears the event hash.
+      });
     });
 
-    it("pays the correct winnings in the case of disagreement winning via a 'score draw'", async () => {
-      await testHelper.advanceTimeToVotingStart(validChallengeProposalId);
-      const signedMessage1 = await votingTestHelper.castVote(validChallengeProposalId, 1, voter1);
-      const signedMessage2 = await votingTestHelper.castVote(validChallengeProposalId, 2, voter2);
-      await testHelper.advanceTimeToRevealingStart(validChallengeProposalId);
-      await votingTestHelper.revealVote(signedMessage1, validChallengeProposalId, 1, voter1);
-      await votingTestHelper.revealVote(signedMessage2, validChallengeProposalId, 2, voter2);
+    // TODO: Move the rest of this to EventsManagerTicketsTest.
+    async function sellTicketFromEventOwner(_ticketBuyer, eventId) {
+      const vendorTicketRefHash = web3Utils.soliditySha3("UniqueVendorTicketRef" + ticketCount++);
+      const vendorProof = testHelper.createVendorTicketProof(eventId, vendorTicketRefHash, eventOwner, _ticketBuyer);
+      await eventsManager.sellTicket(eventId, vendorTicketRefHash, "some metadata", _ticketBuyer, vendorProof,
+          emptyDoorData, {from: eventOwner});
+      return (await testHelper.getEventArgs(eventsManager.LogTicketSale)).ticketId;
+    }
 
-      await endChallengeEvent(stake, stake);
-      // Challenge lost, the winner is the event owner.
-      await withdrawDeposit(fixedAmountToWinner(), eventOwner);
-      // The challenge ender gets their bit.
-      await withdrawDeposit(fixedAmountToChallengeEnder(), challengeEnder);
-      // Winning voter gets the rest.
-      await proposalsManager.claimVoterWinnings(validChallengeProposalId, {from: voter2});
-      await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()).minus(fixedAmountToChallengeEnder()), voter2);
+    async function returnTicketFromEventOwner(_ticketId, eventId) {
+      const vendorReturnMessageHash = await web3Utils.soliditySha3(eventId, _ticketId);
+      const vendorReturnTicketProof = testHelper.createSignedMessage(eventOwner, vendorReturnMessageHash);
+      await eventsManager.returnTicket(eventId, _ticketId, vendorReturnTicketProof, {from: eventOwner});
+    }
 
-      await endEventAndWithdrawDeposit();
-    });
+    it("can only sell and return tickets if event has not been deemed fraudulent", async () => {
+      // Have to move to on-sale period first otherwise ending the challenge will be beyond the ticket sales time.
+      await testHelper.advanceTimeToEventOnSaleTime(goodEvent.id);
+      await challengeEventSucceeds(goodEvent.id);
 
-    it("pays the correct winnings in the case of disagreement winning via a 'no-score draw'", async () => {
-      await testHelper.advanceTimeToVotingStart(validChallengeProposalId);
-      const signedMessage1 = await votingTestHelper.castVote(validChallengeProposalId, 1, voter1);
-      const signedMessage2 = await votingTestHelper.castVote(validChallengeProposalId, 2, voter2);
-      // No-one reveals their votes before the deadline.
+      const ticketBuyer = voter2;
+      const ticketId1 = await sellTicketFromEventOwner(ticketBuyer, goodEvent.id);
+      const ticketId2 = await sellTicketFromEventOwner(ticketBuyer, goodEvent.id);
 
-      await endChallengeEvent(0, 0);
+      await returnTicketFromEventOwner(ticketId1, goodEvent.id);
 
-      await votingTestHelper.revealVote(signedMessage1, validChallengeProposalId, 1, voter1);
-      await votingTestHelper.revealVote(signedMessage2, validChallengeProposalId, 2, voter2);
+      await voteToMarkEventAsFraudulentAndWithdrawWinnings(goodEvent.id, goodEvent.deposit);
 
-      // Challenge lost, the winner is the event owner.
-      await withdrawDeposit(fixedAmountToWinner(), eventOwner);
-      // The challenge ender gets the rest.
-      await withdrawDeposit(validChallengeDeposit.minus(fixedAmountToWinner()), challengeEnder);
-
-      await endEventAndWithdrawDeposit();
-    });
-
-    it("can only sell and refund tickets if event has not been deemed fraudulent", async () => {
-      const ticketBuyer = voter2; // Doesn't really matter who buys the ticket.
-      const vendorTicketRef1Hash = web3Utils.soliditySha3("UniqueVendorTicketRef 1");
-      await eventsManager.sellTicket(validEventId, vendorTicketRef1Hash, "some metadata", ticketBuyer, emptyOptionalData, emptyOptionalData, {from: eventOwner});
-      const ticketId1 = (await testHelper.getEventArgs(eventsManager.LogTicketSale)).ticketId.toNumber();
-      const vendorTicketRef2Hash = web3Utils.soliditySha3("UniqueVendorTicketRef 2");
-      await eventsManager.sellTicket(validEventId, vendorTicketRef2Hash, "some metadata", ticketBuyer, emptyOptionalData, emptyOptionalData, {from: eventOwner});
-      const ticketId2 = (await testHelper.getEventArgs(eventsManager.LogTicketSale)).ticketId.toNumber();
-      await eventsManager.refundTicket(validEventId, ticketId1, emptyOptionalData, {from: eventOwner});
-
-      await voteToMarkEventAsFraudulentAndWithdrawWinnings();
-
-      // Event is now marked as fraudulent - we can no longer sell or refund tickets.
-      await testHelper.expectRevert(() => eventsManager.refundTicket(validEventId, ticketId2, emptyOptionalData, {from: eventOwner}));
-      const vendorTicketRef3Hash = web3Utils.soliditySha3("UniqueVendorTicketRef 3");
-      await testHelper.expectRevert(() => eventsManager.sellTicket(validEventId, vendorTicketRef3Hash, "some metadata", ticketBuyer, emptyOptionalData, emptyOptionalData, {from: eventOwner}));
-    });
-
-    it("can not cancel an event if it has been deemed fraudulent", async () => {
-      await voteToMarkEventAsFraudulentAndWithdrawWinnings();
-
-      // Event is now marked as fraudulent - we can not cancel it.
-      await testHelper.expectRevert(() => eventsManager.cancelEvent(validEventId, '0x', {from: eventOwner}));
+      // Event is now marked as fraudulent - we can no longer sell or return tickets.
+      await testHelper.expectRevert(() => returnTicketFromEventOwner(ticketId2, goodEvent.id));
+      await testHelper.expectRevert(() => sellTicketFromEventOwner(ticketBuyer, goodEvent.id));
     });
   });
 });

@@ -2,14 +2,21 @@ pragma solidity ^0.4.24;
 
 import '../interfaces/IAventusStorage.sol';
 import './LMembers.sol';
+import './LAventities.sol';
+import './LProposal.sol';
 
 library LMerkleRoots {
 
-  /// See IMerkleRootsManager interface for events description
-  event LogMerkleRootRegistered(address indexed ownerAddress, bytes32 indexed rootHash, string evidenceUrl, string desc, uint deposit);
+  // See IMerkleRootsManager interface for logs description
+  event LogMerkleRootRegistered(address indexed ownerAddress, bytes32 indexed rootHash, string evidenceUrl, string desc,
+      uint deposit);
   event LogMerkleRootDeregistered(bytes32 indexed rootHash);
+  event LogMerkleRootChallenged(bytes32 indexed rootHash, uint indexed proposalId, uint lobbyingStart, uint votingStart,
+      uint revealingStart, uint revealingEnd);
+  event LogMerkleRootChallengeEnded(bytes32 indexed rootHash, uint indexed proposalId, uint votesFor, uint votesAgainst);
 
   bytes32 constant merkleRootCountKey = keccak256(abi.encodePacked("MerkleRootCount"));
+  bytes32 constant fixedDepositAmountKey = keccak256(abi.encodePacked("MerkleRoots", "fixedDepositAmount"));
 
   modifier onlyActiveMerkleRoot(IAventusStorage _storage, bytes32 _rootHash) {
     require(
@@ -19,63 +26,92 @@ library LMerkleRoots {
     _;
   }
 
-  modifier onlyMerkleRootOwner(IAventusStorage _storage, bytes32 _rootHash) {
-    require(
-      msg.sender == _storage.getAddress(keccak256(abi.encodePacked("MerkleRoot", _rootHash, "ownerAddress"))),
-      "Function must be called by owner"
-    );
-    _;
-  }
-
   modifier onlyActiveScalingProvider(IAventusStorage _storage, address _provider) {
     require(
-      // TODO: replace this check with LMembers.memberIsActive(_storage, _provider, "ScalingProvider") when we support challenging scaling providers
-      LMembers.memberIsRegistered(_storage, _provider, "ScalingProvider"),
-      "Address must be a registered scaling provider"
+      LMembers.memberIsActive(_storage, _provider, "ScalingProvider"),
+      "Address must be an active scaling provider"
     );
     _;
   }
 
-  modifier onlyIfNotAlreadyRegistered(IAventusStorage _storage, bytes32 _rootHash) {
-    uint aventityId = getAventityIdForMerkleRoot(_storage, _rootHash);
-    if (aventityId != 0) {
-      require(
-        !LAventities.aventityIsRegistered(_storage, aventityId),
-        "Root hash must not have been registered yet"
-      );
-    }
+  modifier onlyIfNotAlreadyActive(IAventusStorage _storage, bytes32 _rootHash) {
+    require(getAventityIdForMerkleRoot(_storage, _rootHash) == 0);
     _;
   }
 
   function deregisterMerkleRoot(IAventusStorage _storage, bytes32 _rootHash)
     external
     onlyActiveScalingProvider(_storage, msg.sender)
-    onlyMerkleRootOwner(_storage, _rootHash)
     onlyActiveMerkleRoot(_storage, _rootHash)
   {
     uint aventityId = getAventityIdForMerkleRoot(_storage, _rootHash);
+    require(
+      LAventities.getAventityDepositor(_storage, aventityId) == msg.sender,
+      "Only the merkle root owner can deregister a merkle root"
+    );
     LAventities.deregisterAventity(_storage, aventityId);
+    removeMerkleRootAventityId(_storage, _rootHash);
+
     emit LogMerkleRootDeregistered(_rootHash);
   }
 
-  function challengeMerkleRoot(IAventusStorage _storage, bytes32 _rootHash)
-    external
-    returns (uint challengeProposalId_)
-  {
+  function challengeMerkleRoot(IAventusStorage _storage, bytes32 _rootHash) external {
     uint aventityId = getAventityIdForMerkleRoot(_storage, _rootHash);
-    challengeProposalId_ = LAventities.challengeAventity(_storage, aventityId);
-    LProposal.emitLogMerkleRootChallenged(_storage, _rootHash, challengeProposalId_);
+    uint proposalId = LAventities.challengeAventity(_storage, aventityId);
+    (uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd) =
+        LProposal.getTimestamps(_storage, proposalId);
+    emit LogMerkleRootChallenged(_rootHash, proposalId, lobbyingStart, votingStart, revealingStart, revealingEnd);
   }
 
-  function getExistingMerkleRootDeposit(IAventusStorage _storage, bytes32 _rootHash) external view returns (uint merkleRootDeposit_) {
+  function endMerkleRootChallenge(IAventusStorage _storage, bytes32 _rootHash)
+    external
+  {
+    uint aventityId = getAventityIdForMerkleRoot(_storage, _rootHash);
+    (uint proposalId, uint votesFor, uint votesAgainst, bool challengeWon) = LAventities.endAventityChallenge(_storage, aventityId);
+
+    if (challengeWon) {
+      removeMerkleRootAventityId(_storage, _rootHash);
+    }
+
+    emit LogMerkleRootChallengeEnded(_rootHash, proposalId, votesFor, votesAgainst);
+  }
+
+  // NOTE: IAventusStorage is not used here but is required for proxying
+  function generateMerkleRoot(IAventusStorage, bytes32[] _merklePath, bytes32 _leafHash)
+    external
+    pure
+    returns (bytes32 rootHash_)
+  {
+    bytes32 computedHash = _leafHash;
+
+    for (uint i = 0; i < _merklePath.length; i++) {
+      bytes32 pathElement = _merklePath[i];
+
+      if (computedHash < pathElement) {
+        // Hash(current computed hash + current path element)
+        computedHash = keccak256(abi.encodePacked(computedHash, pathElement));
+      } else {
+        // Hash(current element of the path + current computed hash)
+        computedHash = keccak256(abi.encodePacked(pathElement, computedHash));
+      }
+    }
+    rootHash_ = computedHash;
+  }
+
+  function getExistingMerkleRootDeposit(IAventusStorage _storage, bytes32 _rootHash)
+    external
+    view
+    returns (uint merkleRootDeposit_)
+  {
     uint aventityId = getAventityIdForMerkleRoot(_storage, _rootHash);
     merkleRootDeposit_ = LAventities.getExistingAventityDeposit(_storage, aventityId);
   }
 
-  function registerMerkleRoot(IAventusStorage _storage, address _ownerAddress, string _evidenceUrl, string _desc, bytes32 _rootHash)
+  function registerMerkleRoot(IAventusStorage _storage, address _ownerAddress, string _evidenceUrl, string _desc,
+      bytes32 _rootHash)
     public
     onlyActiveScalingProvider(_storage, _ownerAddress)
-    onlyIfNotAlreadyRegistered(_storage, _rootHash)
+    onlyIfNotAlreadyActive(_storage, _rootHash)
   {
     uint merkleRootDeposit = getNewMerkleRootDeposit(_storage);
     uint aventityId = LAventities.registerAventity(_storage, _ownerAddress, merkleRootDeposit);
@@ -83,7 +119,6 @@ library LMerkleRoots {
 
     _storage.setUInt(merkleRootCountKey, merkleRootCount);
     _storage.setUInt(keccak256(abi.encodePacked("MerkleRoot", _rootHash, "aventityId")), aventityId);
-    _storage.setAddress(keccak256(abi.encodePacked("MerkleRoot", _rootHash, "ownerAddress")), _ownerAddress);
 
     emit LogMerkleRootRegistered(_ownerAddress, _rootHash, _evidenceUrl, _desc, merkleRootDeposit);
   }
@@ -93,7 +128,7 @@ library LMerkleRoots {
     view
     returns (uint depositinAVT_)
   {
-    uint depositInUSCents = _storage.getUInt(keccak256(abi.encodePacked("MerkleRoots", "fixedDepositAmount")));
+    uint depositInUSCents = _storage.getUInt(fixedDepositAmountKey);
     depositinAVT_ = LAVTManager.getAVTDecimals(_storage, depositInUSCents);
   }
 
@@ -110,35 +145,7 @@ library LMerkleRoots {
     aventityId_ = _storage.getUInt(keccak256(abi.encodePacked("MerkleRoot", _rootHash, "aventityId")));
   }
 
-  function getMerkleRootOwner(IAventusStorage _storage, bytes32 _rootHash)
-    public
-    view
-    returns (address merkleRootOwner_)
-  {
-    merkleRootOwner_ = _storage.getAddress(keccak256(abi.encodePacked("MerkleRoot", _rootHash, "ownerAddress")));
+  function removeMerkleRootAventityId(IAventusStorage _storage, bytes32 _rootHash) private {
+    _storage.setUInt(keccak256(abi.encodePacked("MerkleRoot", _rootHash, "aventityId")), 0);
   }
-
-  // NOTE: IAventusStorage is not used here but is required for proxying
-  function generateMerkleRoot(IAventusStorage, bytes32[] _merklePath, bytes32 _leaf)
-    external
-    pure
-    returns (bytes32 rootHash_)
-  {
-    bytes32 computedHash = _leaf;
-
-    for (uint i = 0; i < _merklePath.length; i++) {
-      bytes32 pathElement = _merklePath[i];
-
-      if (computedHash < pathElement) {
-        // Hash(current computed hash + current path element)
-        computedHash = keccak256(abi.encodePacked(computedHash, ":", pathElement));
-      } else {
-        // Hash(current element of the path + current computed hash)
-        computedHash = keccak256(abi.encodePacked(pathElement, ":", computedHash));
-      }
-    }
-
-    rootHash_ = computedHash;
-  }
-
 }

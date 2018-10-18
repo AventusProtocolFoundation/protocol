@@ -10,58 +10,58 @@ contract EventsManager is IEventsManager, Owned, Versioned {
 
   IAventusStorage public s;
 
-  /**
-  * @dev Constructor
-  * @param _s Persistent storage contract
-  */
   constructor(IAventusStorage _s) public {
     s = _s;
   }
 
-  function createEvent(string _eventDesc, string _eventSupportURL, uint _ticketSaleStartTime, uint _eventTime, uint _capacity,
-      uint _averageTicketPriceInUSCents, bytes _ownerProof)
+  function createEvent(string _eventDesc, string _eventSupportURL, uint _onSaleTime, uint _offSaleTime,
+    uint _averageTicketPriceInUSCents, bytes _ownerProof)
     external
-    returns (uint eventId_)
   {
-    eventId_ = LEvents.createEvent(s, _eventDesc, _eventSupportURL, _ticketSaleStartTime, _eventTime, _capacity,
-        _averageTicketPriceInUSCents, _ownerProof);
+    LEvents.createEvent(s, _eventDesc, _eventSupportURL, _onSaleTime, _offSaleTime, _averageTicketPriceInUSCents, _ownerProof);
   }
 
   function cancelEvent(uint _eventId, bytes _ownerProof) external {
     LEvents.cancelEvent(s, _eventId, _ownerProof);
   }
 
-  function unlockEventDeposit(uint _eventId) external {
-    LEvents.unlockEventDeposit(s, _eventId);
+  function endEvent(uint _eventId) external {
+    LEvents.endEvent(s, _eventId);
   }
 
-  function sellTicket(uint _eventId, bytes32 _vendorTicketRefHash, string _ticketMetadata, address _buyer, bytes _sellerProof, bytes _doorData) external {
-    LEvents.sellTicket(s, _eventId, _vendorTicketRefHash, _ticketMetadata, _buyer, _sellerProof, _doorData);
+  function sellTicket(uint _eventId, bytes32 _vendorTicketRefHash, string _ticketMetadata, address _buyer, bytes _vendorProof,
+    bytes _doorData) external {
+    LEvents.sellTicket(s, _eventId, _vendorTicketRefHash, _ticketMetadata, _buyer, _vendorProof, _doorData);
   }
 
-  function refundTicket(uint _eventId, uint _ticketId, bytes _vendorProof) external {
-    LEvents.refundTicket(s, _eventId, _ticketId, _vendorProof);
+  function returnTicket(uint _eventId, uint _ticketId, bytes _vendorProof) external {
+    LEvents.returnTicket(s, _eventId, _ticketId, _vendorProof);
   }
 
-  function resellTicket(uint _eventId, uint _ticketId, bytes _ownerPermission, address _newBuyer, bytes _sellerProof)
+  function resellTicket(uint _eventId, uint _ticketId, bytes _ticketOwnerPermission, address _newBuyer, bytes _resellerProof,
+    bytes _doorData)
     external {
-      LEvents.resellTicket(s, _eventId, _ticketId, _ownerPermission, _newBuyer, _sellerProof);
+      LEvents.resellTicket(s, _eventId, _ticketId, _ticketOwnerPermission, _newBuyer, _resellerProof, _doorData);
   }
 
-  function registerRole(uint _eventId, string _role, address _address) external {
-    LEvents.registerRole(s, _eventId, _role, _address);
+  function sendTicketToFriend(uint _eventId, uint _ticketId, bytes _ticketOwnerPermission, bytes _newDoorData) external {
+    LEvents.sendTicketToFriend(s, _eventId, _ticketId, _ticketOwnerPermission, _newDoorData);
   }
 
-  function deregisterRole(uint _eventId, string _role, address _address) external {
-    LEvents.deregisterRole(s, _eventId, _role, _address);
+  function listTicket(uint _eventId, bytes32 _vendorTicketRefHash, string _ticketMetadata, bytes _vendorProof,
+    bytes _doorData, bytes _ticketOwnerProof, bytes32[] _merklePath)
+    external {
+      LEvents.listTicketA(s, _eventId, _vendorTicketRefHash, _ticketMetadata, _vendorProof, _doorData, _ticketOwnerProof);
+      LEvents.listTicketB(s, _eventId, _vendorTicketRefHash, _merklePath);
+      LEvents.listTicketC(s, _eventId, _vendorTicketRefHash, _vendorProof, _doorData);
   }
 
-  function roleIsRegistered(uint _eventId, string _role, address _address)
-    external
-    view
-    returns (bool registered_)
-  {
-    registered_ = LEvents.roleIsRegistered(s, _eventId, _role, _address);
+  function registerMemberOnEvent(uint _eventId, address _memberAddress, string _memberType) external {
+    LEvents.registerMemberOnEvent(s, _eventId, _memberAddress, _memberType);
+  }
+
+  function deregisterMemberFromEvent(uint _eventId, address _memberAddress, string _memberType) external {
+    LEvents.deregisterMemberFromEvent(s, _eventId, _memberAddress, _memberType);
   }
 
   function getNewEventDeposit(uint _averageTicketPriceInUSCents)
@@ -76,7 +76,11 @@ contract EventsManager is IEventsManager, Owned, Versioned {
     eventDeposit_ = LEvents.getExistingEventDeposit(s, _eventId);
   }
 
-  function challengeEvent(uint _eventId) external returns (uint proposalId_) {
-    proposalId_ = LEvents.challengeEvent(s, _eventId);
+  function challengeEvent(uint _eventId) external {
+    LEvents.challengeEvent(s, _eventId);
+  }
+
+  function endEventChallenge(uint _eventId) external {
+    LEvents.endEventChallenge(s, _eventId);
   }
 }

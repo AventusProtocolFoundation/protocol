@@ -2,6 +2,8 @@ const testHelper = require("./helpers/testHelper");
 const votingTestHelper = require("./helpers/votingTestHelper");
 
 contract('ProposalsManager - Proposal set-up', async () => {
+  testHelper.profilingHelper.addTimeReports('ProposalsManager - Proposal set-up');
+
   const oneDay = new web3.BigNumber(86400);  // seconds in one day. Solidity uses uint256.
   const oneWeek = oneDay.times(7);
   const minimumVotingPeriod = oneWeek;
@@ -31,7 +33,7 @@ contract('ProposalsManager - Proposal set-up', async () => {
     await testHelper.addAVTToFund(deposit, owner, "deposit");
 
     await proposalsManager.createGovernanceProposal(desc, {from: owner});
-    const eventArgs = await testHelper.getEventArgs(proposalsManager.LogCreateProposal);
+    const eventArgs = await testHelper.getEventArgs(proposalsManager.LogGovernanceProposalCreated);
     const oldProposalId = proposalId;
     proposalId = eventArgs.proposalId;
     assert.equal(proposalId.toNumber(), oldProposalId.plus(1).toNumber(), "ids are not sequential");
@@ -44,7 +46,7 @@ contract('ProposalsManager - Proposal set-up', async () => {
 
   async function cleanUpProposal() {
     await testHelper.advanceTimeToEndOfProposal(proposalId);
-    await proposalsManager.endProposal(proposalId);
+    await proposalsManager.endGovernanceProposal(proposalId);
     await withdrawDeposit();
   }
 
@@ -64,14 +66,14 @@ contract('ProposalsManager - Proposal set-up', async () => {
     });
   });
 
-  context("endProposal", async () => {
+  context("end governance proposal", async () => {
     it ("cannot withdraw funds until proposal has ended", async () => {
       await createProposal("We have to wait for our money.");
       await testHelper.expectRevert(() => withdrawDeposit());
       await testHelper.expectRevert(() => withdrawDeposit());
       await testHelper.advanceTimeToEndOfProposal(proposalId);
       await testHelper.expectRevert(() => withdrawDeposit());
-      await proposalsManager.endProposal(proposalId);
+      await proposalsManager.endGovernanceProposal(proposalId);
       await withdrawDeposit();
     });
 
@@ -92,11 +94,11 @@ contract('ProposalsManager - Proposal set-up', async () => {
       await votingTestHelper.revealVote(signedMessage2, proposalId, 1, voter2);
 
       // cannot end proposal while there are unrevealed votes
-      await testHelper.expectRevert(() => proposalsManager.endProposal(proposalId));
+      await testHelper.expectRevert(() => proposalsManager.endGovernanceProposal(proposalId));
 
       await votingTestHelper.revealVote(signedMessage3, proposalId, 2, voter3);
 
-      await proposalsManager.endProposal(proposalId);
+      await proposalsManager.endGovernanceProposal(proposalId);
       await withdrawDeposit();
     });
   });

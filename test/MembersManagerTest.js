@@ -1,14 +1,17 @@
-const MembersManager = artifacts.require("MembersManager");
 const testHelper = require("./helpers/testHelper");
+const membersTestHelper = require("./helpers/membersTestHelper");
 const web3Utils = require('web3-utils');
 
 contract('MembersManager', async () => {
+  testHelper.profilingHelper.addTimeReports('MembersManager');
+
   let membersManager;
 
   before(async () => {
     await testHelper.before();
+    await membersTestHelper.before(testHelper);
 
-    membersManager = await MembersManager.deployed();
+    membersManager = membersTestHelper.getMembersManager();
     avtManager = testHelper.getAVTManager();
   });
 
@@ -57,11 +60,8 @@ contract('MembersManager', async () => {
 
     it("can register and deregister broker addresses", async () => {
       for (i = 0; i < 3; ++i) {
-        assert.equal(false, await membersManager.memberIsActive(testHelper.getAccount(i), testHelper.brokerMemberType));
         let account = await depositAndRegisterMember(i, testHelper.brokerMemberType);
-        assert.equal(true, await membersManager.memberIsActive(account, testHelper.brokerMemberType));
         await deregisterMemberAndWithdrawDeposit(account, testHelper.brokerMemberType);
-        assert.equal(false, await membersManager.memberIsActive(account, testHelper.brokerMemberType));
       }
     });
 
@@ -124,39 +124,45 @@ contract('MembersManager', async () => {
     it("can register and deregister the same member with different types", async () => {
       //Using account 0 will not work because that is the owner account
       let account = await depositAndRegisterMember(1, testHelper.brokerMemberType);
-      let account2 = await depositAndRegisterMember(1, testHelper.primaryDelegateMemberType);
+      let account2 = await depositAndRegisterMember(1, testHelper.primaryMemberType);
       assert.equal(account, account2);
 
-      assert.equal(true, await membersManager.memberIsActive(account, testHelper.brokerMemberType));
-      assert.equal(true, await membersManager.memberIsActive(account, testHelper.primaryDelegateMemberType));
-      assert.equal(false, await membersManager.memberIsActive(account, testHelper.secondaryDelegateMemberType));
-
       await deregisterMemberAndWithdrawDeposit(account, testHelper.brokerMemberType);
-      assert.equal(false, await membersManager.memberIsActive(account, testHelper.brokerMemberType));
-      assert.equal(true, await membersManager.memberIsActive(account, testHelper.primaryDelegateMemberType));
-      await deregisterMemberAndWithdrawDeposit(account, testHelper.primaryDelegateMemberType);
-      assert.equal(false, await membersManager.memberIsActive(account, testHelper.primaryDelegateMemberType));
+      await deregisterMemberAndWithdrawDeposit(account, testHelper.primaryMemberType);
     });
 
     it("can have different deposits for different types", async () => {
       const brokerNewDepositAmount = 146540;
-      const primaryDelegateNewDepositAmount = 113480;
+      const primaryNewDepositAmount = 113480;
 
       const oldBrokerDepositAmount = await testHelper.getStorage().getUInt(web3Utils.soliditySha3("Members", testHelper.brokerMemberType, "fixedDepositAmount"));
-      const oldPrimaryDelegateDepositAmount = await testHelper.getStorage().getUInt(web3Utils.soliditySha3("Members", testHelper.primaryDelegateMemberType, "fixedDepositAmount"));
+      const oldPrimaryDepositAmount = await testHelper.getStorage().getUInt(web3Utils.soliditySha3("Members", testHelper.primaryMemberType, "fixedDepositAmount"));
       const oneAvtInUSCents = await testHelper.getStorage().getUInt(web3Utils.soliditySha3("OneAVTInUSCents"));
 
       await updateFixedDepositInStorage(brokerNewDepositAmount, testHelper.brokerMemberType);
-      await updateFixedDepositInStorage(primaryDelegateNewDepositAmount, testHelper.primaryDelegateMemberType);
+      await updateFixedDepositInStorage(primaryNewDepositAmount, testHelper.primaryMemberType);
 
       let brokerDepositAmount = await membersManager.getNewMemberDeposit(testHelper.brokerMemberType);
-      let primaryDelegateDepositAmount = await membersManager.getNewMemberDeposit(testHelper.primaryDelegateMemberType);
+      let primaryDepositAmount = await membersManager.getNewMemberDeposit(testHelper.primaryMemberType);
 
       assert.equal(testHelper.convertToAVTDecimal(oneAvtInUSCents, brokerNewDepositAmount), brokerDepositAmount.toNumber());
-      assert.equal(testHelper.convertToAVTDecimal(oneAvtInUSCents, primaryDelegateNewDepositAmount), primaryDelegateDepositAmount.toNumber());
+      assert.equal(testHelper.convertToAVTDecimal(oneAvtInUSCents, primaryNewDepositAmount), primaryDepositAmount.toNumber());
 
       await updateFixedDepositInStorage(oldBrokerDepositAmount, testHelper.brokerMemberType);
-      await updateFixedDepositInStorage(oldPrimaryDelegateDepositAmount, testHelper.primaryDelegateMemberType);
+      await updateFixedDepositInStorage(oldPrimaryDepositAmount, testHelper.primaryMemberType);
+    });
+
+    it("can re-register fraudulent member", async () => {
+      let registeredMember = await depositAndRegisterMember(1, testHelper.brokerMemberType);
+      const challengeOwner = testHelper.getAccount(2);
+      const challengeEnder = testHelper.getAccount(3);
+      const voter = testHelper.getAccount(4);
+
+      await membersTestHelper.challengeMemberAndMarkAsFraudulent(registeredMember, testHelper.brokerMemberType, challengeOwner,
+        challengeEnder, voter);
+
+      registeredMember = await depositAndRegisterMember(1, testHelper.brokerMemberType);
+      await deregisterMemberAndWithdrawDeposit(registeredMember, testHelper.brokerMemberType);
     });
   });
 });

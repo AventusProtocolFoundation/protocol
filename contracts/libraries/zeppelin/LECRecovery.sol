@@ -7,10 +7,6 @@ pragma solidity ^0.4.24;
   * https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/contracts/ECRecovery.sol, Commit: ad12381 (on 9 May)
   *
   * @dev Based on https://gist.github.com/axic/5b33912c6f61ae6fd96d6c4a47afde6d
-  *
-  * TODO Remove this library once solidity supports passing a signature to ecrecover.
-  * See https://github.com/ethereum/solidity/issues/864
-  *
   */
 
  library LECRecovery {
@@ -25,6 +21,7 @@ pragma solidity ^0.4.24;
      pure
      returns (address)
    {
+     hash = toEthSignedMessageHash(hash);
      bytes32 r;
      bytes32 s;
      uint8 v;
@@ -64,7 +61,7 @@ pragma solidity ^0.4.24;
     * @dev and hash the result
     */
    function toEthSignedMessageHash(bytes32 hash)
-     internal
+     private
      pure
      returns (bytes32)
    {

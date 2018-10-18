@@ -1,11 +1,11 @@
-const ProposalsManager = artifacts.require("ProposalsManager.sol");
-const AventusStorage = artifacts.require("AventusStorage.sol");
 const IERC20 = artifacts.require("IERC20");
 const LProposalForTesting = artifacts.require("LProposalForTesting.sol");
 const testHelper = require("./helpers/testHelper");
 const web3Utils = require('web3-utils');
 
 contract('Proxy testing', async () => {
+  testHelper.profilingHelper.addTimeReports('Proxy testing');
+
   const oneDay = 86400;  // seconds in one day.
   const oneWeek = 7 * oneDay;
   const minimumVotingPeriod = oneWeek;
@@ -37,7 +37,7 @@ contract('Proxy testing', async () => {
     await testHelper.addAVTToFund(proposalDeposit, account0, "deposit");
 
     await proposalsManager.createGovernanceProposal(desc);
-    const eventArgs = await testHelper.getEventArgs(proposalsManager.LogCreateProposal);
+    const eventArgs = await testHelper.getEventArgs(proposalsManager.LogGovernanceProposalCreated);
     return eventArgs.proposalId.toNumber();
   }
 
@@ -55,7 +55,7 @@ contract('Proxy testing', async () => {
 
   async function endProposalAndWithdrawDeposit(_proposalId) {
     await testHelper.advanceTimeToEndOfProposal(_proposalId);
-    await proposalsManager.endProposal(_proposalId);
+    await proposalsManager.endGovernanceProposal(_proposalId);
     await testHelper.withdrawAVTFromFund(proposalDeposit, account0, 'deposit');
   }
 
@@ -90,12 +90,12 @@ contract('Proxy testing', async () => {
 
     // Using the updated library should fail.
     await useNewLibrary();
-    await testHelper.expectRevert(() => proposalsManager.endProposal(proposalId));
+    await testHelper.expectRevert(() => proposalsManager.endGovernanceProposal(proposalId));
 
     // Put the old library back...
     await useOldLibrary();
     // ...and the correct behaviour is restored.
-    await proposalsManager.endProposal(proposalId);
+    await proposalsManager.endGovernanceProposal(proposalId);
     await testHelper.withdrawAVTFromFund(proposalDeposit, account0, 'deposit');
   });
 });

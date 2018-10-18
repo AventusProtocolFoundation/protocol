@@ -2,6 +2,8 @@ pragma solidity ^0.4.24;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LAVTManager.sol";
+import "./LProposal.sol";
+import "./LAventitiesStorage.sol";
 
 /**
  * Library for dealing with the winnings of an aventity challenge.
@@ -9,8 +11,8 @@ import "./LAVTManager.sol";
  * This is only used by, and is separate to, LAventities because of size limitations when deploying.
  * There is no proxy for this library.
  */
- // TODO: Rename to LChallengeWinnings.
-library LProposalWinnings {
+
+library LAventitiesChallenges {
   bytes32 constant winningsForChallengeWinnerPercentageKey =
       keccak256(abi.encodePacked("Events", "winningsForChallengeWinnerPercentage"));
   bytes32 constant winningsForChallengeEnderPercentageKey =
@@ -18,51 +20,50 @@ library LProposalWinnings {
 
     function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) external {
       address voter = msg.sender;
-      uint8 winningOption = _storage.getUInt8(keccak256(abi.encodePacked("Proposal", _proposalId, "winningOption")));
-      bytes32 voterStakeKey = keccak256(abi.encodePacked("Proposal", _proposalId, "revealedVoter", winningOption, voter, "stake"));
-      uint voterStake = _storage.getUInt(voterStakeKey);
+      uint winningOption = LAventitiesStorage.getWinningProposalOption(_storage, _proposalId);
+      uint voterStake = LProposal.getRevealedVoterStake(_storage, _proposalId, voter, winningOption);
       require(
         voterStake != 0,
         "Voter has no stake in this proposal"
       );
 
-      uint totalWinnings = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "totalWinningsToVoters")));
+      uint totalWinnings = LAventitiesStorage.getTotalWinningsToVoters(_storage, _proposalId);
       assert(totalWinnings != 0);
-      uint totalWinningStake = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "totalWinningStake")));
+      uint totalWinningStake = LAventitiesStorage.getTotalWinningStake(_storage, _proposalId);
       assert(totalWinningStake != 0);
 
       uint voterReward = (totalWinnings * voterStake) / totalWinningStake;
       giveWinnings(_storage, voterReward, voter);
 
       // Update how much is left in the voters winnings pot.
-      bytes32 winningsToVotersRemainingKey = keccak256(abi.encodePacked("Proposal", _proposalId, "winningsToVotersRemaining"));
-      uint winningsToVotersRemaining = _storage.getUInt(winningsToVotersRemainingKey);
+      // TODO: consider using a reduceWinningsToVotersRemaining method to save the get and set.
+      uint winningsToVotersRemaining = LAventitiesStorage.getWinningsToVotersRemaining(_storage, _proposalId);
       assert(winningsToVotersRemaining >= voterReward);
-      _storage.setUInt(winningsToVotersRemainingKey, winningsToVotersRemaining - voterReward);
+      LAventitiesStorage.setWinningsToVotersRemaining(_storage, _proposalId, winningsToVotersRemaining - voterReward);
 
       // Stop the voter from claiming again.
-      _storage.setUInt(voterStakeKey, 0);
+      LProposal.clearRevealedStake(_storage, _proposalId, voter, winningOption);
     }
 
     function doWinningsDistribution(
         IAventusStorage _storage,
         uint _proposalId,
-        uint8 _winningOption,
-        bool _challengeWon,
+        bool _winningsForVoters,
         uint _deposit,
-        address _challenger,
-        address _challengee)
+        address _winner,
+        address _loser)
       external
     {
       distributeChallengeWinnings(
           _storage,
           _proposalId,
-          _challengeWon ? _challenger : _challengee, // winner
-          _challengeWon ? _challengee : _challenger, // loser
+          _winner,
+          _loser,
           _deposit,
-          0 ==_storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "revealedVotersCount", _winningOption))), // challengeHasNoRevealedVotes
-          _storage.getUInt8(winningsForChallengeWinnerPercentageKey),
-          _storage.getUInt8(winningsForChallengeEnderPercentageKey)
+          _winningsForVoters,
+          // TODO: Move to LAventitiesStorage when stack depth allows
+          _storage.getUInt(winningsForChallengeWinnerPercentageKey),
+          _storage.getUInt(winningsForChallengeEnderPercentageKey)
       );
     }
 
@@ -72,9 +73,9 @@ library LProposalWinnings {
       address _winner,
       address _loser,
       uint _winnings,
-      bool _challengeHasNoRevealedVotes,
-      uint8 _winningsForChallengeWinnerPercentage,
-      uint8 _winningsToChallengeEnderPercentage)
+      bool _winningsForVoters,
+      uint _winningsForChallengeWinnerPercentage,
+      uint _winningsToChallengeEnderPercentage)
     private
   {
     takeAllWinningsFromProposalLoser(_storage, _winnings, _loser);
@@ -87,14 +88,15 @@ library LProposalWinnings {
 
     _winnings -= winningsToProposalWinnerAVT + winningsToChallengeEnderAVT;
 
-    if (_challengeHasNoRevealedVotes) {
+    if (_winningsForVoters) {
+      // The rest of the winnings is distributed to the voters as they claim it.
+      LAventitiesStorage.setTotalWinningsToVoters(_storage, _proposalId, _winnings);
+      LAventitiesStorage.setWinningsToVotersRemaining(_storage, _proposalId, _winnings);
+    } else {
       // If no one voted, the challenge ender gets the rest of the winnings.
       winningsToChallengeEnderAVT += _winnings;
-    } else {
-      // Otherwise, the rest of the winnings is distributed to the voters as they claim it.
-      _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "totalWinningsToVoters")), _winnings);
-      _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "winningsToVotersRemaining")), _winnings);
     }
+
     giveWinnings(_storage, winningsToChallengeEnderAVT, challengeEnder);
   }
 
@@ -115,5 +117,4 @@ library LProposalWinnings {
   {
     LAVTManager.increaseFund(_storage, _payee, "deposit", _winnings);
   }
-
 }

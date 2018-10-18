@@ -10,10 +10,6 @@ contract AVTManager is IAVTManager, Owned, Versioned {
 
   IAventusStorage public s;
 
-  /**
-  * @dev Constructor
-  * @param _s Persistent storage contract
-  */
   constructor(IAventusStorage _s) public {
     s = _s;
   }
