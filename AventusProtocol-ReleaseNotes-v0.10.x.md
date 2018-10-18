@@ -8,11 +8,11 @@ The release notes for this version follow, listed by sub-release and category.
 ## Release 0.10.0 - 2018-10-18
 
 Breaking changes:
-* Removed the majority of types from storage: they are, and never will be, necessary due to 32 byte packing.
 * Return values for non-view and non-pure methods have all been removed: all values to be retrieved from logs instead.
 * IEventsManager.unlockEventDeposit renamed to endEvent.
 * IEventsManager.refundTicket renamed to returnTicket: now sets ticket owner to be the event owner.
-* IEventsManger.de/registerRole renamed to de/registerMemberFromEvent
+* IEventsManger.de/registerRole renamed to de/registerMemberFromEvent.
+* IEventsManger.creatEvent: capacity parameter removed and timestamp parameters renamed.
 * All event methods that can be called via a broker now require validity proof, regardless of whether via broker or not.
 * Can now only cancel an event before the tickets on-sale time.
 * All IEventsManager logs updated to reflect new data.
@@ -38,6 +38,7 @@ Minor changes:
 * Move old release notes into "release" directory.
 
 Internal only major changes:
+* Removed the majority of types from storage: they are, and never will be, necessary due to 32 byte packing.
 * Restructure of library->sublibrary calls, to check for state in correct place.
 * Introduction of L<...>Storage sublibraries to better encapsulate usage of Storage contract.
 * Aventity "active" state is now purely determined by presence of deposit.
