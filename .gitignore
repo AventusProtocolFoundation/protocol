@@ -1,5 +1,9 @@
 .node-xmlhttprequest-sync-*
 build/
+coverage.json
+coverageEnv
+scTopics
+allFiredEvents
 logs/
 node_modules/
 package-lock.json

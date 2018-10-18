@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts\libraries\LAventitiesStorage.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../index.html">all files</a> / <a href="index.html">contracts/libraries/</a> LAventitiesStorage.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>13/13</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>0/0</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>21/21</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>21/21</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line high'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">379×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">379×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">451×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">379×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">471×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">90×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1682×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">758×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">25×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">56×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.4.24;
+&nbsp;
+import '../interfaces/IAventusStorage.sol';
+&nbsp;
+library LAventitiesStorage {
+&nbsp;
+  bytes32 constant aventityCountKey = keccak256(abi.encodePacked("AventityCount"));
+  bytes32 constant challengeLobbyingPeriodDaysKey = keccak256(abi.encodePacked("Aventities", "challengeLobbyingPeriodDays"));
+  bytes32 constant challengeVotingPeriodDaysKey = keccak256(abi.encodePacked("Aventities", "challengeVotingPeriodDays"));
+  bytes32 constant challengeRevealingPeriodDaysKey = keccak256(abi.encodePacked("Aventities", "challengeRevealingPeriodDays"));
+&nbsp;
+  bytes32 constant winningsForChallengeWinnerPercentageKey =
+      keccak256(abi.encodePacked("Events", "winningsForChallengeWinnerPercentage"));
+  bytes32 constant winningsForChallengeEnderPercentageKey =
+      keccak256(abi.encodePacked("Events", "winningsForChallengeEnderPercentage"));
+&nbsp;
+  function getAventityCount(IAventusStorage _storage)
+    external
+    view
+    returns (uint aventityCount_)
+  {
+    aventityCount_ = _storage.getUInt(aventityCountKey);
+  }
+&nbsp;
+  function setAventityCount(IAventusStorage _storage, uint _aventityCount) external {
+    _storage.setUInt(aventityCountKey, _aventityCount);
+  }
+&nbsp;
+  function getLobbyingPeriodDays(IAventusStorage _storage)
+    external
+    view
+    returns (uint lobbyingPeriodDays_)
+  {
+    lobbyingPeriodDays_ = _storage.getUInt(challengeLobbyingPeriodDaysKey);
+  }
+&nbsp;
+  function getVotingPeriodDays(IAventusStorage _storage)
+    external
+    view
+    returns (uint votingPeriodDays_)
+  {
+    votingPeriodDays_ = _storage.getUInt(challengeVotingPeriodDaysKey);
+  }
+&nbsp;
+  function getRevealingPeriodDays(IAventusStorage _storage)
+    external
+    view
+    returns (uint revealingPeriodDays_)
+  {
+    revealingPeriodDays_ = _storage.getUInt(challengeRevealingPeriodDaysKey);
+  }
+&nbsp;
+  function getWinningsForChallengeWinnerPercentage(IAventusStorage _storage)
+    external
+    view
+    returns (uint winnerPercentage_)
+  {
+    winnerPercentage_ = _storage.getUInt(winningsForChallengeWinnerPercentageKey);
+  }
+&nbsp;
+  function getWinningsForChallengeEnderPercentage(IAventusStorage _storage)
+    external
+    view
+    returns (uint enderPercentage_)
+  {
+    enderPercentage_ = _storage.getUInt(winningsForChallengeEnderPercentageKey);
+  }
+&nbsp;
+  function getDepositor(IAventusStorage _storage, uint _aventityId)
+    external
+    view
+    returns (address depositor_)
+  {
+    depositor_ = _storage.getAddress(keccak256(abi.encodePacked("Aventity", _aventityId, "depositor")));
+  }
+&nbsp;
+  function setDepositor(IAventusStorage _storage, uint _aventityId, address _depositor) external {
+    _storage.setAddress(keccak256(abi.encodePacked("Aventity", _aventityId, "depositor")), _depositor);
+  }
+&nbsp;
+  function getChallengeProposalId(IAventusStorage _storage, uint _aventityId)
+    external
+    view
+    returns (uint challengeProposalId_)
+  {
+    challengeProposalId_ = _storage.getUInt(keccak256(abi.encodePacked("Aventity", _aventityId, "challenge")));
+  }
+&nbsp;
+  function setChallengeProposalId(IAventusStorage _storage, uint _aventityId, uint _challengeProposalId) external {
+    _storage.setUInt(keccak256(abi.encodePacked("Aventity", _aventityId, "challenge")), _challengeProposalId);
+  }
+&nbsp;
+  function getDeposit(IAventusStorage _storage, uint _aventityId)
+    external
+    view
+    returns (uint deposit_)
+  {
+    deposit_ = _storage.getUInt(keccak256(abi.encodePacked("Aventity", _aventityId, "deposit")));
+  }
+&nbsp;
+  function setDeposit(IAventusStorage _storage, uint _aventityId, uint _deposit) external {
+    _storage.setUInt(keccak256(abi.encodePacked("Aventity", _aventityId, "deposit")), _deposit);
+  }
+&nbsp;
+  function getWinningProposalOption(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (uint winningOption_)
+  {
+    winningOption_ = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "winningOption")));
+  }
+&nbsp;
+  function setWinningProposalOption(IAventusStorage _storage, uint _proposalId, uint _winningOption) external {
+    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "winningOption")), _winningOption);
+  }
+&nbsp;
+  function getTotalWinningStake(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (uint totalWinningStake_)
+  {
+    totalWinningStake_ = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "totalWinningStake")));
+  }
+&nbsp;
+  function setTotalWinningStake(IAventusStorage _storage, uint _proposalId, uint _totalWinningStake) external {
+    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "totalWinningStake")), _totalWinningStake);
+  }
+&nbsp;
+  function getTotalWinningsToVoters(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (uint winningsToVoters_)
+  {
+    winningsToVoters_ = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "totalWinningsToVoters")));
+  }
+&nbsp;
+  function setTotalWinningsToVoters(IAventusStorage _storage, uint _proposalId, uint _winningsToVoters) external {
+    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "totalWinningsToVoters")), _winningsToVoters);
+  }
+&nbsp;
+  function getWinningsToVotersRemaining(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (uint winningsRemaining_)
+  {
+    winningsRemaining_ = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "winningsToVotersRemaining")));
+  }
+&nbsp;
+  function setWinningsToVotersRemaining(IAventusStorage _storage, uint _proposalId, uint _winningsRemaining) external {
+    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "winningsToVotersRemaining")), _winningsRemaining);
+  }
+}</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Oct 18 2018 13:27:15 GMT+0100 (GMT Daylight Time)
+</div>
+</div>
+<script src="../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../sorter.js"></script>
+</body>
+</html>
