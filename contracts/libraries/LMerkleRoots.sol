@@ -4,6 +4,7 @@ import '../interfaces/IAventusStorage.sol';
 import './LMembers.sol';
 import './LAventities.sol';
 import './LProposal.sol';
+import './LMerkleRootsStorage.sol';
 
 library LMerkleRoots {
 
@@ -14,9 +15,6 @@ library LMerkleRoots {
   event LogMerkleRootChallenged(bytes32 indexed rootHash, uint indexed proposalId, uint lobbyingStart, uint votingStart,
       uint revealingStart, uint revealingEnd);
   event LogMerkleRootChallengeEnded(bytes32 indexed rootHash, uint indexed proposalId, uint votesFor, uint votesAgainst);
-
-  bytes32 constant merkleRootCountKey = keccak256(abi.encodePacked("MerkleRootCount"));
-  bytes32 constant fixedDepositAmountKey = keccak256(abi.encodePacked("MerkleRoots", "fixedDepositAmount"));
 
   modifier onlyActiveMerkleRoot(IAventusStorage _storage, bytes32 _rootHash) {
     require(
@@ -35,7 +33,7 @@ library LMerkleRoots {
   }
 
   modifier onlyIfNotAlreadyActive(IAventusStorage _storage, bytes32 _rootHash) {
-    require(getAventityIdForMerkleRoot(_storage, _rootHash) == 0);
+    require(LMerkleRootsStorage.getAventityId(_storage, _rootHash) == 0);
     _;
   }
 
@@ -44,19 +42,19 @@ library LMerkleRoots {
     onlyActiveScalingProvider(_storage, msg.sender)
     onlyActiveMerkleRoot(_storage, _rootHash)
   {
-    uint aventityId = getAventityIdForMerkleRoot(_storage, _rootHash);
+    uint aventityId = LMerkleRootsStorage.getAventityId(_storage, _rootHash);
     require(
       LAventities.getAventityDepositor(_storage, aventityId) == msg.sender,
       "Only the merkle root owner can deregister a merkle root"
     );
     LAventities.deregisterAventity(_storage, aventityId);
-    removeMerkleRootAventityId(_storage, _rootHash);
+    LMerkleRootsStorage.clearAventityId(_storage, _rootHash);
 
     emit LogMerkleRootDeregistered(_rootHash);
   }
 
   function challengeMerkleRoot(IAventusStorage _storage, bytes32 _rootHash) external {
-    uint aventityId = getAventityIdForMerkleRoot(_storage, _rootHash);
+    uint aventityId = LMerkleRootsStorage.getAventityId(_storage, _rootHash);
     uint proposalId = LAventities.challengeAventity(_storage, aventityId);
     (uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd) =
         LProposal.getTimestamps(_storage, proposalId);
@@ -66,11 +64,11 @@ library LMerkleRoots {
   function endMerkleRootChallenge(IAventusStorage _storage, bytes32 _rootHash)
     external
   {
-    uint aventityId = getAventityIdForMerkleRoot(_storage, _rootHash);
+    uint aventityId = LMerkleRootsStorage.getAventityId(_storage, _rootHash);
     (uint proposalId, uint votesFor, uint votesAgainst, bool challengeWon) = LAventities.endAventityChallenge(_storage, aventityId);
 
     if (challengeWon) {
-      removeMerkleRootAventityId(_storage, _rootHash);
+      LMerkleRootsStorage.clearAventityId(_storage, _rootHash);
     }
 
     emit LogMerkleRootChallengeEnded(_rootHash, proposalId, votesFor, votesAgainst);
@@ -103,7 +101,7 @@ library LMerkleRoots {
     view
     returns (uint merkleRootDeposit_)
   {
-    uint aventityId = getAventityIdForMerkleRoot(_storage, _rootHash);
+    uint aventityId = LMerkleRootsStorage.getAventityId(_storage, _rootHash);
     merkleRootDeposit_ = LAventities.getExistingAventityDeposit(_storage, aventityId);
   }
 
@@ -115,10 +113,7 @@ library LMerkleRoots {
   {
     uint merkleRootDeposit = getNewMerkleRootDeposit(_storage);
     uint aventityId = LAventities.registerAventity(_storage, _ownerAddress, merkleRootDeposit);
-    uint merkleRootCount = _storage.getUInt(merkleRootCountKey) + 1;
-
-    _storage.setUInt(merkleRootCountKey, merkleRootCount);
-    _storage.setUInt(keccak256(abi.encodePacked("MerkleRoot", _rootHash, "aventityId")), aventityId);
+    LMerkleRootsStorage.setAventityId(_storage, _rootHash, aventityId);
 
     emit LogMerkleRootRegistered(_ownerAddress, _rootHash, _evidenceUrl, _desc, merkleRootDeposit);
   }
@@ -128,24 +123,12 @@ library LMerkleRoots {
     view
     returns (uint depositinAVT_)
   {
-    uint depositInUSCents = _storage.getUInt(fixedDepositAmountKey);
+    uint depositInUSCents = LMerkleRootsStorage.getFixedDepositAmount(_storage);
     depositinAVT_ = LAVTManager.getAVTDecimals(_storage, depositInUSCents);
   }
 
   function merkleRootIsActive(IAventusStorage _storage, bytes32 _rootHash) public view returns (bool merkleRootIsActive_) {
-    uint aventityId = getAventityIdForMerkleRoot(_storage, _rootHash);
+    uint aventityId = LMerkleRootsStorage.getAventityId(_storage, _rootHash);
     merkleRootIsActive_ = LAventities.aventityIsActive(_storage, aventityId);
-  }
-
-  function getAventityIdForMerkleRoot(IAventusStorage _storage, bytes32 _rootHash)
-    public
-    view
-    returns (uint aventityId_)
-  {
-    aventityId_ = _storage.getUInt(keccak256(abi.encodePacked("MerkleRoot", _rootHash, "aventityId")));
-  }
-
-  function removeMerkleRootAventityId(IAventusStorage _storage, bytes32 _rootHash) private {
-    _storage.setUInt(keccak256(abi.encodePacked("MerkleRoot", _rootHash, "aventityId")), 0);
   }
 }

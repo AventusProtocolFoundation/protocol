@@ -107,9 +107,10 @@ library LAventities {
       aventityDeposit != 0,
       "Unlocked aventity must have a positive deposit"
     );
-    bytes32 expectedDepositsKey = keccak256(abi.encodePacked("ExpectedDeposits", aventityDepositor));
-    assert(_storage.getUInt(expectedDepositsKey) >= aventityDeposit); // If this asserts, we messed up the deposit code!
-    _storage.setUInt(expectedDepositsKey, _storage.getUInt(expectedDepositsKey) - aventityDeposit);
+    // TODO: Move this get/check/set entirely to LAVTManager.unlockDeposit.
+    uint expectedDeposits = LAVTManager.getExpectedDeposits(_storage, aventityDepositor);
+    assert(expectedDeposits >= aventityDeposit); // If this asserts, we messed up the deposit code!
+    LAVTManager.setExpectedDeposits(_storage, aventityDepositor, expectedDeposits - aventityDeposit);
 
     LAventitiesStorage.setDeposit(_storage, _aventityId, 0);
   }
@@ -166,16 +167,16 @@ library LAventities {
         challengeWon_ ? totalAgreedStake : totalDisagreedStake);
   }
 
+  // TODO: Move this method to LAVTManager.lockDeposit.
   function lockAventityDeposit(IAventusStorage _storage, address _aventityDepositor, uint _aventityDeposit)
     private
   {
-    bytes32 expectedDepositsKey = keccak256(abi.encodePacked("ExpectedDeposits", _aventityDepositor));
-    uint expectedDeposits = _storage.getUInt(expectedDepositsKey) + _aventityDeposit;
+    uint expectedDeposits = LAVTManager.getExpectedDeposits(_storage, _aventityDepositor) + _aventityDeposit;
     uint actualDeposits = LAVTManager.getBalance(_storage, _aventityDepositor, "deposit");
     require(
       actualDeposits >= expectedDeposits,
       'Insufficient deposits'
     );
-    _storage.setUInt(expectedDepositsKey, expectedDeposits);
+    LAVTManager.setExpectedDeposits(_storage, _aventityDepositor, expectedDeposits);
   }
 }

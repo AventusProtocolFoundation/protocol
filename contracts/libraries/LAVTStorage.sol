@@ -55,4 +55,12 @@ library LAVTStorage {
     _storage.setUInt(keccak256(abi.encodePacked("ExpectedDeposits", _depositHolder)), _expectedDeposits);
   }
 
+  function getStakeUnblockTime(IAventusStorage _storage, address _stakeHolder)
+    external
+    view
+    returns (uint unblockTime_)
+  {
+    unblockTime_ = _storage.getUInt(keccak256(abi.encodePacked("Voting", _stakeHolder, uint(0), "nextTime")));
+  }
+
 }

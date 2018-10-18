@@ -11,11 +11,11 @@ library LProposalsEnact {
 
   function doUnlockProposalDeposit(IAventusStorage _storage, uint _proposalId) external {
     address proposalOwner = getProposalOwner(_storage, _proposalId);
-    bytes32 expectedDepositsKey = keccak256(abi.encodePacked("ExpectedDeposits", proposalOwner));
-    uint expectedDeposits = _storage.getUInt(expectedDepositsKey);
     uint proposalDeposit = getProposalDeposit(_storage, _proposalId);
+    // TODO: Move this get/check/set to LAVTManager.unlockDeposit.
+    uint expectedDeposits = LAVTManager.getExpectedDeposits(_storage, proposalOwner);
     assert(expectedDeposits >= proposalDeposit);
-    _storage.setUInt(expectedDepositsKey, expectedDeposits - proposalDeposit);
+    LAVTManager.setExpectedDeposits(_storage, proposalOwner, expectedDeposits - proposalDeposit);
     LProposalsStorage.setDeposit(_storage, _proposalId, 0);
   }
 
@@ -32,10 +32,10 @@ library LProposalsEnact {
   {
     address owner = msg.sender;
 
-    bytes32 expectedDepositsKey = keccak256(abi.encodePacked("ExpectedDeposits", owner));
-    _storage.setUInt(expectedDepositsKey, _storage.getUInt(expectedDepositsKey) + _deposit);
+    // TODO: Move this get/set/check to LAVTManager.lockDeposit.
+    uint expectedDeposits = LAVTManager.getExpectedDeposits(_storage, owner) + _deposit;
+    LAVTManager.setExpectedDeposits(_storage, owner, expectedDeposits);
 
-    uint expectedDeposits = _storage.getUInt(expectedDepositsKey);
     uint actualDeposits = LAVTManager.getBalance(_storage, owner, "deposit");
     require(
       actualDeposits >= expectedDeposits,

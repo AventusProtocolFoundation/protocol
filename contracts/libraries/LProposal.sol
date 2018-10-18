@@ -136,14 +136,6 @@ library LProposal {
     LProposalsStorage.setRevealedVoterStake(_storage, _proposalId, _voter, _optionId, 0);
   }
 
-  function getRevealedVotersCount(IAventusStorage _storage, uint _proposalId, uint _optionId)
-    external
-    view
-    returns (uint revealedVoters_)
-  {
-    revealedVoters_ = LProposalsStorage.getRevealedVotersCount(_storage, _proposalId, _optionId);
-  }
-
   function getGovernanceProposalDeposit(IAventusStorage _storage) view public returns (uint depositInAVT_) {
     uint depositInUSCents = LProposalsStorage.getGovernanceProposalDepositInUSCents(_storage);
     depositInAVT_ = LAVTManager.getAVTDecimals(_storage, depositInUSCents);

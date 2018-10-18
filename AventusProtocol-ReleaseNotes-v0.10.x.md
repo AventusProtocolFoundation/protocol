@@ -13,7 +13,8 @@ Breaking changes:
 * IEventsManager.unlockEventDeposit renamed to endEvent.
 * IEventsManager.refundTicket renamed to returnTicket: now sets ticket owner to be the event owner.
 * IEventsManger.de/registerRole renamed to de/registerMemberFromEvent
-* All event method that can be called via a broker now require validity proof, regardless of whether via broker or not.
+* All event methods that can be called via a broker now require validity proof, regardless of whether via broker or not.
+* Can now only cancel an event before the tickets on-sale time.
 * All IEventsManager logs updated to reflect new data.
 * Challenges are now ended using the manager contract that created them, NOT ProposalsManager.
 * Various getters removed, eg memberIsActive: use logs instead.
@@ -21,8 +22,13 @@ Breaking changes:
 New functionality:
 * Added IEventsManager.listTicket and sendTicketToFriend for transfer of merkle tree tickets on the blockchain.
 * Test timing profiling
+* Fraudulent events and members can now be re-registered
+* Resale of "blank" tickets (vendor proof omits buyer addres)
+* Primary and Secondary members can now act as a Broker on the protocol without registering as a Broker member
+* Event owners, Primary and Secondary members can now act as a Broker on the event without registering as a Broker member
 
 Minor changes:
+* Ticket id is no longer sequential: it is generated from the unique reference and the vendor to obfuscate sales.
 * ParameterRegistry can only be initialised ONCE.
 * All method input parameters start with an underscore.
 * All method output parameters end with an underscore.

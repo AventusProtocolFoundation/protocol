@@ -13,10 +13,6 @@ import "./LAventitiesStorage.sol";
  */
 
 library LAventitiesChallenges {
-  bytes32 constant winningsForChallengeWinnerPercentageKey =
-      keccak256(abi.encodePacked("Events", "winningsForChallengeWinnerPercentage"));
-  bytes32 constant winningsForChallengeEnderPercentageKey =
-      keccak256(abi.encodePacked("Events", "winningsForChallengeEnderPercentage"));
 
     function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) external {
       address voter = msg.sender;
@@ -45,56 +41,33 @@ library LAventitiesChallenges {
       LProposal.clearRevealedStake(_storage, _proposalId, voter, winningOption);
     }
 
-    function doWinningsDistribution(
-        IAventusStorage _storage,
-        uint _proposalId,
-        bool _winningsForVoters,
-        uint _deposit,
-        address _winner,
-        address _loser)
-      external
-    {
-      distributeChallengeWinnings(
-          _storage,
-          _proposalId,
-          _winner,
-          _loser,
-          _deposit,
-          _winningsForVoters,
-          // TODO: Move to LAventitiesStorage when stack depth allows
-          _storage.getUInt(winningsForChallengeWinnerPercentageKey),
-          _storage.getUInt(winningsForChallengeEnderPercentageKey)
-      );
-    }
-
-  function distributeChallengeWinnings(
+  function doWinningsDistribution(
       IAventusStorage _storage,
       uint _proposalId,
-      address _winner,
-      address _loser,
+      bool _distributeToVoters,
       uint _winnings,
-      bool _winningsForVoters,
-      uint _winningsForChallengeWinnerPercentage,
-      uint _winningsToChallengeEnderPercentage)
-    private
+      address _winner,
+      address _loser)
+    external
   {
     takeAllWinningsFromProposalLoser(_storage, _winnings, _loser);
-
-    uint winningsToProposalWinnerAVT = (_winnings * _winningsForChallengeWinnerPercentage) / 100;
+    uint winningsForChallengeWinnerPercentage = LAventitiesStorage.getWinningsForChallengeWinnerPercentage(_storage);
+    uint winningsToProposalWinnerAVT = (_winnings * winningsForChallengeWinnerPercentage) / 100;
     giveWinnings(_storage, winningsToProposalWinnerAVT, _winner);
 
+    uint winningsToChallengeEnderPercentage = LAventitiesStorage.getWinningsForChallengeEnderPercentage(_storage);
     address challengeEnder = msg.sender;
-    uint winningsToChallengeEnderAVT = (_winnings * _winningsToChallengeEnderPercentage) / 100;
+    uint winningsToChallengeEnderAVT = (_winnings * winningsToChallengeEnderPercentage) / 100;
 
-    _winnings -= winningsToProposalWinnerAVT + winningsToChallengeEnderAVT;
+    uint winningsForVoters = _winnings - winningsToProposalWinnerAVT - winningsToChallengeEnderAVT;
 
-    if (_winningsForVoters) {
+    if (_distributeToVoters) {
       // The rest of the winnings is distributed to the voters as they claim it.
-      LAventitiesStorage.setTotalWinningsToVoters(_storage, _proposalId, _winnings);
-      LAventitiesStorage.setWinningsToVotersRemaining(_storage, _proposalId, _winnings);
+      LAventitiesStorage.setTotalWinningsToVoters(_storage, _proposalId, winningsForVoters);
+      LAventitiesStorage.setWinningsToVotersRemaining(_storage, _proposalId, winningsForVoters);
     } else {
       // If no one voted, the challenge ender gets the rest of the winnings.
-      winningsToChallengeEnderAVT += _winnings;
+      winningsToChallengeEnderAVT += winningsForVoters;
     }
 
     giveWinnings(_storage, winningsToChallengeEnderAVT, challengeEnder);

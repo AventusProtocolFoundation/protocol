@@ -129,7 +129,10 @@ library LEventsCommon {
     view
     returns (bool isRegistered_)
   {
-    isRegistered_ = isActiveMemberOnProtocol(_storage, _brokerAddress, "Broker");
+    // Protocol registered primaries and secondaries have protocol registered broker permissions
+    isRegistered_ = isActiveMemberOnProtocol(_storage, _brokerAddress, "Broker") ||
+        isActiveMemberOnProtocol(_storage, _brokerAddress, "Primary") ||
+        isActiveMemberOnProtocol(_storage, _brokerAddress, "Secondary");
   }
 
   function isActiveBrokerOnEvent(IAventusStorage _storage, address _brokerAddress, uint _eventId)

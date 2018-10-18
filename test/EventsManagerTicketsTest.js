@@ -74,13 +74,14 @@ contract('EventsManager - tickets', async () => {
       });
 
       // TODO: return ticketId along with ticket ref rather than storing as a global variable
-      async function sellTicketSucceeds(_eventId, _buyer, _vendor, _isPrimaryIntegrated, _isDoorIntegrated, _vendorTicketRef) {
+      async function sellTicketSucceeds(_eventId, _buyer, _vendor, _isPrimaryIntegrated, _isDoorIntegrated, _vendorTicketRef,
+          _sender) {
         const vendorTicketRef = _vendorTicketRef || setupUniqueVendorTicketRef();
         const vendorTicketRefHash = web3Utils.soliditySha3(vendorTicketRef);
         const expectedTicketId = web3Utils.soliditySha3(vendorTicketRefHash, _vendor);
         const ticketMetadata = 'some metadata';
 
-        const sender = isViaBroker ? brokerAddress : _vendor;
+        const sender = _sender || (isViaBroker ? brokerAddress : _vendor);
         const vendorProof = testHelper.createVendorTicketProof(_eventId, vendorTicketRefHash, _vendor, _buyer,
             _isPrimaryIntegrated);
         const doorData = _isDoorIntegrated ? emptyDoorData : testHelper.createSignedSecret(secret, _buyer);
@@ -161,6 +162,7 @@ contract('EventsManager - tickets', async () => {
             _isSecondaryIntegrated, _signer, _sender));
       }
 
+      // TODO: create PRIMARY_INTEGRATED etc. boolean constants to improve readability when calling sellTicket methods
       context("sell ticket", async () => {
         context("with active event", async () => {
           afterEach(async () => {
@@ -207,6 +209,18 @@ contract('EventsManager - tickets', async () => {
                   it("seller is a primary", async function () {
                     await testSellingTicketAsPrimary(primaryIsIntegrated, doorIsIntegrated);
                   });
+
+                  if (isViaBroker && primaryIsIntegrated) {
+                    it("broker is a protocol registered primary", async () => {
+                      await membersTestHelper.depositAndRegisterMember(primary, testHelper.primaryMemberType,
+                          testHelper.evidenceURL, "Registering primary");
+
+                      await sellTicketSucceeds(goodEvent.id, buyer1, eventOwner, primaryIsIntegrated, doorIsIntegrated,
+                          setupUniqueVendorTicketRef(), primary);
+
+                      await membersTestHelper.deregisterMemberAndWithdrawDeposit(primary, testHelper.primaryMemberType);
+                    });
+                  }
                 });
               }
             }
@@ -271,6 +285,10 @@ contract('EventsManager - tickets', async () => {
                     await sellTicketFails(goodEvent.id, setupUniqueVendorTicketRef(), buyer1, eventOwner, true, true);
                     await membersTestHelper.depositAndRegisterMember(brokerAddress, testHelper.brokerMemberType,
                       testHelper.evidenceURL, "Registering broker");
+                  });
+
+                  it("but sending address is not a protocol registered primary", async () => {
+                    await sellTicketFails(goodEvent.id, setupUniqueVendorTicketRef(), buyer1, eventOwner, true, true, primary);
                   });
 
                   it("but buyer does not match what the primary signed", async () => {

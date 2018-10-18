@@ -2,12 +2,12 @@ pragma solidity ^0.4.24;
 
 import '../interfaces/IAventusStorage.sol';
 import "./LAventusTime.sol";
+import "./LAVTStorage.sol";
 
 // Library for adding functionality for handling AVT funds.
 library LAVTManager  {
   bytes32 constant stakeFundHash = keccak256(abi.encodePacked("stake"));
   bytes32 constant depositFundHash = keccak256(abi.encodePacked("deposit"));
-  bytes32 constant oneAVTInUSCentsKey = keccak256(abi.encodePacked("OneAVTInUSCents"));
 
   // See IAVTManager interface for logs description
   event LogWithdraw(address indexed sender, string fund, uint amount);
@@ -99,37 +99,37 @@ library LAVTManager  {
     doTransfer(_storage, _amount, msg.sender, _fromFund, _toAddress, _toFund);
   }
 
-  function getBalance(IAventusStorage _storage, address _avtHolder, string _fund)
-    external
-    view
-    returns (uint balance_)
-  {
-    balance_ = _storage.getUInt(keccak256(abi.encodePacked("AVTFund", _avtHolder, _fund)));
+  function setExpectedDeposits(IAventusStorage _storage, address _depositHolder, uint _expectedDeposits) external {
+    LAVTStorage.setExpectedDeposits(_storage, _depositHolder, _expectedDeposits);
   }
 
   function getAVTDecimals(IAventusStorage _storage, uint _usCents) external view returns (uint avtDecimals_) {
-    uint oneAvtInUSCents = _storage.getUInt(oneAVTInUSCentsKey);
+    uint oneAvtInUSCents = LAVTStorage.getOneAVTInUSCents(_storage);
     avtDecimals_ = (_usCents * (10**18)) / oneAvtInUSCents;
   }
 
-  function decreaseFund(IAventusStorage _storage, address _fromAddress, string _fund, uint _amount) public {
-    bytes32 key = keccak256(abi.encodePacked("AVTFund", _fromAddress, _fund));
-    uint currDeposit = _storage.getUInt(key);
-    require (
-      _amount <= currDeposit,
-      "Amount taken must be less than current deposit"
-    );
-    _storage.setUInt(key, currDeposit - _amount);
+  function getBalance(IAventusStorage _storage, address _avtHolder, string _fund)
+    public
+    view
+    returns (uint balance_)
+  {
+    balance_ = LAVTStorage.getFundBalance(_storage, _avtHolder, _fund);
   }
 
-  function increaseFund(IAventusStorage _storage,  address _toAddress, string _fund, uint _amount) public {
-    bytes32 key = keccak256(abi.encodePacked("AVTFund", _toAddress, _fund));
-    uint currDeposit = _storage.getUInt(key);
-    require (
-      _amount != 0,
-      "Added amount must be greater than zero"
-    );
-    _storage.setUInt(key, currDeposit + _amount);
+  function decreaseFund(IAventusStorage _storage, address _account, string _fund, uint _amount) public {
+    LAVTStorage.decreaseFund(_storage, _account, _fund, _amount);
+  }
+
+  function increaseFund(IAventusStorage _storage,  address _account, string _fund, uint _amount) public {
+    LAVTStorage.increaseFund(_storage, _account, _fund, _amount);
+  }
+
+  function getExpectedDeposits(IAventusStorage _storage, address _depositHolder)
+    public
+    view
+    returns (uint expectedDeposits_)
+  {
+    expectedDeposits_ = LAVTStorage.getExpectedDeposits(_storage, _depositHolder);
   }
 
   // NOTE: This version has NO CHECKS on whether the transfer should be blocked so should only be
@@ -144,17 +144,10 @@ library LAVTManager  {
     );
 
     // Take AVT from the "from" fund...
-    bytes32 fromKey = keccak256(abi.encodePacked("AVTFund", _fromAddress, _fromFund));
-    uint currentFromBalance = _storage.getUInt(fromKey);
-    require(
-      currentFromBalance >= _amount,
-      "The transfer amount must not exceed the source fund balance"
-    );
-    _storage.setUInt(fromKey, currentFromBalance - _amount);
+    decreaseFund(_storage, _fromAddress, _fromFund, _amount);
 
     // ...and give it to the "to" _fund.
-    bytes32 toKey = keccak256(abi.encodePacked("AVTFund", _toAddress, _toFund));
-    _storage.setUInt(toKey, _storage.getUInt(toKey) + _amount);
+    increaseFund(_storage, _toAddress, _toFund, _amount);
   }
 
   function stakeChangeIsBlocked(IAventusStorage _storage, address _stakeHolder)
@@ -162,7 +155,7 @@ library LAVTManager  {
     view
     returns (bool blocked_)
   {
-    uint blockedUntil = _storage.getUInt(keccak256(abi.encodePacked("Voting", _stakeHolder, uint(0), "nextTime")));
+    uint blockedUntil = LAVTStorage.getStakeUnblockTime(_storage, _stakeHolder);
 
     if (blockedUntil == 0)
       blocked_ = false; // No unrevealed votes
@@ -177,8 +170,8 @@ library LAVTManager  {
     view
     returns (bool blocked_)
   {
-      uint expectedDeposits = _storage.getUInt(keccak256(abi.encodePacked("ExpectedDeposits", _depositHolder)));
-      uint actualDeposits = _storage.getUInt(keccak256(abi.encodePacked("AVTFund", _depositHolder, "deposit")));
+      uint expectedDeposits = getExpectedDeposits(_storage, _depositHolder);
+      uint actualDeposits = getBalance(_storage, _depositHolder, "deposit");
       require(
         actualDeposits >= _amount,
         "Withdrawn amount must not exceed the deposit"

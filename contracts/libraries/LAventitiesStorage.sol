@@ -9,6 +9,11 @@ library LAventitiesStorage {
   bytes32 constant challengeVotingPeriodDaysKey = keccak256(abi.encodePacked("Aventities", "challengeVotingPeriodDays"));
   bytes32 constant challengeRevealingPeriodDaysKey = keccak256(abi.encodePacked("Aventities", "challengeRevealingPeriodDays"));
 
+  bytes32 constant winningsForChallengeWinnerPercentageKey =
+      keccak256(abi.encodePacked("Events", "winningsForChallengeWinnerPercentage"));
+  bytes32 constant winningsForChallengeEnderPercentageKey =
+      keccak256(abi.encodePacked("Events", "winningsForChallengeEnderPercentage"));
+
   function getAventityCount(IAventusStorage _storage)
     external
     view
@@ -43,6 +48,22 @@ library LAventitiesStorage {
     returns (uint revealingPeriodDays_)
   {
     revealingPeriodDays_ = _storage.getUInt(challengeRevealingPeriodDaysKey);
+  }
+
+  function getWinningsForChallengeWinnerPercentage(IAventusStorage _storage)
+    external
+    view
+    returns (uint winnerPercentage_)
+  {
+    winnerPercentage_ = _storage.getUInt(winningsForChallengeWinnerPercentageKey);
+  }
+
+  function getWinningsForChallengeEnderPercentage(IAventusStorage _storage)
+    external
+    view
+    returns (uint enderPercentage_)
+  {
+    enderPercentage_ = _storage.getUInt(winningsForChallengeEnderPercentageKey);
   }
 
   function getDepositor(IAventusStorage _storage, uint _aventityId)
