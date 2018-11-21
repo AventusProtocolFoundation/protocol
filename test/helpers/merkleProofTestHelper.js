@@ -1,39 +1,30 @@
-/**
- * @title merkleProofTestHelper.js
- * @dev Helper functions to assist in the creation of tests for the Merkle Tree Proof
- * Based on  https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/test/helpers/merkleTree.js
- */
-const MerkleRootsManager = artifacts.require("MerkleRootsManager");
-const web3Utils = require('web3-utils');
+// Based on  https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/test/helpers/merkleTree.js
 
 let leaves, layers;
-let testHelper, merkleRootsManager;
+let testHelper;
 
-async function before(_testHelper) {
+async function init(_testHelper) {
   testHelper = _testHelper;
-  merkleRootsManager = await MerkleRootsManager.deployed();
-  merkleRootsManager = testHelper.profilingHelper.profileContract(merkleRootsManager, "merkleRootsManager");
-};
+}
 
-
-function createTree(numberOfLevels, leafData) {
-  leaves = createLeaves(numberOfLevels, leafData);
+function createTree(_numberOfLevels, _leafData) {
+  leaves = createLeaves(_numberOfLevels, _leafData);
   layers = getLayers(leaves);
-  const leafHash = web3Utils.soliditySha3(...leafData);
+  const leafHash = testHelper.hash(..._leafData);
   const merklePath = getMerklePath(leafHash);
   const rootHash = getRoot();
   return {merklePath, rootHash, leafHash, leaves};
 }
 
-function createLeaves(levels, leafData) {
+function createLeaves(_levels, _leafData) {
   let elements = [];
-  elements.push(leafData);
+  elements.push(_leafData);
 
-  for (var i = 1; i < (Math.pow(2, levels-1) ); i++) {
+  for (let i = 1; i < (Math.pow(2, _levels-1) ); i++) {
     elements.push([i]);
   }
 
-  elements = elements.filter(el => el.length > 0).map(el => web3Utils.soliditySha3(...el));
+  elements = elements.filter(el => el.length > 0).map(el => testHelper.hash(...el));
   elements.sort();
   return elements;
 }
@@ -60,7 +51,6 @@ function getNextLayer(_elements) {
       // Hash the current element with its pair element
       layer.push(combinedHash(el, arr[idx + 1]));
     }
-
     return layer;
   }, []);
 }
@@ -70,9 +60,9 @@ function combinedHash(_first, _second) {
   if (!_second) { return _first; }
 
   if (_first < _second) {
-    return web3Utils.soliditySha3(_first, _second);
+    return testHelper.hash(_first, _second);
   }
-  return web3Utils.soliditySha3(_second, _first);
+  return testHelper.hash(_second, _first);
 }
 
 function getRoot() {
@@ -83,7 +73,7 @@ function getMerklePath(_element) {
   let idx = leaves.indexOf(_element);
 
   if (idx === -1) {
-    throw new Error("Element does not exist in Merkle tree");
+    throw new Error('Element does not exist in Merkle tree');
   }
 
   return layers.reduce((path, layer) => {
@@ -94,25 +84,23 @@ function getMerklePath(_element) {
     }
 
     idx = Math.floor(idx / 2);
-
     return path;
   }, []);
 }
 
-function getPairElement(idx, layer) {
-  const pairIdx = idx % 2 === 0 ? idx + 1 : idx - 1;
+function getPairElement(_idx, _layer) {
+  const pairIdx = _idx % 2 === 0 ? _idx + 1 : _idx - 1;
 
-  if (pairIdx < layer.length) {
-    return layer[pairIdx];
+  if (pairIdx < _layer.length) {
+    return _layer[pairIdx];
   } else {
     return null;
   }
 }
 
+// Keep exports alphabetical.
 module.exports = {
-  getMerkleRootsManager: () => merkleRootsManager,
-
-  before,
   createTree,
-  getMerklePath
+  getMerklePath,
+  init,
 };

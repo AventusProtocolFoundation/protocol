@@ -2,43 +2,34 @@ pragma solidity ^0.4.24;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LProposalsEnact.sol";
-import "./LProposalVoting.sol";
+import "./LProposalsVoting.sol";
 import "./LProposalsStorage.sol";
 
 // Library for extending voting protocol functionality
-library LProposal {
+library LProposals {
 
   // See IProposalsManager interface for logs description.
   event LogGovernanceProposalCreated(uint indexed proposalId, address indexed sender, string desc, uint lobbyingStart, uint votingStart,
       uint revealingStart, uint revealingEnd, uint deposit);
-  event LogCastVote(uint indexed proposalId, address indexed sender, bytes32 secret, uint prevTime);
-  event LogCancelVote(uint indexed proposalId, address indexed sender);
-  event LogRevealVote(uint indexed proposalId, address indexed sender, uint indexed optId, uint revealingStart,
+  event LogVoteCast(uint indexed proposalId, address indexed sender, bytes32 secret, uint prevTime);
+  event LogVoteCancelled(uint indexed proposalId, address indexed sender);
+  event LogVoteRevealed(uint indexed proposalId, address indexed sender, uint indexed optId, uint revealingStart,
       uint revealingEnd);
   event LogGovernanceProposalEnded(uint indexed proposalId, uint votesFor, uint votesAgainst);
 
   // Verify a proposal's status (see LProposalsEnact.doGetProposalStatus for values)
   modifier onlyInVotingPeriod(IAventusStorage _storage, uint _proposalId) {
-    require(
-      LProposalsEnact.inVotingPeriod(_storage, _proposalId),
-      "Proposal has the wrong status"
-    );
+    require(LProposalsEnact.inVotingPeriod(_storage, _proposalId), "Proposal has the wrong status");
     _;
   }
 
   modifier onlyAfterRevealingFinishedAndProposalNotEnded(IAventusStorage _storage, uint _proposalId) {
-    require(
-      LProposalsEnact.afterRevealingFinishedAndProposalNotEnded(_storage, _proposalId),
-      "Proposal has the wrong status"
-    );
+    require(LProposalsEnact.afterRevealingFinishedAndProposalNotEnded(_storage, _proposalId), "Proposal has the wrong status");
     _;
   }
 
   modifier onlyGovernanceProposals(IAventusStorage _storage, uint _proposalId) {
-    require(
-      LProposalsStorage.isGovernanceProposal(_storage, _proposalId),
-      "Proposal is not a governance proposal"
-    );
+    require(LProposalsStorage.isGovernanceProposal(_storage, _proposalId), "Proposal is not a governance proposal");
     _;
   }
 
@@ -48,7 +39,7 @@ library LProposal {
     (uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd) = getTimestamps(_storage, proposalId);
 
     // set a flag to mark this proposal as a governance proposal
-    LProposalsStorage.setGovernanceProposal(_storage, proposalId, true);
+    LProposalsStorage.setGovernanceProposal(_storage, proposalId);
 
     emit LogGovernanceProposalCreated(proposalId, msg.sender, _desc, lobbyingStart, votingStart, revealingStart, revealingEnd, deposit);
   }
@@ -71,8 +62,8 @@ library LProposal {
     external
     onlyInVotingPeriod(_storage, _proposalId) // Ensure voting period is currently active
   {
-    LProposalVoting.castVote(_storage, _proposalId, _secret, _prevTime);
-    emit LogCastVote(_proposalId, msg.sender, _secret, _prevTime);
+    LProposalsVoting.castVote(_storage, _proposalId, _secret, _prevTime);
+    emit LogVoteCast(_proposalId, msg.sender, _secret, _prevTime);
   }
 
   function cancelVote(
@@ -81,15 +72,15 @@ library LProposal {
   )
     external
   {
-    LProposalVoting.cancelVote(_storage, _proposalId);
-    emit LogCancelVote(_proposalId, msg.sender);
+    LProposalsVoting.cancelVote(_storage, _proposalId);
+    emit LogVoteCancelled(_proposalId, msg.sender);
   }
 
   function revealVote(IAventusStorage _storage, bytes _signedMessage, uint _proposalId, uint _optId) external {
-    LProposalVoting.revealVote(_storage, _signedMessage, _proposalId, _optId);
+    LProposalsVoting.revealVote(_storage, _signedMessage, _proposalId, _optId);
     uint revealingStart = LProposalsStorage.getRevealingStart(_storage, _proposalId);
     uint revealingEnd = LProposalsStorage.getRevealingEnd(_storage, _proposalId);
-    emit LogRevealVote(_proposalId, msg.sender, _optId, revealingStart, revealingEnd);
+    emit LogVoteRevealed(_proposalId, msg.sender, _optId, revealingStart, revealingEnd);
   }
 
   function endGovernanceProposal(IAventusStorage _storage, uint _proposalId)
@@ -101,7 +92,7 @@ library LProposal {
   }
 
   function getPrevTimeParamForCastVote(IAventusStorage _storage, uint _proposalId) external view returns (uint prevTime_) {
-    prevTime_ = LProposalVoting.getPrevTimeParamForCastVote(_storage, _proposalId);
+    prevTime_ = LProposalsVoting.getPrevTimeParamForCastVote(_storage, _proposalId);
   }
 
   function getAventusTime(IAventusStorage _storage) external view returns (uint time_) {
@@ -136,7 +127,7 @@ library LProposal {
     LProposalsStorage.setRevealedVoterStake(_storage, _proposalId, _voter, _optionId, 0);
   }
 
-  function getGovernanceProposalDeposit(IAventusStorage _storage) view public returns (uint depositInAVT_) {
+  function getGovernanceProposalDeposit(IAventusStorage _storage) public view returns (uint depositInAVT_) {
     uint depositInUSCents = LProposalsStorage.getGovernanceProposalDepositInUSCents(_storage);
     depositInAVT_ = LAVTManager.getAVTDecimals(_storage, depositInUSCents);
   }
