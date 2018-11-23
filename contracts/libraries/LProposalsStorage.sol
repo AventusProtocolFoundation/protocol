@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import '../interfaces/IAventusStorage.sol';
+import "../interfaces/IAventusStorage.sol";
 
 library LProposalsStorage {
 
@@ -94,8 +94,8 @@ library LProposalsStorage {
     isGovernance_ = _storage.getBoolean(keccak256(abi.encodePacked(proposalString, _proposalId, "governanceProposal")));
   }
 
-  function setGovernanceProposal(IAventusStorage _storage, uint _proposalId, bool _isGovernance) external {
-    _storage.setBoolean(keccak256(abi.encodePacked(proposalString, _proposalId, "governanceProposal")), _isGovernance);
+  function setGovernanceProposal(IAventusStorage _storage, uint _proposalId) external {
+    _storage.setBoolean(keccak256(abi.encodePacked(proposalString, _proposalId, "governanceProposal")), true);
   }
 
   function getLobbyingStart(IAventusStorage _storage, uint _proposalId)

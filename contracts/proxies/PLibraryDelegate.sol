@@ -1,8 +1,8 @@
 pragma solidity ^0.4.24;
 
-import '../interfaces/IAventusStorage.sol';
-import './PDelegate.sol';
-import '../Versioned.sol';
+import "../interfaces/IAventusStorage.sol";
+import "./PDelegate.sol";
+import "../Versioned.sol";
 
 contract PLibraryDelegate is PDelegate, Versioned {
 

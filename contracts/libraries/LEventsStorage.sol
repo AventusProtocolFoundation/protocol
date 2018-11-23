@@ -1,6 +1,7 @@
 pragma solidity ^0.4.24;
 
-import '../interfaces/IAventusStorage.sol';
+import "../interfaces/IAventusStorage.sol";
+import "./LAventusTime.sol";
 
 library LEventsStorage {
 
@@ -9,14 +10,6 @@ library LEventsStorage {
   bytes32 constant freeEventDepositAmountUSCentsKey = keccak256(abi.encodePacked("Events", "freeEventDepositAmountUSCents"));
   bytes32 constant paidEventDepositAmountUSCentsKey = keccak256(abi.encodePacked("Events", "paidEventDepositAmountUSCents"));
   bytes32 constant eventCountKey = keccak256(abi.encodePacked("EventCount"));
-
-  function getMinimumReportingPeriodDays(IAventusStorage _storage)
-    external
-    view
-    returns (uint minimumReportingDays_)
-  {
-    minimumReportingDays_ = _storage.getUInt(minimumEventReportingPeriodDaysKey);
-  }
 
   function getFreeEventDepositInUSCents(IAventusStorage _storage)
     external
@@ -55,16 +48,18 @@ library LEventsStorage {
         _memberAddress)));
   }
 
-  function setAsRegisteredMemberOnEvent(IAventusStorage _storage, uint _eventId, address _memberAddress, string _memberType,
-      bool _isRegistered)
+  function setRegisteredMemberOnEvent(IAventusStorage _storage, uint _eventId, address _memberAddress, string _memberType)
     external
   {
     _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "member", _memberType, "address", _memberAddress)),
-        _isRegistered);
+        true);
   }
 
-  function setTicketDoorData(IAventusStorage _storage, uint _eventId, uint _ticketId, bytes _doorData) external {
-    _storage.setBytes(keccak256(abi.encodePacked("Event", _eventId, "Ticket", _ticketId)), _doorData);
+  function clearRegisteredMemberOnEvent(IAventusStorage _storage, uint _eventId, address _memberAddress, string _memberType)
+    external
+  {
+    _storage.setBoolean(keccak256(abi.encodePacked("Event", _eventId, "member", _memberType, "address", _memberAddress)),
+        false);
   }
 
   function getTicketOwner(IAventusStorage _storage, uint _eventId, uint _ticketId)
@@ -99,8 +94,12 @@ library LEventsStorage {
     isExisting_ = _storage.getBoolean(keccak256(abi.encodePacked("Event", "hash", _eventHash)));
   }
 
-  function setEventHashExists(IAventusStorage _storage, bytes32 _eventHash, bool _existing) external {
-    _storage.setBoolean(keccak256(abi.encodePacked("Event", "hash", _eventHash)), _existing);
+  function setEventHashExists(IAventusStorage _storage, bytes32 _eventHash) external {
+    _storage.setBoolean(keccak256(abi.encodePacked("Event", "hash", _eventHash)), true);
+  }
+
+  function clearEventHashExists(IAventusStorage _storage, bytes32 _eventHash) external {
+    _storage.setBoolean(keccak256(abi.encodePacked("Event", "hash", _eventHash)), false);
   }
 
   function getOffSaleTime(IAventusStorage _storage, uint _eventId)
@@ -112,7 +111,8 @@ library LEventsStorage {
   }
 
   function setOffSaleTime(IAventusStorage _storage, uint _eventId, uint _offSaleTime) external {
-    assert(_offSaleTime > 0);
+    uint onSaleTime = _storage.getUInt(keccak256(abi.encodePacked("Event", _eventId, "onSaleTime")));
+    require(onSaleTime < _offSaleTime, "Tickets on-sale time must be before off-sale time");
     _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "offSaleTime")), _offSaleTime);
   }
 
@@ -125,7 +125,9 @@ library LEventsStorage {
   }
 
   function setOnSaleTime(IAventusStorage _storage, uint _eventId, uint _onSaleTime) external {
-    assert(_onSaleTime > 0);
+    uint minimumEventReportingPeriod = (1 days) * _storage.getUInt(minimumEventReportingPeriodDaysKey);
+    uint minimumOnSaleTime = LAventusTime.getCurrentTime(_storage) + minimumEventReportingPeriod;
+    require(_onSaleTime >= minimumOnSaleTime, "Tickets on-sale time is not far enough in the future");
     _storage.setUInt(keccak256(abi.encodePacked("Event", _eventId, "onSaleTime")), _onSaleTime);
   }
 

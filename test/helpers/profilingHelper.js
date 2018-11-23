@@ -1,9 +1,8 @@
+/* eslint no-console: "off" */
+
 const addTimeInfoToTests = process.env.TEMP_PROFILE;
 
-let originalContext;
-let originalIt;
-let originalBeforeEach;
-let originalAfterEach;
+let originalIt, originalBeforeEach, originalAfterEach;
 
 let stats = {};
 let currentScope = {testId: 0};
@@ -12,7 +11,8 @@ function addTimeReports(testContract) {
   if (!addTimeInfoToTests) return;
 
   originalIt = it;
-  it = function(title, testFunction) {
+
+  it = function(title, testFunction) { // eslint-disable-line no-global-assign
     let quotedTitle = `"${testContract}-${title}"`;
     let testFunctionWithStats = async function() {
       currentScope.testId++;
@@ -30,14 +30,12 @@ function addTimeReports(testContract) {
   };
 
   originalBeforeEach = beforeEach;
-  beforeEach = function(beforeFunction) {
+  beforeEach = function(beforeFunction) { // eslint-disable-line no-global-assign
     let beforeFunctionWithStats = async function() {
-      let testStartTime =  new Date();
       resetStats();
       let promise = beforeFunction.call(this);
       await promise;
-      reportStats(currentScope.testId + 1, "\"beforeEach\"");
-      let testFinishTime =  new Date();
+      reportStats(currentScope.testId + 1, '"beforeEach"');
       return promise;
     };
 
@@ -45,14 +43,12 @@ function addTimeReports(testContract) {
   };
 
   originalAfterEach = afterEach;
-  afterEach = function(afterFunction) {
+  afterEach = function(afterFunction) { // eslint-disable-line no-global-assign
     let afterFunctionWithStats = async function() {
-      let testStartTime =  new Date();
       resetStats();
       let promise = afterFunction.call(this);
       await promise;
-      reportStats(currentScope.testId, "\"afterEach\"");
-      let testFinishTime =  new Date();
+      reportStats(currentScope.testId, '"afterEach"');
       return promise;
     };
 
@@ -67,8 +63,8 @@ function profileContract(contract, contractName) {
   let members = Object.keys(contract);
   let membersDictionary = members.map(m => ({name: m, obj: contract[m]}));
 
-  membersDictionary.forEach((item, index) => {
-    if (typeof item.obj === "function" && !item.name.startsWith("Log")) {
+  membersDictionary.forEach((item) => {
+    if (typeof item.obj === 'function' && !item.name.startsWith('Log')) {
       newContract[item.name] = profileFunction(`${contractName}.${item.name}`, item.obj);
     } else {
       newContract[item.name] = item.obj;
@@ -93,7 +89,7 @@ function profileFunction(name, f) {
       stats[name].time += diffTime;
     }
     return promise;
-  }
+  };
 }
 
 function reportStats(testId, context) {
@@ -113,10 +109,11 @@ function resetStats() {
   stats = {};
 }
 
+// Keep exports alphabetical.
 module.exports = {
   addTimeReports,
-  resetStats,
-  reportStats,
   profileContract,
-  profileFunction
-}
+  profileFunction,
+  reportStats,
+  resetStats,
+};

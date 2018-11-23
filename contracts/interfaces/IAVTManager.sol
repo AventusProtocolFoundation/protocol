@@ -5,15 +5,15 @@ interface IAVTManager {
   /**
    * @notice Event emitted for a withdraw transaction.
    */
-  event LogWithdraw(address indexed sender, string fund, uint amount);
+  event LogAVTWithdrawn(address indexed sender, string fund, uint amount);
 
   /**
    * @notice Event emitted for a Deposit transaction.
    */
-  event LogDeposit(address indexed sender, string fund, uint amount);
+  event LogAVTDeposited(address indexed sender, string fund, uint amount);
 
   /**
-   * @notice Withdraw AVT not locked up as stake or deposit.
+   * @notice Withdraw AVT not locked up in stake or deposit fund.
    * @param _fund Fund to withdraw from (must be "deposit" or "stake")
    * @param _amount Amount to withdraw.
    */

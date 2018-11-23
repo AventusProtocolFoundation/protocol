@@ -4,7 +4,7 @@ contract Owned {
   address public owner = msg.sender;
 
   modifier onlyOwner {
-    require (msg.sender == owner);
+    require(msg.sender == owner, "Sender must be owner");
     _;
   }
 
@@ -12,8 +12,7 @@ contract Owned {
     public
     onlyOwner
   {
-    require (_owner != 0x0);
-
+    require(_owner != 0x0, "Owner cannot be zero address");
     owner = _owner;
   }
 }

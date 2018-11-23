@@ -1,10 +1,10 @@
 pragma solidity ^0.4.24;
 
-import './interfaces/IAventusStorage.sol';
-import './interfaces/IAVTManager.sol';
-import './libraries/LAVTManager.sol';
-import './Owned.sol';
-import './Versioned.sol';
+import "./interfaces/IAventusStorage.sol";
+import "./interfaces/IAVTManager.sol";
+import "./libraries/LAVTManager.sol";
+import "./Owned.sol";
+import "./Versioned.sol";
 
 contract AVTManager is IAVTManager, Owned, Versioned {
 

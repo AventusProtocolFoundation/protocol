@@ -2,8 +2,8 @@ pragma solidity ^0.4.24;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LAventusTime.sol";
-import './LAVTManager.sol';
-import './LProposalsStorage.sol';
+import "./LAVTManager.sol";
+import "./LProposalsStorage.sol";
 
 // Library for extending voting protocol functionality
 library LProposalsEnact {
@@ -12,10 +12,7 @@ library LProposalsEnact {
   function doUnlockProposalDeposit(IAventusStorage _storage, uint _proposalId) external {
     address proposalOwner = getProposalOwner(_storage, _proposalId);
     uint proposalDeposit = getProposalDeposit(_storage, _proposalId);
-    // TODO: Move this get/check/set to LAVTManager.unlockDeposit.
-    uint expectedDeposits = LAVTManager.getExpectedDeposits(_storage, proposalOwner);
-    assert(expectedDeposits >= proposalDeposit);
-    LAVTManager.setExpectedDeposits(_storage, proposalOwner, expectedDeposits - proposalDeposit);
+    LAVTManager.unlockDeposit(_storage, proposalOwner, proposalDeposit);
     LProposalsStorage.setDeposit(_storage, _proposalId, 0);
   }
 
@@ -32,15 +29,7 @@ library LProposalsEnact {
   {
     address owner = msg.sender;
 
-    // TODO: Move this get/set/check to LAVTManager.lockDeposit.
-    uint expectedDeposits = LAVTManager.getExpectedDeposits(_storage, owner) + _deposit;
-    LAVTManager.setExpectedDeposits(_storage, owner, expectedDeposits);
-
-    uint actualDeposits = LAVTManager.getBalance(_storage, owner, "deposit");
-    require(
-      actualDeposits >= expectedDeposits,
-      "Owner has insufficient deposit funds to create a proposal"
-    );
+    LAVTManager.lockDeposit(_storage, owner, _deposit);
 
     uint proposalCount = LProposalsStorage.getProposalCount(_storage);
     proposalId_ = proposalCount + 1;
@@ -63,7 +52,7 @@ library LProposalsEnact {
   }
 
   function inRevealingPeriod(IAventusStorage _storage, uint _proposalId) external view returns (bool result_) {
-    return doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.Revealing;
+    result_ = doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.Revealing;
   }
 
   function inVotingPeriodOrAfterRevealingFinished(IAventusStorage _storage, uint _proposalId)
@@ -79,7 +68,7 @@ library LProposalsEnact {
   }
 
   function inVotingPeriod(IAventusStorage _storage, uint _proposalId) external view returns (bool result_) {
-    return doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.Voting;
+    result_ = doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.Voting;
   }
 
   function afterRevealingFinishedAndProposalNotEnded(IAventusStorage _storage, uint _proposalId)
@@ -87,7 +76,7 @@ library LProposalsEnact {
     view
     returns (bool result_)
   {
-    return doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.RevealingFinishedProposalNotEnded;
+    result_ = doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.RevealingFinishedProposalNotEnded;
   }
 
   /**

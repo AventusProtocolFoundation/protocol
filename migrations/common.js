@@ -9,14 +9,14 @@ const storageJsonFile = "./api/storage.json";
  * "then" method and the storage methods:
  * see https://github.com/trufflesuite/truffle-contract/blob/develop/contract.js
  */
-function getStorageContractFromJsonFile(deployer, aventusStorage) {
+function getStorageContractFromJsonFile(_aventusStorage) {
   const rawdata = fs.readFileSync(storageJsonFile);
-  return aventusStorage.at(JSON.parse(rawdata).address);
+  return _aventusStorage.at(JSON.parse(rawdata).address);
 }
 
-function saveStorageContractToJsonFile(aventusStorage) {
-  const sAddress = aventusStorage.address;
-  const storageObject = { address: eip55.encode(sAddress), abi: aventusStorage.abi };
+function saveStorageContractToJsonFile(_aventusStorage) {
+  const sAddress = _aventusStorage.address;
+  const storageObject = { address: eip55.encode(sAddress), abi: _aventusStorage.abi };
   fs.writeFileSync(storageJsonFile, JSON.stringify(storageObject, null, 4));
 }
 

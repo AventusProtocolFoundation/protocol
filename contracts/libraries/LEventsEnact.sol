@@ -5,56 +5,38 @@ import "./LAventities.sol";
 
 library LEventsEnact {
 
-  modifier onlyWithValidOwnerProof(IAventusStorage _storage, uint _eventId, bytes _ownerProof) {
-    bytes32 msgHash = keccak256(abi.encodePacked(_eventId));
-    address signer = LEventsCommon.getSignerFromProof(msgHash, _ownerProof);
-    require(signer == LEventsStorage.getEventOwner(_storage, _eventId), "Signer must be event owner");
+  modifier onlyWithValidCancellationProof(IAventusStorage _storage, uint _eventId, bytes _cancelEventEventOwnerProof) {
+    bytes32 cancellationHash = keccak256(abi.encodePacked(_eventId));
+    address signer = LEventsCommon.getSignerFromProof(cancellationHash, _cancelEventEventOwnerProof);
+    require(signer == LEventsStorage.getEventOwner(_storage, _eventId), "Proof must be valid and signed by event owner");
     _;
   }
 
   modifier onlyActiveBrokerOnEvent(IAventusStorage _storage, uint _eventId) {
-    require(
-      LEventsCommon.isActiveBrokerOnEvent(_storage, msg.sender, _eventId), "Sender must be registered broker on this event");
+    bool isActiveBroker = LEventsCommon.isActiveBrokerOnEvent(_storage, _eventId, msg.sender);
+    require(isActiveBroker, "Sender must be registered broker on this event");
     _;
   }
 
-  function challengeEvent(IAventusStorage _storage, uint _eventId)
+  function createEvent(IAventusStorage _storage, uint _onSaleTime, uint _offSaleTime, uint _averageTicketPriceInUSCents,
+      bytes _createEventEventOwnerProof, bytes32 _eventHash)
     external
-    returns (uint proposalId_)
+    returns (address eventOwner_, uint eventId_, uint depositInAVTDecimals_)
   {
-    uint aventityId = LEventsStorage.getAventityId(_storage, _eventId);
-    proposalId_ = LAventities.challengeAventity(_storage, aventityId);
+    eventOwner_ = LEventsCommon.getSignerFromProof(_eventHash, _createEventEventOwnerProof);
+    (eventId_, depositInAVTDecimals_) = doCreateEvent(_storage, _onSaleTime, _offSaleTime, _averageTicketPriceInUSCents,
+        eventOwner_, _eventHash);
+    LEventsCommon.recordProtocolInteractions(_storage, eventOwner_, "EventOwner");
   }
 
-  function createEvent(IAventusStorage _storage, string _eventSupportURL, uint _onSaleTime,
-      uint _offSaleTime, uint _averageTicketPriceInUSCents, bytes _ownerProof, bytes32 _eventHash)
-    external
-    returns (uint eventId_, uint depositInAVTDecimals_)
-  {
-    address eventOwner = LEventsCommon.getSignerFromProof(_eventHash, _ownerProof);
-    (eventId_, depositInAVTDecimals_) = doCreateEvent(_storage, _eventSupportURL, _onSaleTime, _offSaleTime,
-      _averageTicketPriceInUSCents, eventOwner, _eventHash);
-  }
-
-  function endEventChallenge(IAventusStorage _storage, uint _eventId)
-    external
-    returns (uint proposalId_, uint votesFor_, uint votesAgainst_)
-  {
-    uint aventityId = LEventsStorage.getAventityId(_storage, _eventId);
-    bool challengeWon;
-    (proposalId_, votesFor_, votesAgainst_, challengeWon) = LAventities.endAventityChallenge(_storage, aventityId);
-
-    if (challengeWon) {
-      clearEventHash(_storage, _eventId);
-    }
-  }
-
-  function cancelEvent(IAventusStorage _storage, uint _eventId, bytes _ownerProof)
+  function cancelEvent(IAventusStorage _storage, uint _eventId, bytes _cancelEventEventOwnerProof)
     external
     onlyActiveBrokerOnEvent(_storage, _eventId)
-    onlyWithValidOwnerProof(_storage, _eventId, _ownerProof)
+    onlyWithValidCancellationProof(_storage, _eventId, _cancelEventEventOwnerProof)
   {
     deregisterEvent(_storage, _eventId);
+    address eventOwner = LEventsStorage.getEventOwner(_storage, _eventId);
+    LEventsCommon.recordProtocolInteractions(_storage, eventOwner, "EventOwner");
   }
 
   function endEvent(IAventusStorage _storage, uint _eventId)
@@ -63,15 +45,14 @@ library LEventsEnact {
     deregisterEvent(_storage, _eventId);
   }
 
-  function doCreateEvent(IAventusStorage _storage, string _eventSupportURL, uint _onSaleTime,
-      uint _offSaleTime, uint _averageTicketPriceInUSCents, address _eventOwner, bytes32 _eventHash)
+  function doCreateEvent(IAventusStorage _storage, uint _onSaleTime, uint _offSaleTime, uint _averageTicketPriceInUSCents,
+      address _eventOwner, bytes32 _eventHash)
     private
     returns (uint eventId_, uint depositInAVTDecimals_)
   {
-    if (_eventOwner != msg.sender) require(LEventsCommon.isActiveBrokerOnProtocol(_storage, msg.sender),
-        "sender must be broker");
-
-    LEventsCommon.validateEventCreation(_storage, _eventSupportURL, _onSaleTime, _offSaleTime);
+    if (_eventOwner != msg.sender) {
+      require(LEventsCommon.isActiveBrokerOnProtocol(_storage, msg.sender), "Sender must be broker");
+    }
 
     eventId_ = LEventsStorage.getEventCount(_storage) + 1;
     LEventsStorage.setEventCount(_storage, eventId_);
@@ -81,7 +62,7 @@ library LEventsEnact {
 
     uint aventityId = LAventities.registerAventity(_storage, _eventOwner, depositInAVTDecimals_);
 
-    LEventsStorage.setEventHashExists(_storage, _eventHash, true);
+    LEventsStorage.setEventHashExists(_storage, _eventHash);
     LEventsStorage.setEventHash(_storage, eventId_, _eventHash);
     LEventsStorage.setAventityId(_storage, eventId_, aventityId);
     LEventsStorage.setEventOwner(_storage, eventId_, _eventOwner);
@@ -94,11 +75,7 @@ library LEventsEnact {
   {
     uint aventityId = LEventsStorage.getAventityId(_storage, _eventId);
     LAventities.deregisterAventity(_storage, aventityId);
-    clearEventHash(_storage, _eventId);
-  }
-
-  function clearEventHash(IAventusStorage _storage, uint _eventId) private {
     bytes32 eventHash = LEventsStorage.getEventHash(_storage, _eventId);
-    LEventsStorage.setEventHashExists(_storage, eventHash, false);
+    LEventsStorage.clearEventHashExists(_storage, eventHash);
   }
 }

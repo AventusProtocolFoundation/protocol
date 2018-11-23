@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import '../interfaces/IAventusStorage.sol';
+import "../interfaces/IAventusStorage.sol";
 
 library LAVTStorage {
 
@@ -25,20 +25,14 @@ library LAVTStorage {
   function decreaseFund(IAventusStorage _storage, address _account, string _fund, uint _amount) external {
     bytes32 key = keccak256(abi.encodePacked("AVTFund", _account, _fund));
     uint currDeposit = _storage.getUInt(key);
-    require (
-      _amount <= currDeposit,
-      "Amount taken must be less than current deposit"
-    );
+    require(_amount <= currDeposit, "Amount taken must be less than current deposit");
     _storage.setUInt(key, currDeposit - _amount);
   }
 
   function increaseFund(IAventusStorage _storage,  address _account, string _fund, uint _amount) external {
     bytes32 key = keccak256(abi.encodePacked("AVTFund", _account, _fund));
     uint currDeposit = _storage.getUInt(key);
-    require (
-      _amount != 0,
-      "Added amount must be greater than zero"
-    );
+    require(_amount != 0, "Added amount must be greater than zero");
     _storage.setUInt(key, currDeposit + _amount);
   }
 
@@ -47,7 +41,6 @@ library LAVTStorage {
     view
     returns (uint expectedDeposits_)
   {
-    // TODO: consider renaming and changing top level schema name
     expectedDeposits_ = _storage.getUInt(keccak256(abi.encodePacked("ExpectedDeposits", _depositHolder)));
   }
 

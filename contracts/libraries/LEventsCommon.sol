@@ -1,10 +1,10 @@
 pragma solidity ^0.4.24;
 
-import '../interfaces/IAventusStorage.sol';
-import './LAventusTime.sol';
-import './LAVTManager.sol';
-import './LAventities.sol';
-import './LMembers.sol';
+import "../interfaces/IAventusStorage.sol";
+import "./LAventusTime.sol";
+import "./LAVTManager.sol";
+import "./LAventities.sol";
+import "./LMembers.sol";
 import "./zeppelin/LECRecovery.sol";
 import "./LEventsStorage.sol";
 
@@ -21,25 +21,20 @@ library LEventsCommon {
   }
 
   modifier onlyValidEventMemberType(IAventusStorage _storage, string _memberType) {
-    require(
-      keccak256(abi.encodePacked(_memberType)) == keccak256("Primary") ||
-      keccak256(abi.encodePacked(_memberType)) == keccak256("Secondary") ||
-      keccak256(abi.encodePacked(_memberType)) == keccak256("Broker"),
-      "Member type must be Primary, Secondary or Broker"
-    );
+    require(isValidEventMemberType(_memberType), "Member type must be Primary, Secondary or Broker");
     _;
   }
 
-  function validateEventCreation(IAventusStorage _storage, string _eventSupportURL, uint _onSaleTime, uint _offSaleTime)
+  function recordProtocolInteractions(IAventusStorage _storage, address _memberAddress, string _memberType)
     external
-    view
   {
-    require(bytes(_eventSupportURL).length != 0, "Event requires a non-empty URL");
-    uint minimumEventReportingPeriod = (1 days) * LEventsStorage.getMinimumReportingPeriodDays(_storage);
-    assert(minimumEventReportingPeriod > 0);
-    require(_onSaleTime >= LAventusTime.getCurrentTime(_storage) + minimumEventReportingPeriod,
-        "Reporting period must be greater than minimum");
-    require(_onSaleTime < _offSaleTime, "Tickets on-sale time must be before off-sale time");
+    if (isValidEventMemberType(_memberType)) {
+      LMembers.recordInteraction(_storage, _memberAddress, _memberType);
+    }
+
+    if (_memberAddress != msg.sender) {
+      LMembers.recordInteraction(_storage, msg.sender, "Broker");
+    }
   }
 
   function getNewEventDeposit(IAventusStorage _storage, uint _averageTicketPriceInUSCents)
@@ -55,33 +50,34 @@ library LEventsCommon {
       address _ticketOwner, bytes _vendorProof)
     external
     view
-    returns (address vendor_)
+    returns (address sender_)
   {
     bytes32 blankHash = keccak256(abi.encodePacked(_eventId, _vendorTicketRefHash));
     bytes32 ticketOwnerHash = keccak256(abi.encodePacked(_eventId, _vendorTicketRefHash, _ticketOwner));
 
-    vendor_ = getSenderAndValidateMemberProof(_storage, _eventId, "Primary", _vendorProof, blankHash, ticketOwnerHash);
+    sender_ = getSenderAndValidateMemberProof(_storage, _eventId, "Primary", _vendorProof, blankHash, ticketOwnerHash);
   }
 
-  function validateResellerProofAndSender(IAventusStorage _storage, uint _eventId, uint _ticketId, bytes _ticketOwnerPermission,
+  function getSenderAndValidateResellerProof(IAventusStorage _storage, uint _eventId, uint _ticketId, bytes _ticketOwnerPermission,
       address _newBuyer, bytes _resellerProof)
     external
     view
+    returns (address sender_)
   {
     bytes32 newBuyerHash = keccak256(abi.encodePacked(_eventId, _ticketId, _ticketOwnerPermission, _newBuyer));
     bytes32 blankHash = keccak256(abi.encodePacked(_eventId, _ticketId, _ticketOwnerPermission));
 
-    getSenderAndValidateMemberProof(_storage, _eventId, "Secondary", _resellerProof, blankHash, newBuyerHash);
+    sender_ = getSenderAndValidateMemberProof(_storage, _eventId, "Secondary", _resellerProof, blankHash, newBuyerHash);
   }
 
   function resellTicketOwnerPermissionCheck(IAventusStorage _storage, uint _eventId, uint _ticketId,
       bytes _ticketOwnerPermission)
    external
    view {
-    address currentOwner = LEventsStorage.getTicketOwner(_storage, _eventId, _ticketId);
-    bytes32 msgHash = keccak256(abi.encodePacked(_eventId, _ticketId, currentOwner));
+    address ticketOwner = LEventsStorage.getTicketOwner(_storage, _eventId, _ticketId);
+    bytes32 msgHash = keccak256(abi.encodePacked(_eventId, _ticketId, ticketOwner));
     address signer = getSignerFromProof(msgHash, _ticketOwnerPermission);
-    require(signer == currentOwner, "resale must be signed by current owner");
+    require(signer == ticketOwner, "Resale must be signed by current owner");
   }
 
   function getExistingEventDeposit(IAventusStorage _storage, uint _eventId) external view returns (uint eventDeposit_) {
@@ -94,22 +90,18 @@ library LEventsCommon {
     onlyEventOwner(_storage, _eventId)
     onlyValidEventMemberType(_storage, _memberType)
     onlyActiveMemberOnProtocol(_storage, _memberAddress, _memberType)
-    returns (bool)
   {
-    if (isActiveMemberOnEvent(_storage, _eventId, _memberAddress, _memberType)) return false; // Already registered
-    LEventsStorage.setAsRegisteredMemberOnEvent(_storage, _eventId, _memberAddress, _memberType, true);
-    return true;
+    require(!isActiveMemberOnEvent(_storage, _eventId, _memberAddress, _memberType), "Member is already registered on event");
+    LEventsStorage.setRegisteredMemberOnEvent(_storage, _eventId, _memberAddress, _memberType);
   }
 
   function deregisterMemberFromEvent(IAventusStorage _storage, uint _eventId, address _memberAddress, string _memberType)
     external
     onlyEventOwner(_storage, _eventId)
     onlyValidEventMemberType(_storage, _memberType)
-    returns (bool)
   {
-    if (!isActiveMemberOnEvent(_storage, _eventId, _memberAddress, _memberType)) return false; // Already deregistered.
-    LEventsStorage.setAsRegisteredMemberOnEvent(_storage, _eventId, _memberAddress, _memberType, false);
-    return true;
+    require(isActiveMemberOnEvent(_storage, _eventId, _memberAddress, _memberType), "Member is not registered on event");
+    LEventsStorage.clearRegisteredMemberOnEvent(_storage, _eventId, _memberAddress, _memberType);
   }
 
   function isActiveVendorOnEvent(IAventusStorage _storage, uint _eventId, address _vendor)
@@ -120,7 +112,11 @@ library LEventsCommon {
     isActive_ = isEventOwner(_storage, _eventId, _vendor) || isActiveMemberOnEvent(_storage, _eventId, _vendor, "Primary");
   }
 
-  function getSignerFromProof(bytes32 _msgHash, bytes _proof) public pure returns (address signer_) {
+  function getSignerFromProof(bytes32 _msgHash, bytes _proof)
+    public
+    pure
+    returns (address signer_)
+  {
     signer_ = LECRecovery.recover(_msgHash, _proof);
   }
 
@@ -135,7 +131,7 @@ library LEventsCommon {
         isActiveMemberOnProtocol(_storage, _brokerAddress, "Secondary");
   }
 
-  function isActiveBrokerOnEvent(IAventusStorage _storage, address _brokerAddress, uint _eventId)
+  function isActiveBrokerOnEvent(IAventusStorage _storage, uint _eventId, address _brokerAddress)
     public
     view
     returns (bool isValidBroker_)
@@ -147,6 +143,12 @@ library LEventsCommon {
         isEventOwner(_storage, _eventId, _brokerAddress);
   }
 
+  function isValidEventMemberType(string _memberType) public pure returns (bool isValid_) {
+    isValid_ = keccak256(abi.encodePacked(_memberType)) == keccak256("Primary") ||
+        keccak256(abi.encodePacked(_memberType)) == keccak256("Secondary") ||
+        keccak256(abi.encodePacked(_memberType)) == keccak256("Broker");
+  }
+
   function isActiveMemberOnEvent(IAventusStorage _storage, uint _eventId, address _memberAddress, string _memberType)
     private
     view
@@ -156,6 +158,7 @@ library LEventsCommon {
         isActiveMemberOnProtocol(_storage, _memberAddress, _memberType);
   }
 
+  // MUST NOT be public as some member types imply others: use the public or external methods.
   function isRegisteredMemberOnEvent(IAventusStorage _storage, uint _eventId, address _memberAddress, string _memberType)
     private
     view
@@ -164,6 +167,7 @@ library LEventsCommon {
     isRegistered_ = LEventsStorage.isRegisteredAsMemberOnEvent(_storage, _eventId, _memberAddress, _memberType);
   }
 
+  // MUST NOT be public as some member types imply others: use the public or external methods.
   function isActiveMemberOnProtocol(IAventusStorage _storage, address _memberAddress, string _memberType)
     private
     view
@@ -190,19 +194,21 @@ library LEventsCommon {
     view
     returns (address)
   {
-    (bool isValid, address memberAddress) = validateMemberProof(_storage, _memberType, _memberProof, _blankHash, _eventId);
-    if (isValid) {
-      require(isActiveBrokerOnEvent(_storage, msg.sender, _eventId) ||
-          isActiveMemberOnEvent(_storage, _eventId, msg.sender, _memberType),
-          string(abi.encodePacked(_memberType, " or event active broker only")));
+    bool memberIsActive;
+
+    (bool proofIsValid, address memberAddress) = validateMemberProof(_storage, _memberType, _memberProof, _blankHash, _eventId);
+    if (proofIsValid) {
+      memberIsActive = isActiveBrokerOnEvent(_storage, _eventId, msg.sender) ||
+          isActiveMemberOnEvent(_storage, _eventId, msg.sender, _memberType);
+      require(memberIsActive, string(abi.encodePacked(_memberType, " or event active broker only")));
       return memberAddress;
     }
 
-    (isValid, memberAddress) = validateMemberProof(_storage, _memberType, _memberProof, _integratedHash, _eventId);
-    if (isValid) {
-      require(isEventOwnerOrActiveBrokerOnProtocol(_storage, _eventId, msg.sender) ||
-          isActiveMemberOnEvent(_storage, _eventId, msg.sender, _memberType),
-          string(abi.encodePacked(_memberType, " or protocol active broker only")));
+    (proofIsValid, memberAddress) = validateMemberProof(_storage, _memberType, _memberProof, _integratedHash, _eventId);
+    if (proofIsValid) {
+      memberIsActive = isEventOwnerOrActiveBrokerOnProtocol(_storage, _eventId, msg.sender) ||
+          isActiveMemberOnEvent(_storage, _eventId, msg.sender, _memberType);
+      require(memberIsActive, string(abi.encodePacked(_memberType, " or protocol active broker only")));
       return memberAddress;
     }
 
@@ -213,11 +219,10 @@ library LEventsCommon {
       uint _eventId)
     private
     view
-    returns (bool isValid_, address signer_)
+    returns (bool proofIsValid_, address signer_)
   {
     signer_ = getSignerFromProof(_msgHash, _memberProof);
-    isValid_ = isEventOwner(_storage, _eventId, signer_) ||
-        isActiveMemberOnEvent(_storage, _eventId, signer_, _memberType);
+    proofIsValid_ = isEventOwner(_storage, _eventId, signer_) || isActiveMemberOnEvent(_storage, _eventId, signer_, _memberType);
   }
 
   function isEventOwnerOrActiveBrokerOnProtocol(IAventusStorage _storage, uint _eventId, address _ownerOrBrokerAddress)

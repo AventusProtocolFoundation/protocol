@@ -6,21 +6,16 @@ import "./zeppelin/LECRecovery.sol";
 import "./LProposalsEnact.sol";
 import "./LProposalsStorage.sol";
 
-library LProposalVoting {
+library LProposalsVoting {
 
   modifier onlyInVotingPeriodOrAfterRevealingFinished(IAventusStorage _storage, uint _proposalId) {
-    require(
-      LProposalsEnact.inVotingPeriodOrAfterRevealingFinished(_storage, _proposalId),
-      "Proposal must be in the voting period or after revealing finished"
-    );
+    bool inVotingPeriodOrAfterRevealing = LProposalsEnact.inVotingPeriodOrAfterRevealingFinished(_storage, _proposalId);
+    require(inVotingPeriodOrAfterRevealing, "Proposal must be in the voting period or after revealing finished");
     _;
   }
 
   modifier onlyInRevealingPeriodOrLater(IAventusStorage _storage, uint _proposalId) {
-    require(
-      LProposalsEnact.inRevealingPeriodOrLater(_storage, _proposalId),
-      "A vote can only be revealed in the revealing phase or later"
-    );
+    require(LProposalsEnact.inRevealingPeriodOrLater(_storage, _proposalId), "Must be in revealing phase or later");
     _;
   }
 
@@ -31,7 +26,12 @@ library LProposalVoting {
   }
 
   modifier onlyWhenVoterIsSender(uint _proposalId, uint _optId, bytes _signedMessage) {
-    require (checkVoterIsSender(_proposalId, _optId, _signedMessage), "Voter must be the sender");
+    require(checkVoterIsSender(_proposalId, _optId, _signedMessage), "Voter must be the sender");
+    _;
+  }
+
+  modifier onlyValidOptionId(uint _optId) {
+    require (_optId == 1 || _optId == 2, "Invalid option");
     _;
   }
 
@@ -44,10 +44,7 @@ library LProposalVoting {
     external
     // no modifier checked, because it should have been checked at the top-level
   {
-    require(
-      LProposalsStorage.getVoterSecret(_storage, msg.sender, _proposalId) == 0,
-      "Must cancel existing vote for this proposal"
-    );
+    require(LProposalsStorage.getVoterSecret(_storage, msg.sender, _proposalId) == 0, "Already voted");
     LProposalsStorage.setVoterSecret(_storage, msg.sender, _proposalId, _secret);
 
     uint unrevealedVotesCount = LProposalsStorage.getUnrevealedVotesCount(_storage, _proposalId);
@@ -65,14 +62,12 @@ library LProposalVoting {
   function revealVote(IAventusStorage _storage, bytes _signedMessage, uint _proposalId, uint _optId)
     public
     onlyInRevealingPeriodOrLater(_storage, _proposalId)
+    onlyValidOptionId(_optId)
     onlyWhenVoterIsSender(_proposalId, _optId, _signedMessage)
   {
-    // Make sure the stored vote is the same as the revealed one.
-    require(
-      LProposalsStorage.getVoterSecret(_storage, msg.sender, _proposalId) ==
-        keccak256(abi.encodePacked(_signedMessage)),
-        "Stored vote must be the same as the revealed one"
-    );
+    bool storedVoteMatches = LProposalsStorage.getVoterSecret(_storage, msg.sender, _proposalId) ==
+        keccak256(abi.encodePacked(_signedMessage));
+    require(storedVoteMatches, "Stored vote must be the same as the revealed one");
 
     // IFF we are still in the reveal period then add any stake
     if (LProposalsEnact.inRevealingPeriod(_storage, _proposalId)) {
@@ -85,10 +80,7 @@ library LProposalVoting {
   function getPrevTimeParamForCastVote(IAventusStorage _storage, uint _proposalId) external view returns (uint prevTime_) {
     address voter = msg.sender;
     uint proposalRevealTime = LProposalsStorage.getRevealingStart(_storage, _proposalId);
-    require(
-      proposalRevealTime != 0,
-      "Proposal must have a reveal starting time"
-    ); // Invalid proposal.
+    require(proposalRevealTime != 0, "Proposal does not exist");
     if (LProposalsStorage.getVoteCountForRevealTime(_storage, voter, proposalRevealTime) != 0) {
       // We have an entry in the DLL for this time already.
       prevTime_ = LProposalsStorage.getPreviousRevealTime(_storage, voter, proposalRevealTime);
@@ -121,18 +113,14 @@ library LProposalVoting {
       // Make sure that the prev and next entries are valid first.
       uint nextTime = LProposalsStorage.getNextRevealTime(_storage, voter, _prevTime);
       if (_prevTime != 0) {
-        require(
-          _prevTime < proposalRevealTime &&
-              LProposalsStorage.getVoteCountForRevealTime(_storage, voter, _prevTime) != 0,
-          "In addSendersVoteToDLL, the voter must have voted at least once before the proposal"
-        );
+        bool validPrevTime = _prevTime < proposalRevealTime &&
+            LProposalsStorage.getVoteCountForRevealTime(_storage, voter, _prevTime) != 0;
+        require(validPrevTime, "Invalid previous time");
       }
       if (nextTime != 0) {
-        require(
-          proposalRevealTime < nextTime &&
-              LProposalsStorage.getVoteCountForRevealTime(_storage, voter, nextTime) != 0,
-          "In addSendersVoteToDLL, the voter must have voted at least once after the proposal"
-        );
+        bool validNextTime = proposalRevealTime < nextTime &&
+            LProposalsStorage.getVoteCountForRevealTime(_storage, voter, nextTime) != 0;
+        require(validNextTime, "Invalid next time");
       }
 
       // Create new entry in the DLL betwwen _prevTime and nextTime.
@@ -151,7 +139,7 @@ library LProposalVoting {
     address voter = msg.sender;
     uint proposalRevealTime = LProposalsStorage.getRevealingStart(_storage, _proposalId);
     uint numVotes = LProposalsStorage.getVoteCountForRevealTime(_storage, voter, proposalRevealTime);
-    require(numVotes != 0, "Voter must have voted for this proposal");
+    assert(numVotes != 0);
 
     // If this was the only vote, remove the entire entry from the DLL.
     if (numVotes == 1) {
@@ -172,12 +160,12 @@ library LProposalVoting {
     LProposalsStorage.setVoterSecret(_storage, msg.sender, _proposalId, 0);
   }
 
-  function checkVoterIsSender(uint _proposalId, uint _optId, bytes _signedMessage) private view returns (bool)
+  function checkVoterIsSender(uint _proposalId, uint _optId, bytes _signedMessage) private view returns (bool voterIsSender_)
   {
     // Get voter public key from message and signature
     bytes32 msgHash = keccak256(abi.encodePacked((_proposalId * 10) + _optId));
     address voter = LECRecovery.recover(msgHash, _signedMessage);
-    return voter == msg.sender;
+    voterIsSender_ = voter == msg.sender;
   }
 
   function addVoterStakeToProposal(IAventusStorage _storage, uint _proposalId, uint _optId, address _voter)

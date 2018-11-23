@@ -1,6 +1,7 @@
 pragma solidity ^0.4.24;
 
-import '../interfaces/IAventusStorage.sol';
+import "../interfaces/IAventusStorage.sol";
+import "./LAventusTime.sol";
 
 library LMembersStorage {
 
@@ -26,5 +27,28 @@ library LMembersStorage {
 
   function clearAventityId(IAventusStorage _storage, address _memberAddress, string _memberType) external {
     _storage.setUInt(keccak256(abi.encodePacked("Member", _memberAddress, "type", _memberType, "aventityId")), 0);
+  }
+
+  function setLastInteractionTime(IAventusStorage _storage, address _memberAddress, string _memberType) external {
+    uint currentTime = LAventusTime.getCurrentTime(_storage);
+    _storage.setUInt(keccak256(abi.encodePacked("Member", _memberAddress, "type", _memberType, "lastInteractionTime")),
+        currentTime);
+  }
+
+  function getLastInteractionTime(IAventusStorage _storage, address _memberAddress, string _memberType)
+    external
+    view
+    returns (uint lastInteractionTime_)
+  {
+    lastInteractionTime_ = _storage.getUInt(keccak256(abi.encodePacked("Member", _memberAddress, "type", _memberType,
+        "lastInteractionTime")));
+  }
+
+  function getCoolingOffPeriod(IAventusStorage _storage, string _memberType)
+    external
+    view
+    returns (uint coolingOffPeriod_)
+  {
+    coolingOffPeriod_ = _storage.getUInt(keccak256(abi.encodePacked("Members", _memberType, "coolingOffPeriodDays")));
   }
 }

@@ -1,11 +1,11 @@
 pragma solidity ^0.4.24;
 
-import './interfaces/IAventusStorage.sol';
-import './interfaces/IProposalsManager.sol';
-import './libraries/LEvents.sol';
-import './libraries/LProposal.sol';
-import './Owned.sol';
-import './Versioned.sol';
+import "./interfaces/IAventusStorage.sol";
+import "./interfaces/IProposalsManager.sol";
+import "./libraries/LEvents.sol";
+import "./libraries/LProposals.sol";
+import "./Owned.sol";
+import "./Versioned.sol";
 
 contract ProposalsManager is IProposalsManager, Owned, Versioned {
 
@@ -16,23 +16,23 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
   }
 
   function createGovernanceProposal(string _desc) external {
-    LProposal.createGovernanceProposal(s, _desc);
+    LProposals.createGovernanceProposal(s, _desc);
   }
 
   function endGovernanceProposal(uint _proposalId) external {
-    LProposal.endGovernanceProposal(s, _proposalId);
+    LProposals.endGovernanceProposal(s, _proposalId);
   }
 
   function castVote(uint _proposalId, bytes32 _secret, uint _prevTime) external {
-    LProposal.castVote(s, _proposalId, _secret, _prevTime);
+    LProposals.castVote(s, _proposalId, _secret, _prevTime);
   }
 
   function cancelVote(uint _proposalId) external {
-    LProposal.cancelVote(s, _proposalId);
+    LProposals.cancelVote(s, _proposalId);
   }
 
   function revealVote(bytes _signedMessage, uint _proposalId, uint _optId) external {
-    LProposal.revealVote(s, _signedMessage, _proposalId, _optId);
+    LProposals.revealVote(s, _signedMessage, _proposalId, _optId);
   }
 
   function claimVoterWinnings(uint _proposalId) external {
@@ -40,15 +40,15 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
   }
 
   function getGovernanceProposalDeposit() external view returns (uint proposalDeposit_) {
-    proposalDeposit_ = LProposal.getGovernanceProposalDeposit(s);
+    proposalDeposit_ = LProposals.getGovernanceProposalDeposit(s);
   }
 
   function getPrevTimeParamForCastVote(uint _proposalId) external view returns (uint prevTime_) {
-    prevTime_ = LProposal.getPrevTimeParamForCastVote(s, _proposalId);
+    prevTime_ = LProposals.getPrevTimeParamForCastVote(s, _proposalId);
   }
 
   function getAventusTime() external view returns (uint time_) {
-    time_ = LProposal.getAventusTime(s);
+    time_ = LProposals.getAventusTime(s);
   }
 
 }

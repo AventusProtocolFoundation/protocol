@@ -13,7 +13,7 @@ let forceDeployStorage = true;
 /**
  * @return Promise wrapping the address of the AVT contract.
  */
-function getAVTContract(_deployer, _network, _storage) {
+function getAVTContract(_storage) {
   // Create the AVT only if it doesn't exist.
   let avtPromise = _storage.getAddress(web3.sha3("AVTERC20Instance"));
   return avtPromise
@@ -27,14 +27,14 @@ function getAVTContract(_deployer, _network, _storage) {
   });
 }
 
-function initialDeploy(_deployer, _network) {
+function initialDeploy(_deployer) {
   let storage;
   return _deployer.deploy(Migrations)
-  .then(() => getStorageContract(_deployer, _network))
+  .then(() => getStorageContract(_deployer))
   .then(arg => {
     storage = arg;
     console.log("Storage address:", storage.address);
-    return getAVTContract(_deployer, _network, storage);
+    return getAVTContract(storage);
   })
   .then(arg => {
     console.log("AVT ERC20 address:", arg);
@@ -43,26 +43,26 @@ function initialDeploy(_deployer, _network) {
 }
 
 // Deploy a new (or use the old) storage contract.
-function getStorageContract(deployer, network) {
+function getStorageContract(_deployer) {
   if (forceDeployStorage) {
     console.log("Deploying storage contract");
-    return deployAndSaveStorageContract(deployer);
+    return deployAndSaveStorageContract(_deployer);
   } else {
     console.log("Using existing storage contract");
     // This weird way of error handling is because the truffleContract is thenable but not a proper
     // promise. See https://github.com/trufflesuite/truffle-contract/blob/develop/contract.js.
-    const truffleContract = common.getStorageContractFromJsonFile(deployer, AventusStorage);
+    const truffleContract = common.getStorageContractFromJsonFile(AventusStorage);
     return truffleContract
     .then(() => truffleContract).catch(e => {
       console.log("No existing storage contract");
-      return deployAndSaveStorageContract(deployer);
+      return deployAndSaveStorageContract(_deployer);
     });
   }
 }
 
-function deployAndSaveStorageContract(deployer) {
+function deployAndSaveStorageContract(_deployer) {
   console.log("Deploying storage contract...");
-  return deployer.deploy(AventusStorage)
+  return _deployer.deploy(AventusStorage)
   .then(storage => {
     console.log("...saving storage contract for reuse.");
     common.saveStorageContractToJsonFile(AventusStorage);
@@ -78,17 +78,18 @@ function exitOnOversizeBinary() {
   }
 }
 
-module.exports = function(deployer, network, accounts) {
-  if (network !== "coverage") exitOnOversizeBinary();
+module.exports = function(_deployer, _network, _accounts) {
+  if (_network !== "coverage") exitOnOversizeBinary();
 
-  if (network === "live" || network === "rinkeby") {
-    return deployer;
+  if (_network === "live" || _network === "rinkeby") {
+    console.log(`network ${_network} not supported by this migration script, skipping...`);
+    return _deployer;
   }
   console.log("PRIVATE NETWORK DEPLOYMENT");
   console.log("*** Version of web3: ", web3.version.api);
   console.log("*** Starting setup...");
 
-  return initialDeploy(deployer, network)
+  return initialDeploy(_deployer)
   .then(() => console.log("*** SETUP COMPLETE"));
 };
 

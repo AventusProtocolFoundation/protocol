@@ -1,5 +1,5 @@
 {
-    "address": "0xA1A6eFbC28D6F2E0165474Ec822Ab30290267661",
+    "address": "0xF6d05B4dc6212B9C04b6a0fDE83Beb4658e98563",
     "abi": [
         {
             "constant": false,
@@ -10,24 +10,6 @@
                 }
             ],
             "name": "setOwner",
-            "outputs": [],
-            "payable": false,
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "constant": false,
-            "inputs": [
-                {
-                    "name": "_accessType",
-                    "type": "string"
-                },
-                {
-                    "name": "_address",
-                    "type": "address"
-                }
-            ],
-            "name": "allowAccess",
             "outputs": [],
             "payable": false,
             "stateMutability": "nonpayable",
@@ -45,24 +27,6 @@
             ],
             "payable": false,
             "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "constant": false,
-            "inputs": [
-                {
-                    "name": "_accessType",
-                    "type": "string"
-                },
-                {
-                    "name": "_address",
-                    "type": "address"
-                }
-            ],
-            "name": "denyAccess",
-            "outputs": [],
-            "payable": false,
-            "stateMutability": "nonpayable",
             "type": "function"
         },
         {
@@ -84,7 +48,7 @@
                     "type": "address"
                 }
             ],
-            "name": "LogAllowAccess",
+            "name": "LogAccessAllowed",
             "type": "event"
         },
         {
@@ -101,8 +65,44 @@
                     "type": "address"
                 }
             ],
-            "name": "LogDenyAccess",
+            "name": "LogAccessDenied",
             "type": "event"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "_accessType",
+                    "type": "string"
+                },
+                {
+                    "name": "_address",
+                    "type": "address"
+                }
+            ],
+            "name": "allowAccess",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "_accessType",
+                    "type": "string"
+                },
+                {
+                    "name": "_address",
+                    "type": "address"
+                }
+            ],
+            "name": "denyAccess",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
         },
         {
             "constant": false,
@@ -117,12 +117,7 @@
                 }
             ],
             "name": "transferAVTTo",
-            "outputs": [
-                {
-                    "name": "retVal_",
-                    "type": "bool"
-                }
-            ],
+            "outputs": [],
             "payable": false,
             "stateMutability": "nonpayable",
             "type": "function"
@@ -140,12 +135,7 @@
                 }
             ],
             "name": "transferAVTFrom",
-            "outputs": [
-                {
-                    "name": "retVal_",
-                    "type": "bool"
-                }
-            ],
+            "outputs": [],
             "payable": false,
             "stateMutability": "nonpayable",
             "type": "function"

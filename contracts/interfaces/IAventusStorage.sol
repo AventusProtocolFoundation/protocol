@@ -1,8 +1,43 @@
 pragma solidity ^0.4.24;
 
 interface IAventusStorage {
-  function transferAVTTo(address _to, uint _tokens) external returns (bool retVal_);
-  function transferAVTFrom(address _from, uint _tokens) external returns (bool retVal_);
+  /**
+   * @notice Event emitted for a allowAccess transaction.
+   */
+  event LogAccessAllowed(string accessType, address indexed accessAddress);
+
+  /**
+   * @notice Event emitted for a denyAccess transaction.
+   */
+  event LogAccessDenied(string accessType, address indexed accessAddress);
+
+  /**
+   * @notice Allows access to storage.
+   * @param _accessType type of access to allow
+   * @param _address address of contract that is granted access
+   */
+  function allowAccess(string _accessType, address _address) external;
+
+  /**
+   * @notice Deny access to storage.
+   * @param _accessType type of access to deny
+   * @param _address address of contract that is denied access
+   */
+  function denyAccess(string _accessType, address _address) external;
+
+  /**
+   * @notice Transfer AVT to address from erc20 contract.
+   * @param _to address of contract to transfer AVT to
+   * @param _tokens number of tokens to transfer
+   */
+  function transferAVTTo(address _to, uint _tokens) external;
+
+  /**
+   * @notice Transfer AVT to erc20 contract from address.
+   * @param _from address of contract to transfer AVT from
+   * @param _tokens number of tokens to transfer
+   */
+  function transferAVTFrom(address _from, uint _tokens) external;
 
   /**
    * @notice Get a stored uint
