@@ -2,7 +2,7 @@ pragma solidity ^0.4.24;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LAVTManager.sol";
-import "./LProposal.sol";
+import "./LProposals.sol";
 import "./LAventitiesStorage.sol";
 
 /**
@@ -17,11 +17,8 @@ library LAventitiesChallenges {
     function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) external {
       address voter = msg.sender;
       uint winningOption = LAventitiesStorage.getWinningProposalOption(_storage, _proposalId);
-      uint voterStake = LProposal.getRevealedVoterStake(_storage, _proposalId, voter, winningOption);
-      require(
-        voterStake != 0,
-        "Voter has no stake in this proposal"
-      );
+      uint voterStake = LProposals.getRevealedVoterStake(_storage, _proposalId, voter, winningOption);
+      require(voterStake != 0, "Voter has no winnings for this proposal");
 
       uint totalWinnings = LAventitiesStorage.getTotalWinningsToVoters(_storage, _proposalId);
       assert(totalWinnings != 0);
@@ -31,14 +28,10 @@ library LAventitiesChallenges {
       uint voterReward = (totalWinnings * voterStake) / totalWinningStake;
       giveWinnings(_storage, voterReward, voter);
 
-      // Update how much is left in the voters winnings pot.
-      // TODO: consider using a reduceWinningsToVotersRemaining method to save the get and set.
-      uint winningsToVotersRemaining = LAventitiesStorage.getWinningsToVotersRemaining(_storage, _proposalId);
-      assert(winningsToVotersRemaining >= voterReward);
-      LAventitiesStorage.setWinningsToVotersRemaining(_storage, _proposalId, winningsToVotersRemaining - voterReward);
+      LAventitiesStorage.reduceVotersWinningsPot(_storage, _proposalId, voterReward);
 
       // Stop the voter from claiming again.
-      LProposal.clearRevealedStake(_storage, _proposalId, voter, winningOption);
+      LProposals.clearRevealedStake(_storage, _proposalId, voter, winningOption);
     }
 
   function doWinningsDistribution(
@@ -64,7 +57,7 @@ library LAventitiesChallenges {
     if (_distributeToVoters) {
       // The rest of the winnings is distributed to the voters as they claim it.
       LAventitiesStorage.setTotalWinningsToVoters(_storage, _proposalId, winningsForVoters);
-      LAventitiesStorage.setWinningsToVotersRemaining(_storage, _proposalId, winningsForVoters);
+      LAventitiesStorage.initialiseVotersWinningsPot(_storage, _proposalId, winningsForVoters);
     } else {
       // If no one voted, the challenge ender gets the rest of the winnings.
       winningsToChallengeEnderAVT += winningsForVoters;

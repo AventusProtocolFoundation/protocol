@@ -1,21 +1,18 @@
 pragma solidity ^0.4.24;
 
-import '../interfaces/IAventusStorage.sol';
-import './LAVTManager.sol';
-import './LProposal.sol';
-import './LAventitiesChallenges.sol';
-import './LAventitiesStorage.sol';
+import "../interfaces/IAventusStorage.sol";
+import "./LAVTManager.sol";
+import "./LProposals.sol";
+import "./LAventitiesChallenges.sol";
+import "./LAventitiesStorage.sol";
 
 library LAventities {
 
   // See IProposalsManager.claimVoterWinnings for details.
-  event LogClaimVoterWinnings(uint indexed proposalId);
+  event LogVoterWinningsClaimed(uint indexed proposalId);
 
   modifier onlyActiveAndNotUnderChallengeAventity(IAventusStorage _storage, uint _aventityId) {
-    require(
-      aventityIsActiveAndNotUnderChallenge(_storage, _aventityId),
-      "Aventity must be valid and not under challenge"
-    );
+    require(aventityIsActiveAndNotUnderChallenge(_storage, _aventityId), "Aventity must be valid and not under challenge");
     _;
   }
 
@@ -23,7 +20,7 @@ library LAventities {
     external
     returns(uint aventityId_)
   {
-    lockAventityDeposit(_storage, _aventityDepositor, _aventityDeposit);
+    LAVTManager.lockDeposit(_storage, _aventityDepositor, _aventityDeposit);
 
     aventityId_ = LAventitiesStorage.getAventityCount(_storage) + 1;
 
@@ -49,7 +46,7 @@ library LAventities {
     uint numDaysInRevealingPeriod = LAventitiesStorage.getRevealingPeriodDays(_storage);
 
     uint deposit = getExistingAventityDeposit(_storage, _aventityId);
-    challengeProposalId_ = LProposal.createProposal(_storage, deposit, numDaysInLobbyingPeriod, numDaysInVotingPeriod,
+    challengeProposalId_ = LProposals.createProposal(_storage, deposit, numDaysInLobbyingPeriod, numDaysInVotingPeriod,
         numDaysInRevealingPeriod);
     LAventitiesStorage.setChallengeProposalId(_storage, _aventityId, challengeProposalId_);
   }
@@ -59,16 +56,16 @@ library LAventities {
     returns (uint proposalId_, uint votesFor_, uint votesAgainst_, bool challengeWon_)
   {
     proposalId_ = LAventitiesStorage.getChallengeProposalId(_storage, _aventityId);
-    require(proposalId_ > 0, "aventity must have an active challenge");
+    require(proposalId_ > 0, "Challenge does not exist");
 
     challengeWon_ = finaliseChallenge(_storage, proposalId_, _aventityId);
 
-    (votesFor_, votesAgainst_) = LProposal.endProposal(_storage, proposalId_);
+    (votesFor_, votesAgainst_) = LProposals.endProposal(_storage, proposalId_);
   }
 
   function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) external {
     LAventitiesChallenges.claimVoterWinnings(_storage, _proposalId);
-    emit LogClaimVoterWinnings(_proposalId);
+    emit LogVoterWinningsClaimed(_proposalId);
   }
 
   function getAventityDepositor(IAventusStorage _storage, uint _aventityId)
@@ -103,14 +100,7 @@ library LAventities {
   function unlockAventityDeposit(IAventusStorage _storage, uint _aventityId) public {
     uint aventityDeposit = getExistingAventityDeposit(_storage, _aventityId);
     address aventityDepositor = LAventitiesStorage.getDepositor(_storage, _aventityId);
-    require(
-      aventityDeposit != 0,
-      "Unlocked aventity must have a positive deposit"
-    );
-    // TODO: Move this get/check/set entirely to LAVTManager.unlockDeposit.
-    uint expectedDeposits = LAVTManager.getExpectedDeposits(_storage, aventityDepositor);
-    assert(expectedDeposits >= aventityDeposit); // If this asserts, we messed up the deposit code!
-    LAVTManager.setExpectedDeposits(_storage, aventityDepositor, expectedDeposits - aventityDeposit);
+    LAVTManager.unlockDeposit(_storage, aventityDepositor, aventityDeposit);
 
     LAventitiesStorage.setDeposit(_storage, _aventityId, 0);
   }
@@ -140,8 +130,8 @@ library LAventities {
     private
     returns (bool challengeWon_)
   {
-    uint totalAgreedStake = LProposal.getTotalRevealedStake(_storage, _proposalId, 1);
-    uint totalDisagreedStake = LProposal.getTotalRevealedStake(_storage, _proposalId, 2);
+    uint totalAgreedStake = LProposals.getTotalRevealedStake(_storage, _proposalId, 1);
+    uint totalDisagreedStake = LProposals.getTotalRevealedStake(_storage, _proposalId, 2);
 
     // Note: a "draw" is taken as the community NOT agreeing with the challenge.
     uint winningOption = totalAgreedStake > totalDisagreedStake ? 1 : 2;
@@ -156,8 +146,8 @@ library LAventities {
       setAventityAsClearFromChallenge(_storage, _aventityId);
     }
 
-    address winner = challengeWon_ ? LProposal.getOwner(_storage, _proposalId) : getAventityDepositor(_storage, _aventityId);
-    address loser = challengeWon_ ? getAventityDepositor(_storage, _aventityId) : LProposal.getOwner(_storage, _proposalId);
+    address winner = challengeWon_ ? LProposals.getOwner(_storage, _proposalId) : getAventityDepositor(_storage, _aventityId);
+    address loser = challengeWon_ ? getAventityDepositor(_storage, _aventityId) : LProposals.getOwner(_storage, _proposalId);
     bool winningsForVoters = challengeWon_ || totalDisagreedStake > 0;
     LAventitiesChallenges.doWinningsDistribution(_storage, _proposalId, winningsForVoters, deposit, winner, loser);
 
@@ -165,18 +155,5 @@ library LAventities {
     LAventitiesStorage.setWinningProposalOption(_storage, _proposalId, winningOption);
     LAventitiesStorage.setTotalWinningStake(_storage, _proposalId,
         challengeWon_ ? totalAgreedStake : totalDisagreedStake);
-  }
-
-  // TODO: Move this method to LAVTManager.lockDeposit.
-  function lockAventityDeposit(IAventusStorage _storage, address _aventityDepositor, uint _aventityDeposit)
-    private
-  {
-    uint expectedDeposits = LAVTManager.getExpectedDeposits(_storage, _aventityDepositor) + _aventityDeposit;
-    uint actualDeposits = LAVTManager.getBalance(_storage, _aventityDepositor, "deposit");
-    require(
-      actualDeposits >= expectedDeposits,
-      'Insufficient deposits'
-    );
-    LAVTManager.setExpectedDeposits(_storage, _aventityDepositor, expectedDeposits);
   }
 }

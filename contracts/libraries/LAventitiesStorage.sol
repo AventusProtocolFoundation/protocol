@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import '../interfaces/IAventusStorage.sol';
+import "../interfaces/IAventusStorage.sol";
 
 library LAventitiesStorage {
 
@@ -10,9 +10,9 @@ library LAventitiesStorage {
   bytes32 constant challengeRevealingPeriodDaysKey = keccak256(abi.encodePacked("Aventities", "challengeRevealingPeriodDays"));
 
   bytes32 constant winningsForChallengeWinnerPercentageKey =
-      keccak256(abi.encodePacked("Events", "winningsForChallengeWinnerPercentage"));
+      keccak256(abi.encodePacked("Aventities", "winningsForChallengeWinnerPercentage"));
   bytes32 constant winningsForChallengeEnderPercentageKey =
-      keccak256(abi.encodePacked("Events", "winningsForChallengeEnderPercentage"));
+      keccak256(abi.encodePacked("Aventities", "winningsForChallengeEnderPercentage"));
 
   function getAventityCount(IAventusStorage _storage)
     external
@@ -138,15 +138,20 @@ library LAventitiesStorage {
     _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "totalWinningsToVoters")), _winningsToVoters);
   }
 
-  function getWinningsToVotersRemaining(IAventusStorage _storage, uint _proposalId)
-    external
-    view
-    returns (uint winningsRemaining_)
-  {
-    winningsRemaining_ = _storage.getUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "winningsToVotersRemaining")));
+  function initialiseVotersWinningsPot(IAventusStorage _storage, uint _proposalId, uint _winningsRemaining) external {
+    bytes32 winningsToVotersRemainingKey = keccak256(abi.encodePacked("Proposal", _proposalId, "winningsToVotersRemaining"));
+    uint currentWinningsRemaining = _storage.getUInt(winningsToVotersRemainingKey);
+    assert(currentWinningsRemaining == 0);
+
+    _storage.setUInt(winningsToVotersRemainingKey, _winningsRemaining);
   }
 
-  function setWinningsToVotersRemaining(IAventusStorage _storage, uint _proposalId, uint _winningsRemaining) external {
-    _storage.setUInt(keccak256(abi.encodePacked("Proposal", _proposalId, "winningsToVotersRemaining")), _winningsRemaining);
+  function reduceVotersWinningsPot(IAventusStorage _storage, uint _proposalId, uint _reduction) external {
+    assert(_reduction != 0);
+    bytes32 winningsToVotersRemainingKey = keccak256(abi.encodePacked("Proposal", _proposalId, "winningsToVotersRemaining"));
+    uint winningsRemaining = _storage.getUInt(winningsToVotersRemainingKey);
+    assert(winningsRemaining >= _reduction);
+
+    _storage.setUInt(winningsToVotersRemainingKey, winningsRemaining - _reduction);
   }
 }

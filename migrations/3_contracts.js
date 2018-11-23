@@ -3,7 +3,7 @@ const common = require('./common.js');
 const eip55 = require('eip55');
 const fs = require('fs');
 
-const AventusStorage = artifacts.require("AventusStorage");
+const IAventusStorage = artifacts.require("IAventusStorage");
 
 const AVTManager = artifacts.require("AVTManager");
 const AVTManagerInterface = artifacts.require("IAVTManager");
@@ -25,8 +25,8 @@ const abiPartLength = 16;
 
 const Versioned = artifacts.require("Versioned");
 
-module.exports = function(deployer, network, accounts) {
-  return deployContracts(deployer, network)
+module.exports = function(_deployer, _network, _accounts) {
+  return deployContracts(_deployer, _network)
   .then(() => console.log("*** CONTRACTS DEPLOY COMPLETE"));
 };
 
@@ -39,10 +39,10 @@ let deployParameterRegistry;
 
 let version;
 
-function deployContracts(deployer, network) {
+function deployContracts(_deployer, _network) {
   console.log("Deploying Contracts...");
 
-  const developmentMode = network === "development" || network === "coverage";
+  const developmentMode = _network === "development" || _network === "coverage";
 
   // ALWAYS deploy to development, NEVER to another network unless hard coded.
   deployAVTManager = developmentMode;
@@ -54,18 +54,18 @@ function deployContracts(deployer, network) {
 
   let storage;
 
-  return deployer
+  return _deployer
   .then(() => getVersion())
-  .then(() => common.getStorageContractFromJsonFile(deployer, AventusStorage))
+  .then(() => common.getStorageContractFromJsonFile(IAventusStorage))
   .then(s => {
     storage = s;
-    return doDeployProposalsManager(deployer, storage)
+    return doDeployProposalsManager(_deployer, storage)
   })
-  .then(() => doDeployAVTManager(deployer, storage))
-  .then(() => doDeployMembersManager(deployer, storage))
-  .then(() => doDeployEventsManager(deployer, storage))
-  .then(() => doDeployMerkleRootsManager(deployer, storage))
-  .then(() => doDeployParameterRegistry(deployer, storage));
+  .then(() => doDeployAVTManager(_deployer, storage))
+  .then(() => doDeployMembersManager(_deployer, storage))
+  .then(() => doDeployEventsManager(_deployer, storage))
+  .then(() => doDeployMerkleRootsManager(_deployer, storage))
+  .then(() => doDeployParameterRegistry(_deployer, storage));
 }
 
 function getVersion(_deployer) {
@@ -128,23 +128,23 @@ function doDeployParameterRegistry(_deployer, _storage) {
   .then(parameterRegistry => parameterRegistry.init());
 }
 
-function saveInterfaceToStorage(s, interfaceName, interfaceInstance, implementation) {
-  interfaceName += "-" + version;
-  console.log("+ saveInterfaceToStorage", interfaceName);
+function saveInterfaceToStorage(_s, _interfaceName, _interfaceInstance, _implementation) {
+  _interfaceName += "-" + version;
+  console.log("+ saveInterfaceToStorage", _interfaceName);
   let numParts;
-  return s.setAddress(web3.sha3(interfaceName + "_Address"), eip55.encode(implementation.address))
+  return _s.setAddress(web3.sha3(_interfaceName + "_Address"), eip55.encode(_implementation.address))
   .then(() => {
-    numParts = Math.ceil(interfaceInstance.abi.length / abiPartLength);
-    return s.setUInt(web3.sha3(interfaceName + "_Abi_NumParts"), numParts);
+    numParts = Math.ceil(_interfaceInstance.abi.length / abiPartLength);
+    return _s.setUInt(web3.sha3(_interfaceName + "_Abi_NumParts"), numParts);
   })
   .then(() => {
-    console.log("Splitting " + interfaceName + " ABI into", numParts);
+    console.log("Splitting " + _interfaceName + " ABI into", numParts);
     let abiPromises = [];
     for (let i = 0; i < numParts; ++i) {
       const start = i * abiPartLength;
       const end = start + abiPartLength;
-      const part = JSON.stringify(interfaceInstance.abi.slice(start, end), null, 0);
-      abiPromises.push(s.setString(web3.sha3(interfaceName + "_Abi_Part_" + i), part));
+      const part = JSON.stringify(_interfaceInstance.abi.slice(start, end), null, 0);
+      abiPromises.push(_s.setString(web3.sha3(_interfaceName + "_Abi_Part_" + i), part));
     }
     return Promise.all(abiPromises);
   });

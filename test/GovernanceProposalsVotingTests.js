@@ -60,25 +60,31 @@ contract('Governance proposals voting', async () => {
           {from: accounts.goodVoterAddress});
     });
 
-    it('succeeds if governance proposal is in voting period', async() => {
-      await castVoteSucceeds();
-    });
-
-    context('fails with bad parameter', async () => {
-      it('governance proposal Id', async() => {
-        const badGovernanceProposalId = 9999;
-        await castVoteFails(badGovernanceProposalId, goodPrevTime, 'Proposal has the wrong status');
-      });
-
-      it('previous vote time', async() => {
-        const badPrevTime = goodPrevTime.plus(10);
-        await castVoteFails(goodGovernanceProposalId, badPrevTime, 'Invalid previous time');
+    context('succeeds with', async () => {
+      it('good parameters', async() => {
+        await castVoteSucceeds();
       });
     });
 
-    it('fails if state is already voted', async() => {
-      await votingTestHelper.castVote(accounts.goodVoterAddress, goodGovernanceProposalId, goodVoteOption);
-      await castVoteFails(goodGovernanceProposalId, goodPrevTime, 'Already voted');
+    context('fails with', async () => {
+      context('bad parameters', async () => {
+        it('governanceProposalId', async() => {
+          const badGovernanceProposalId = 9999;
+          await castVoteFails(badGovernanceProposalId, goodPrevTime, 'Proposal has the wrong status');
+        });
+
+        it('prevTime', async() => {
+          const badPrevTime = goodPrevTime.plus(10);
+          await castVoteFails(goodGovernanceProposalId, badPrevTime, 'Invalid previous time');
+        });
+      });
+    });
+
+    context('bad state', async () => {
+      it('vote has already been cast', async() => {
+        await votingTestHelper.castVote(accounts.goodVoterAddress, goodGovernanceProposalId, goodVoteOption);
+        await castVoteFails(goodGovernanceProposalId, goodPrevTime, 'Already voted');
+      });
     });
   });
 
@@ -105,34 +111,40 @@ contract('Governance proposals voting', async () => {
           {from: accounts.goodVoterAddress}), _expectedError);
     }
 
-    it('succeeds if already voted and proposal is in revealing period', async() => {
-      await revealVoteSucceeds();
-    });
-
-    context('fails with bad parameter', async () => {
-      it('reveal vote signed message', async() => {
-        const badGovernanceProposalId = 8888;
-        const badSignedMessage = await signingTestHelper.getRevealVoteSignedMessage(accounts.goodVoterAddress,
-            badGovernanceProposalId, goodVoteOption);
-        await revealVoteFails(badSignedMessage, goodGovernanceProposalId, goodVoteOption, 'Voter must be the sender');
-      });
-
-      it('governance proposal Id', async() => {
-        const badGovernanceProposalId = 9999;
-        await revealVoteFails(goodRevealVoteSignedMessage, badGovernanceProposalId, goodVoteOption,
-            'Must be in revealing phase or later');
-      });
-
-      it('option Id', async() => {
-        const badOptionId = 99;
-        await revealVoteFails(goodRevealVoteSignedMessage, goodGovernanceProposalId, badOptionId, 'Invalid option');
+    context('succeeds with', async () => {
+      it('good parameters', async() => {
+        await revealVoteSucceeds();
       });
     });
 
-    it('fails if state is already revealed', async() => {
-      await votingTestHelper.revealVote(accounts.goodVoterAddress, goodGovernanceProposalId, goodVoteOption);
-      await revealVoteFails(goodRevealVoteSignedMessage, goodGovernanceProposalId, goodVoteOption,
-          'Stored vote must be the same as the revealed one');
+    context('fails with', async () => {
+      context('bad parameters', async() => {
+        it('revealVoteSignedMessage', async() => {
+          const badGovernanceProposalId = 8888;
+          const badSignedMessage = await signingTestHelper.getRevealVoteSignedMessage(accounts.goodVoterAddress,
+              badGovernanceProposalId, goodVoteOption);
+          await revealVoteFails(badSignedMessage, goodGovernanceProposalId, goodVoteOption, 'Voter must be the sender');
+        });
+
+        it('governanceProposalId', async() => {
+          const badGovernanceProposalId = 9999;
+          await revealVoteFails(goodRevealVoteSignedMessage, badGovernanceProposalId, goodVoteOption,
+              'Must be in revealing phase or later');
+        });
+
+        it('optionId', async() => {
+          const badOptionId = 99;
+          await revealVoteFails(goodRevealVoteSignedMessage, goodGovernanceProposalId, badOptionId, 'Invalid option');
+        });
+      });
+
+      context('bad state', async() => {
+        it('vote has already been revealed', async() => {
+          await votingTestHelper.revealVote(accounts.goodVoterAddress, goodGovernanceProposalId, goodVoteOption);
+          await revealVoteFails(goodRevealVoteSignedMessage, goodGovernanceProposalId, goodVoteOption,
+              'Stored vote must be the same as the revealed one');
+        });
+      });
     });
   });
 
@@ -152,32 +164,37 @@ contract('Governance proposals voting', async () => {
       await votingTestHelper.advanceTimeAndCastVote(accounts.goodVoterAddress, goodGovernanceProposalId, goodVoteOption);
     });
 
-    it('succeeds if already voted and before revealing period start', async() => {
-      await cancelVoteSucceeds();
+    context('succeeds with', async () => {
+      it('good parameters', async() => {
+        await cancelVoteSucceeds();
+      });
     });
 
-    it('fails with bad governance proposal Id parameter', async() => {
-      const badGovernanceProposalId = 9999;
-      await cancelVoteFails(badGovernanceProposalId, accounts.goodVoterAddress,
-          'Proposal must be in the voting period or after revealing finished');
-    });
-
-    context('fails with bad state', async () => {
-
-      it('without voting first', async() => {
-        await cancelVoteFails(goodGovernanceProposalId, accounts.badVoterAddress, 'Sender must have a non revealed vote');
+    context('fails with', async () => {
+      context('bad parameters', async () => {
+        it('governanceProposalId', async() => {
+          const badGovernanceProposalId = 9999;
+          await cancelVoteFails(badGovernanceProposalId, accounts.goodVoterAddress,
+              'Proposal must be in the voting period or after revealing finished');
+        });
       });
 
-      it('in the revealing period', async() => {
-        await votingTestHelper.advanceTimeToRevealingStart(goodGovernanceProposalId);
-        await cancelVoteFails(goodGovernanceProposalId, accounts.goodVoterAddress,
-            'Proposal must be in the voting period or after revealing finished');
-      });
+      context('bad state', async () => {
+        it('without voting first', async() => {
+          await cancelVoteFails(goodGovernanceProposalId, accounts.badVoterAddress, 'Sender must have a non revealed vote');
+        });
 
-      it('cancelled vote', async() => {
-        await proposalsManager.cancelVote(goodGovernanceProposalId, {from: accounts.goodVoterAddress});
-        await cancelVoteFails(goodGovernanceProposalId, accounts.goodVoterAddress,
-            'Sender must have a non revealed vote');
+        it('in the revealing period', async() => {
+          await votingTestHelper.advanceTimeToRevealingStart(goodGovernanceProposalId);
+          await cancelVoteFails(goodGovernanceProposalId, accounts.goodVoterAddress,
+              'Proposal must be in the voting period or after revealing finished');
+        });
+
+        it('cancelled vote', async() => {
+          await proposalsManager.cancelVote(goodGovernanceProposalId, {from: accounts.goodVoterAddress});
+          await cancelVoteFails(goodGovernanceProposalId, accounts.goodVoterAddress,
+              'Sender must have a non revealed vote');
+        });
       });
     });
   });
@@ -192,22 +209,29 @@ contract('Governance proposals voting', async () => {
           {from: accounts.goodVoterAddress}), _expectedError);
     }
 
-    it('succeeds for an existing proposal', async() => {
-      await getPrevTimeParamForCastVoteSucceeds();
+    context('succeeds with', async () => {
+      it('good parameters', async() => {
+        await getPrevTimeParamForCastVoteSucceeds();
+      });
     });
-
-    it('fails with bad governance proposal id parameter', async() => {
-      const badGovernanceProposalId = 7777;
-      await getPrevTimeParamForCastVoteFails(badGovernanceProposalId, 'Proposal does not exist');
+    context('fails with', async () => {
+      context('bad parameters', async () => {
+        it('governanceProposalId', async() => {
+          const badGovernanceProposalId = 7777;
+          await getPrevTimeParamForCastVoteFails(badGovernanceProposalId, 'Proposal does not exist');
+        });
+      });
+      // Note: there are no bad state tests
     });
-    // Note: there are no bad state tests
   });
 
   context('getGovernanceProposalDeposit()', async () => {
-    it('succeeds', async() => {
-      const expectedDepositInUSCents = avtTestHelper.getAVTFromUSCents(10000); // value from parameter registry;
-      const depositInUSCents = await proposalsManager.getGovernanceProposalDeposit();
-      assert.equal(depositInUSCents.toNumber(), expectedDepositInUSCents);
+    context('succeeds with', async() => {
+      it('good parameters', async() => {
+        const expectedDepositInUSCents = avtTestHelper.getAVTFromUSCents(10000); // value from parameter registry;
+        const depositInUSCents = await proposalsManager.getGovernanceProposalDeposit();
+        assert.equal(depositInUSCents.toNumber(), expectedDepositInUSCents);
+      });
     });
     // Note: there are no bad parameters and no bad state tests
   });

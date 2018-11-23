@@ -15,11 +15,12 @@ contract('EventsManager - merkle tickets', async () => {
   let goodVendorTicketRefHash;
   let goodTicketMetadata;
   let goodVendorProof;
-  let goodDoorData;
   let goodTicketOwnerProof;
   let goodMerklePath;
   let goodTree;
   let goodSender;
+  let goodTicketOwner = accounts.ticketOwner;
+  let doorData = '0x';
 
   before(async () => {
     await testHelper.init();
@@ -54,12 +55,9 @@ contract('EventsManager - merkle tickets', async () => {
     goodVendorTicketRefHash = testHelper.hash('1');
     goodTicketMetadata = 'some metadata';
     goodVendorProof = signingTestHelper.getListTicketVendorProof(accounts.primary, goodEventId, goodVendorTicketRefHash,
-        accounts.ticketOwner);
-    goodDoorData = '0x';
-    goodTicketOwnerProof = signingTestHelper.getListTicketTicketOwnerProof(accounts.ticketOwner, goodVendorTicketRefHash);
-    const leafData = [
-      goodEventId, goodVendorTicketRefHash, goodTicketMetadata, accounts.ticketOwner, goodVendorProof, goodDoorData
-    ];
+        goodTicketOwner);
+    goodTicketOwnerProof = signingTestHelper.getListTicketTicketOwnerProof(goodTicketOwner, goodVendorTicketRefHash);
+    const leafData = [goodEventId, goodVendorTicketRefHash, goodTicketMetadata, goodTicketOwner, goodVendorProof, doorData];
     const expectedTreeDepth = 12;
     goodTree = merkleProofTestHelper.createTree(expectedTreeDepth, leafData);
     goodMerklePath = goodTree.merklePath;
@@ -67,19 +65,19 @@ contract('EventsManager - merkle tickets', async () => {
   }
 
   async function registerMerkleRootAndVendorOnEvent() {
-    await merkleRootsManager.registerMerkleRoot(accounts.scalingProvider, goodTree.rootHash, {from: accounts.scalingProvider});
+    await merkleRootsManager.registerMerkleRoot(goodTree.rootHash, {from: accounts.scalingProvider});
     await eventsManager.registerMemberOnEvent(goodEventId, accounts.primary, memberTypes.primary, {from: goodSender});
   }
 
   async function listTicketSucceeds() {
-    await eventsManager.listTicket(goodEventId, goodVendorTicketRefHash, goodTicketMetadata, goodVendorProof, goodDoorData,
+    await eventsManager.listTicket(goodEventId, goodVendorTicketRefHash, goodTicketMetadata, goodVendorProof, doorData,
         goodTicketOwnerProof, goodMerklePath, {from: goodSender});
 
     const expectedTicketId = testHelper.hash(goodVendorTicketRefHash, accounts.primary);
     const logArgs = await testHelper.getLogArgs(eventsManager.LogTicketListed);
     assert.equal(logArgs.eventId.toNumber(), goodEventId);
     assert.equal(logArgs.ticketId.toNumber(), expectedTicketId);
-    assert.equal(logArgs.ticketOwner, accounts.ticketOwner);
+    assert.equal(logArgs.ticketOwner, goodTicketOwner);
     assert.equal(logArgs.leafHash, goodTree.leafHash);
     return logArgs.ticketId;
   }
@@ -94,10 +92,10 @@ contract('EventsManager - merkle tickets', async () => {
       await eventsTestHelper.advanceTimeEndEventAndWithdrawDeposit(accounts.eventOwner, goodEventId);
     });
 
-    async function listTicketFails(_eventId, _vendorTicketRefHash, _ticketMetadata, _vendorProof, _doorData,
-        _ticketOwnerProof, _merklePath, _sender, _expectedError) {
+    async function listTicketFails(_eventId, _vendorTicketRefHash, _ticketMetadata, _vendorProof, _ticketOwnerProof,
+        _merklePath, _sender, _expectedError) {
       await testHelper.expectRevert(() => eventsManager.listTicket(_eventId, _vendorTicketRefHash, _ticketMetadata,
-          _vendorProof, _doorData, _ticketOwnerProof, _merklePath, {from: _sender}), _expectedError);
+          _vendorProof, doorData, _ticketOwnerProof, _merklePath, {from: _sender}), _expectedError);
     }
 
     context('succeeds with', async () => {
@@ -108,66 +106,55 @@ contract('EventsManager - merkle tickets', async () => {
 
     context('fails with', async () => {
       context('bad parameters', async () => {
-        it('bad eventId', async () => {
+        it('eventId', async () => {
           const badEventId = 0;
           const updatedVendorProof = signingTestHelper.getListTicketVendorProof(accounts.primary, badEventId,
-              goodVendorTicketRefHash, accounts.ticketOwner);
-          await listTicketFails(badEventId, goodVendorTicketRefHash, goodTicketMetadata, updatedVendorProof, goodDoorData,
+              goodVendorTicketRefHash, goodTicketOwner);
+          await listTicketFails(badEventId, goodVendorTicketRefHash, goodTicketMetadata, updatedVendorProof,
               goodTicketOwnerProof, goodMerklePath, goodSender, 'Event must be trading');
         });
 
-        // TODO: The below fail with 'Merkle root is not active' at present because listTicket A & B are joined by leafHash.
-        // Once we remove passing the storage param and just have listTicket() these should fail properly & can be readded.
-        xit('bad vendorTicketRefHash', async () => {
+        // TODO: The below 4 tests fail with 'Merkle root is not active' presently because of the leafHash in listTicket A & B.
+        // Once we have a single listTicket() method these can be revised to fail properly.
+        it('vendorTicketRefHash', async () => {
           const badVendorTicketRefHash = testHelper.hash(0);
           const updatedVendorProof = signingTestHelper.getListTicketVendorProof(accounts.primary, goodEventId,
-              badVendorTicketRefHash, accounts.ticketOwner);
-          const updatedTicketOwnerProof = signingTestHelper.getListTicketTicketOwnerProof(accounts.ticketOwner,
+              badVendorTicketRefHash, goodTicketOwner);
+          const updatedTicketOwnerProof = signingTestHelper.getListTicketTicketOwnerProof(goodTicketOwner,
               badVendorTicketRefHash);
-          await listTicketFails(goodEventId, badVendorTicketRefHash, goodTicketMetadata, updatedVendorProof, goodDoorData,
+          await listTicketFails(goodEventId, badVendorTicketRefHash, goodTicketMetadata, updatedVendorProof,
               updatedTicketOwnerProof, goodMerklePath, goodSender, 'Merkle root is not active');
         });
 
-        xit('bad ticketMetadata', async () => {
+        it('ticketMetadata', async () => {
           const badTicketMetadata = '';
-          await listTicketFails(goodEventId, goodVendorTicketRefHash, badTicketMetadata, goodVendorProof, goodDoorData,
+          await listTicketFails(goodEventId, goodVendorTicketRefHash, badTicketMetadata, goodVendorProof,
               goodTicketOwnerProof, goodMerklePath, goodSender, 'Merkle root is not active');
         });
 
-        xit('bad vendorProof', async () => {
+        it('vendorProof', async () => {
           const badVendorProof = testHelper.sign(accounts.badAddress, testHelper.hash(0));
-          await listTicketFails(goodEventId, goodVendorTicketRefHash, goodTicketMetadata, badVendorProof, goodDoorData,
+          await listTicketFails(goodEventId, goodVendorTicketRefHash, goodTicketMetadata, badVendorProof,
               goodTicketOwnerProof, goodMerklePath, goodSender, 'Merkle root is not active');
         });
 
-        // TODO: add in when/if we check doorData
-        xit('bad doorData', async () => {
-          const badDoorData = 0;
-          await listTicketFails(goodEventId, goodVendorTicketRefHash, goodTicketMetadata, goodVendorProof, badDoorData,
-              goodTicketOwnerProof, goodMerklePath, goodSender, 'Bad doorData');
-        });
-
-        xit('bad ticketOwnerProof', async () => {
+        it('ticketOwnerProof', async () => {
           const badTicketOwnerProof = testHelper.sign(accounts.badAddress, testHelper.hash(0));
-          await listTicketFails(goodEventId, goodVendorTicketRefHash, goodTicketMetadata, goodVendorProof, goodDoorData,
+          await listTicketFails(goodEventId, goodVendorTicketRefHash, goodTicketMetadata, goodVendorProof,
               badTicketOwnerProof, goodMerklePath, goodSender, 'Merkle root is not active');
         });
 
-        it('bad merklePath', async () => {
+        it('merklePath', async () => {
           const badMerklePath = [0,0,0,0];
-          await listTicketFails(goodEventId, goodVendorTicketRefHash, goodTicketMetadata, goodVendorProof, goodDoorData,
+          await listTicketFails(goodEventId, goodVendorTicketRefHash, goodTicketMetadata, goodVendorProof,
               goodTicketOwnerProof, badMerklePath, goodSender, 'Merkle root is not active');
         });
 
-        it('bad sender', async () => {
+        it('sender', async () => {
           const badSender = accounts.badAddress;
-          await listTicketFails(goodEventId, goodVendorTicketRefHash, goodTicketMetadata, goodVendorProof, goodDoorData,
+          await listTicketFails(goodEventId, goodVendorTicketRefHash, goodTicketMetadata, goodVendorProof,
               goodTicketOwnerProof, goodMerklePath, badSender, 'Primary or protocol active broker only');
         });
-      });
-
-      context('bad states', async () => {
-        //TODO: add bad state tests
       });
     });
   });

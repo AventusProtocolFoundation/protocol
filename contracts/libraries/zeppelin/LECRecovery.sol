@@ -47,12 +47,9 @@ pragma solidity ^0.4.24;
      }
 
      // If the version is correct return the signer address
-     if (v != 27 && v != 28) {
-       return (address(0));
-     } else {
-       // solium-disable-next-line arg-overflow
-       return ecrecover(hash, v, r, s);
-     }
+     require (v == 27 || v == 28, "Incorrect signature version");
+      // solium-disable-next-line arg-overflow
+     return ecrecover(hash, v, r, s);
    }
 
    /**

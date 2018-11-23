@@ -159,6 +159,7 @@ contract('EventsManager - events', async () => {
       );
       const logArgs = await testHelper.getLogArgs(eventsManager.LogEventCreated);
       assert.equal(logArgs.eventDesc, goodCreateEventParams.eventDesc);
+      assert.equal(logArgs.eventOwner, goodCreateEventParams.eventOwner);
       assert.equal(logArgs.eventSupportURL, goodCreateEventParams.eventSupportURL);
       assert.equal(logArgs.onSaleTime.toNumber(), goodCreateEventParams.onSaleTime);
       assert.equal(logArgs.offSaleTime.toNumber(), goodCreateEventParams.offSaleTime);

@@ -180,7 +180,7 @@ contract('AventusStorage', async () => {
     });
   });
 
-  context('Ownership and access rights - ', async () => {
+  context('Ownership and access rights', async () => {
 
     it('can set a new storage contract owner', async () => {
       assert.equal(await aventusStorage.owner(), accounts.owner);

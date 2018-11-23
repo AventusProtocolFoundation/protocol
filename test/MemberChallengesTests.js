@@ -252,8 +252,6 @@ contract('Member challenges', async () => {
 
     beforeEach(async () => {
       goodChallenge = await challengesTestHelper.challengeMember(challengedAddress, goodType, challenger);
-
-      // TODO: Test this in the overnight tests instead. Here, just test we can clear up the AVT funds correctly
       deposit = goodChallenge.deposit;
       winnerWinnings = depositAmountToWinner(deposit);
       enderWinnings = depositAmountToChallengeEnder(deposit);

@@ -1,83 +1,76 @@
-// TODO: Rename this file to proposalsTestHelper.js
+let testHelper, timeTestHelper, signingTestHelper, aventusStorage;
+let proposalsManager;
 
-const ProposalsManager = artifacts.require("ProposalsManager.sol");
-const web3Utils = require('web3-utils');
-
-let testHelper, proposalsManager;
-
-async function before(_testHelper) {
+async function init(_testHelper, _timeTestHelper, _signingTestHelper) {
   testHelper = _testHelper;
+  timeTestHelper = _timeTestHelper;
+  signingTestHelper = _signingTestHelper;
 
+  aventusStorage = testHelper.getAventusStorage();
   proposalsManager = testHelper.getProposalsManager();
 }
 
-function getSignedMessage(proposalId, optionId, _address) {
-  let hexString = convertToBytes32HexString(proposalId * 10 + optionId);
-  let data = web3Utils.soliditySha3("0x" + hexString);
-  let address = _address || testHelper.getAccount(0);
-  return testHelper.createSignedMessage(address, data);
+async function advanceToProposalPeriod(_proposalId, _period) {
+  const periodKey = testHelper.hash('Proposal', _proposalId, _period);
+  const period = await aventusStorage.getUInt(periodKey);
+  await timeTestHelper.advanceToTime(parseInt(period));
 }
 
-// convert a number to hex-64 zero-padded string
-function convertToBytes32HexString(num) {
-    let n = num.toString(16);
-    return new Array(64 - n.length + 1).join('0') + n;
+async function advanceTimeToVotingStart(_proposalId) {
+  await advanceToProposalPeriod(_proposalId, 'votingStart');
 }
 
-function getSignatureSecret(_signedMessage) {
-  return web3Utils.soliditySha3(_signedMessage);
+async function advanceTimeToRevealingStart(_proposalId) {
+  await advanceToProposalPeriod(_proposalId, 'revealingStart');
 }
 
-async function castVote(_proposalId, _optionId, _address) {
-  let address = _address || testHelper.getAccount(0);
-  const signedMessage = await getSignedMessage(_proposalId, _optionId, _address);
-  let prevTime = await proposalsManager.getPrevTimeParamForCastVote(_proposalId, {from: address});
-  await proposalsManager.castVote(_proposalId, getSignatureSecret(signedMessage), prevTime, {from: address});
-  return signedMessage;
-}
-
-async function cancelVote(_proposalId, _address) {
-  let address = _address || testHelper.getAccount(0);
-  await proposalsManager.cancelVote(_proposalId, {from: address});
-}
-
-async function revealVote(_signedMessage, _proposalId, _optionId, _address) {
-  let address = _address || testHelper.getAccount(0);
-  await proposalsManager.revealVote(_signedMessage, _proposalId, _optionId, {from: address});
+async function advanceTimeToEndOfProposal(_proposalId) {
+  await advanceToProposalPeriod(_proposalId, 'revealingEnd');
 }
 
 async function advanceTimeCastAndRevealVotes(_proposalId, _votes) {
-  await testHelper.advanceTimeToVotingStart(_proposalId);
-  let signedMessages = {};
-  _votes.forEach(async vote => {
-    let signedMessage = await castVote(_proposalId, vote.option, vote.voter);
-    signedMessages[vote.voter+vote.option] = signedMessage;
-  });
-
-  await testHelper.advanceTimeToRevealingStart(_proposalId);
-
-  _votes.forEach(async vote => await revealVote(signedMessages[vote.voter+vote.option], _proposalId, vote.option, vote.voter));
+  await advanceTimeToVotingStart(_proposalId);
+  _votes.forEach(async vote => await castVote(vote.voter, _proposalId, vote.option));
+  await advanceTimeToRevealingStart(_proposalId);
+  _votes.forEach(async vote => await revealVote(vote.voter, _proposalId, vote.option));
 }
 
-async function claimVoterWinnings(proposalId_, voterAddress_) {
-  await proposalsManager.claimVoterWinnings(proposalId_, {from: voterAddress_});
+async function castVote(_voter, _proposalId, _optionId) {
+  const voteSecret = await signingTestHelper.getCastVoteSecret(_voter, _proposalId, _optionId);
+  let prevTime = await proposalsManager.getPrevTimeParamForCastVote(_proposalId, {from: _voter});
+  await proposalsManager.castVote(_proposalId, voteSecret, prevTime, {from: _voter});
 }
 
-/**
- * Returns the current blockchain time on the main net or the mock time on a test network
- */
-async function getAventusTime() {
-  return await proposalsManager.getAventusTime();
+async function revealVote(_voter, _proposalId, _optionId) {
+  const signedMessage = signingTestHelper.getRevealVoteSignedMessage(_voter, _proposalId, _optionId);
+  await proposalsManager.revealVote(signedMessage, _proposalId, _optionId, {from: _voter});
 }
 
+async function advanceTimeAndRevealVote(_voter, _proposalId, _optionId) {
+  await advanceTimeToRevealingStart(_proposalId);
+  const signedMessage = signingTestHelper.getRevealVoteSignedMessage(_voter, _proposalId, _optionId);
+  await proposalsManager.revealVote(signedMessage, _proposalId, _optionId, {from: _voter});
+}
+
+async function advanceTimeAndCastVote(_voter, _proposalId, _optionId) {
+  await advanceTimeToVotingStart(_proposalId);
+  await castVote(_voter, _proposalId, _optionId);
+}
+
+async function claimVoterWinnings(_proposalId, _voterAddress) {
+  await proposalsManager.claimVoterWinnings(_proposalId, {from: _voterAddress});
+}
+
+// Keep exports alphabetical.
 module.exports = {
-  before,
-  castVote,
-  cancelVote,
-  getSignatureSecret,
-  getSignedMessage,
-  revealVote,
-  getAventusTime,
+  advanceTimeAndCastVote,
+  advanceTimeAndRevealVote,
   advanceTimeCastAndRevealVotes,
-  claimVoterWinnings
-}
+  advanceTimeToEndOfProposal,
+  advanceTimeToRevealingStart,
+  advanceTimeToVotingStart,
+  castVote,
+  claimVoterWinnings,
+  init,
+  revealVote
+};
