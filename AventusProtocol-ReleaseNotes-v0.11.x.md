@@ -14,10 +14,15 @@ Breaking changes:
 * Removed sendTicketToFriend
 * Removed event challenges
 * returnTicket renamed to cancelTicket
+* cancelTicket vendor proof now includes ticketOwner
 * Removed evidenceUrl and desc from merkle root registration
 * Removed merkle root deposits, challenges and deregistering
+* registerMerkleRoot must be called by a registered scaling provider
 * Event deposits increased
+* getExistingEventDeposit can only be called on an event that exists
+* URL and description must be non-empty for events and members
 * Register/Deregister of member now revert rather than fail silently
+* Votes can only be revealed against optionId 1 or 2
 
 New functionality:
 * All requires now have error strings
@@ -33,6 +38,7 @@ Minor changes:
 
 Internal only major changes:
 * All tests files replaced with new versions
+* All unreachable requires are now asserts
 
 Internal only minor changes:
 * Moved some parameter checks into storage setters (be more OO)
