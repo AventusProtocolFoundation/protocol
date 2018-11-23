@@ -5,8 +5,8 @@ interface IEventsManager {
   /**
    * @notice Event emitted for a createEvent transaction.
    */
-  event LogEventCreated(uint indexed eventId, string eventDesc, string eventSupportURL, uint onSaleTime, uint offSaleTime,
-      uint averageTicketPriceInUSCents, uint depositInAVTDecimals);
+  event LogEventCreated(uint indexed eventId, address indexed eventOwner, string eventDesc, string eventSupportURL,
+      uint onSaleTime, uint offSaleTime, uint averageTicketPriceInUSCents, uint depositInAVTDecimals);
 
   /**
    * @notice Event emitted for a endEvent transaction.
@@ -21,28 +21,24 @@ interface IEventsManager {
   /**
    * @notice Event emitted for a sellTicket transaction.
    */
-  event LogTicketSale(uint indexed eventId, uint indexed ticketId, bytes32 vendorTicketRefHash, string ticketMetadata,
+  event LogTicketSold(uint indexed eventId, uint indexed ticketId, bytes32 vendorTicketRefHash, string ticketMetadata,
       bytes vendorProof, bytes doorData, address indexed buyer);
 
   /**
    * @notice Event emitted for a resellTicket transaction.
    */
-  event LogTicketResale(uint indexed eventId, uint indexed ticketId, address indexed newBuyer, bytes resellerProof);
+  event LogTicketResold(uint indexed eventId, uint indexed ticketId, bytes resellerProof, bytes doorData,
+      address indexed newBuyer);
 
   /**
-   * @notice Event emitted for a returnTicket transaction.
+   * @notice Event emitted for a cancelTicket transaction.
    */
-  event LogTicketReturn(uint indexed eventId, uint indexed ticketId, bytes vendorProof);
+  event LogTicketCancelled(uint indexed eventId, uint indexed ticketId, bytes vendorProof);
 
   /**
    * @notice Event emitted for a listTicket transaction.
    */
   event LogTicketListed(uint indexed eventId, uint ticketId, address indexed ticketOwner, bytes32 indexed leafHash);
-
-  /**
-   * @notice Event emitted for a sendTicketToFriend transaction.
-   */
-  event LogTicketSentToFriend(uint indexed eventId, uint indexed ticketId, bytes newDoorData);
 
   /**
    * @notice Event emitted for a registerMemberOnEvent transaction.
@@ -53,17 +49,6 @@ interface IEventsManager {
    * @notice Event emitted for a deregisterMemberFromEvent transaction.
    */
   event LogMemberDeregisteredFromEvent(uint indexed eventId, address indexed memberAddress, string memberType);
-
-  /**
-   * @notice Event emitted for a challengeEvent transaction.
-   */
-  event LogEventChallenged(uint indexed eventId, uint indexed proposalId, uint lobbyingStart, uint votingStart,
-      uint revealingStart, uint revealingEnd);
-
-  /**
-   * Event emitted for a endEventChallenge transaction.
-   */
-  event LogEventChallengeEnded(uint indexed eventId, uint indexed proposalId, uint votesFor, uint votesAgainst);
 
   /**
    * @notice Create an event
@@ -103,12 +88,12 @@ interface IEventsManager {
       bytes _doorData) external;
 
   /**
-   * @notice Return ticket to event owner
+   * @notice Cancel ticket and transfer ownership to event owner
    * @param _eventId event id for the event in context
-   * @param _ticketId ticket Id for the ticket to be returned
-   * @param _vendorProof signed proof from the event owner/primary if returning via a broker
+   * @param _ticketId ticket Id for the ticket to be cancelled
+   * @param _vendorProof signed proof from the event owner/primary if cancelling via a broker
    */
-  function returnTicket(uint _eventId, uint _ticketId, bytes _vendorProof) external;
+  function cancelTicket(uint _eventId, uint _ticketId, bytes _vendorProof) external;
 
   /**
    * @notice Register a member for an event
@@ -137,15 +122,6 @@ interface IEventsManager {
    */
   function resellTicket(uint _eventId, uint _ticketId, bytes _ticketOwnerPermission, address _newBuyer, bytes _resellerProof,
       bytes _doorData) external;
-
-  /**
-   * @notice Allow a friend to use the door data, but retain ownership of the ticket
-   * @param _eventId ID of the event
-   * @param _ticketId identifier for the ticket: unique to this event.
-   * @param _ticketOwnerPermission a proof signed by the current owner authorizing a transfer of this ticket
-   * @param _newDoorData the credentials necessary for the friend to be authenticated at the event's entrance
-   */
-  function sendTicketToFriend(uint _eventId, uint _ticketId, bytes _ticketOwnerPermission, bytes _newDoorData) external;
 
   /**
    * @notice List a ticket for resale on the protocol which was originally a merkle tree sale.
@@ -179,15 +155,4 @@ interface IEventsManager {
    */
   function getExistingEventDeposit(uint _eventId) external view returns(uint eventDeposit_);
 
-  /**
-   * @notice Create a challenge for the specified event.
-   * @param _eventId id for the event to be challenged
-   */
-  function challengeEvent(uint _eventId) external;
-
-  /**
-   * @notice Ends a challenge on the specified event.
-   * @param _eventId id of the event to be cleared of challenge
-   */
-  function endEventChallenge(uint _eventId) external;
 }

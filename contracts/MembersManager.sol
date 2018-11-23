@@ -1,10 +1,10 @@
 pragma solidity ^0.4.24;
 
-import './interfaces/IMembersManager.sol';
-import './interfaces/IAventusStorage.sol';
-import './libraries/LMembers.sol';
-import './Owned.sol';
-import './Versioned.sol';
+import "./interfaces/IMembersManager.sol";
+import "./interfaces/IAventusStorage.sol";
+import "./libraries/LMembers.sol";
+import "./Owned.sol";
+import "./Versioned.sol";
 
 contract MembersManager is IMembersManager, Owned, Versioned {
 
@@ -46,5 +46,13 @@ contract MembersManager is IMembersManager, Owned, Versioned {
       returns (uint memberDepositInAVT_)
     {
       memberDepositInAVT_ = LMembers.getExistingMemberDeposit(s, _memberAddress, _memberType);
+    }
+
+    function memberIsActive(address _memberAddress, string _memberType)
+      external
+      view
+      returns (bool isActive_)
+    {
+      isActive_ = LMembers.memberIsActive(s, _memberAddress, _memberType);
     }
 }

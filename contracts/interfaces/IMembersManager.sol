@@ -40,7 +40,7 @@ interface IMembersManager {
    * @notice Get the deposit value in AVT - to 18 sig fig - required to register a member.
    * See registerMember().
    */
-  function getNewMemberDeposit(string _memberType) view external returns (uint memberDepositInAVT_);
+  function getNewMemberDeposit(string _memberType) external view returns (uint memberDepositInAVT_);
 
   /**
    * @notice Create a challenge for the specified member.
@@ -60,4 +60,10 @@ interface IMembersManager {
    * @notice Gets the deposit paid for the specified member.
    */
   function getExistingMemberDeposit(address _memberAddress, string _memberType) external view returns (uint memberDepositInAVT_);
+
+  /**
+   * @return true if the given member is allowed to use the Aventus Protocol.
+   * ie registered AND not fraudulent.
+   */
+  function memberIsActive(address _memberAddress, string _memberType) external view returns (bool isActive_);
 }

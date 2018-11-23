@@ -8,7 +8,7 @@ contract PDelegate {
   * @param _calldata Calldata for the delegatecall
   */
   function delegatedFwd(address _dst, bytes _calldata) internal {
-    require (isContract(_dst));
+    assert(isContract(_dst));
 
     assembly {
       let result := delegatecall(sub(gas, 10000), _dst, add(_calldata, 0x20), mload(_calldata), 0, 0)

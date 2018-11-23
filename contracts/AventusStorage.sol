@@ -2,13 +2,16 @@ pragma solidity ^0.4.24;
 
 import "./proxies/PDelegate.sol";
 import "./interfaces/IAventusStorage.sol";
-import './interfaces/IERC20.sol';
-import "./MultiAccess.sol";
+import "./interfaces/IERC20.sol";
+import "./Owned.sol";
 
 // Persistent storage on the blockchain
 
-contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
+contract AventusStorage is Owned, PDelegate, IAventusStorage {
   bytes32 constant avtContractAddressKey = keccak256(abi.encodePacked("AVTERC20Instance"));
+
+  event LogAccessAllowed(string accessType, address indexed accessAddress);
+  event LogAccessDenied(string accessType, address indexed accessAddress);
 
   modifier onlyWithWriteAccess() {
     isAllowedAccess("write");
@@ -20,6 +23,8 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
     _;
   }
 
+  mapping(bytes32 => bool) accessAllowed;
+
   mapping(bytes32 => uint) UInt;
   mapping(bytes32 => string) String;
   mapping(bytes32 => address) Address;
@@ -28,14 +33,24 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   mapping(bytes32 => bool) Boolean;
   mapping(bytes32 => int) Int;
 
-  function transferAVTTo(address _to, uint _tokens) external onlyWithTransferAVTAccess returns (bool retVal_) {
-    IERC20 avt = IERC20(doGetAddress(avtContractAddressKey));
-    retVal_ = avt.transfer(_to, _tokens);
+  function allowAccess(string _accessType, address _address) external onlyOwner {
+    accessAllowed[getKey(_accessType, _address)] = true;
+    emit LogAccessAllowed(_accessType, _address);
   }
 
-  function transferAVTFrom(address _from, uint _tokens) external onlyWithTransferAVTAccess returns (bool retVal_) {
+  function denyAccess(string _accessType, address _address) external onlyOwner {
+    accessAllowed[getKey(_accessType, _address)] = false;
+    emit LogAccessDenied(_accessType, _address);
+  }
+
+  function transferAVTTo(address _to, uint _tokens) external onlyWithTransferAVTAccess {
     IERC20 avt = IERC20(doGetAddress(avtContractAddressKey));
-    retVal_ = avt.transferFrom(_from, this, _tokens);
+    assert(avt.transfer(_to, _tokens));
+  }
+
+  function transferAVTFrom(address _from, uint _tokens) external onlyWithTransferAVTAccess {
+    IERC20 avt = IERC20(doGetAddress(avtContractAddressKey));
+    assert(avt.transferFrom(_from, this, _tokens));
   }
 
   /**
@@ -44,7 +59,7 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
   function () payable external {
     address target = doGetAddress(keccak256(abi.encodePacked("StorageInstance")));
 
-    require (target > 0);
+    require(target > 0, "Extended functionality StorageContract not found");
 
     delegatedFwd(target, msg.data);
   }
@@ -160,6 +175,18 @@ contract AventusStorage is MultiAccess, PDelegate, IAventusStorage {
     returns (address value_)
   {
     value_ = Address[_record];
+  }
+
+  function isAllowedAccess(string _accessType) private view {
+    require(msg.sender == owner || accessAllowed[getKey(_accessType, msg.sender)], "Access denied for storage");
+  }
+
+  function getKey(string _accessType, address _address)
+    private
+    pure
+    returns (bytes32 key_)
+  {
+    key_ = keccak256(abi.encodePacked(_accessType, _address));
   }
 
 }

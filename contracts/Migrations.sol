@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import './Owned.sol';
+import "./Owned.sol";
 
 contract Migrations is Owned {
   uint public last_completed_migration;

@@ -10,23 +10,23 @@ interface IProposalsManager {
   /**
    * @notice Event emitted for a castVote transaction.
    */
-  event LogCastVote(uint indexed proposalId, address indexed sender, bytes32 secret, uint prevTime);
+  event LogVoteCast(uint indexed proposalId, address indexed sender, bytes32 secret, uint prevTime);
 
   /**
    * @notice Event emitted for a cancelVote transaction.
    */
-  event LogCancelVote(uint indexed proposalId, address indexed sender);
+  event LogVoteCancelled(uint indexed proposalId, address indexed sender);
 
   /**
    * @notice Event emitted for a revealVote transaction.
    */
-  event LogRevealVote(uint indexed proposalId, address indexed sender, uint indexed optId, uint revealingStart,
+  event LogVoteRevealed(uint indexed proposalId, address indexed sender, uint indexed optId, uint revealingStart,
       uint revealingEnd);
 
   /**
    * @notice Event emitted for a claimVoterWinnings transaction.
    */
-  event LogClaimVoterWinnings(uint indexed proposalId);
+  event LogVoterWinningsClaimed(uint indexed proposalId);
 
   /**
    * @notice Event emitted for an endGovernanceProposal transaction.
@@ -37,7 +37,7 @@ interface IProposalsManager {
    * @return the deposit value in AVT - with 18 digits precision - for a corporate
    * governance proposal.
    */
-  function getGovernanceProposalDeposit() view external returns (uint proposalDeposit_);
+  function getGovernanceProposalDeposit() external view returns (uint proposalDeposit_);
 
   /**
    * @notice Create a governance proposal to be voted on

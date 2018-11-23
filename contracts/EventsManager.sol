@@ -1,10 +1,10 @@
 pragma solidity ^0.4.24;
 
-import './interfaces/IAventusStorage.sol';
-import './interfaces/IEventsManager.sol';
-import './libraries/LEvents.sol';
-import './Owned.sol';
-import './Versioned.sol';
+import "./interfaces/IAventusStorage.sol";
+import "./interfaces/IEventsManager.sol";
+import "./libraries/LEvents.sol";
+import "./Owned.sol";
+import "./Versioned.sol";
 
 contract EventsManager is IEventsManager, Owned, Versioned {
 
@@ -34,8 +34,8 @@ contract EventsManager is IEventsManager, Owned, Versioned {
     LEvents.sellTicket(s, _eventId, _vendorTicketRefHash, _ticketMetadata, _buyer, _vendorProof, _doorData);
   }
 
-  function returnTicket(uint _eventId, uint _ticketId, bytes _vendorProof) external {
-    LEvents.returnTicket(s, _eventId, _ticketId, _vendorProof);
+  function cancelTicket(uint _eventId, uint _ticketId, bytes _vendorProof) external {
+    LEvents.cancelTicket(s, _eventId, _ticketId, _vendorProof);
   }
 
   function resellTicket(uint _eventId, uint _ticketId, bytes _ticketOwnerPermission, address _newBuyer, bytes _resellerProof,
@@ -44,16 +44,12 @@ contract EventsManager is IEventsManager, Owned, Versioned {
       LEvents.resellTicket(s, _eventId, _ticketId, _ticketOwnerPermission, _newBuyer, _resellerProof, _doorData);
   }
 
-  function sendTicketToFriend(uint _eventId, uint _ticketId, bytes _ticketOwnerPermission, bytes _newDoorData) external {
-    LEvents.sendTicketToFriend(s, _eventId, _ticketId, _ticketOwnerPermission, _newDoorData);
-  }
-
   function listTicket(uint _eventId, bytes32 _vendorTicketRefHash, string _ticketMetadata, bytes _vendorProof,
     bytes _doorData, bytes _ticketOwnerProof, bytes32[] _merklePath)
     external {
       LEvents.listTicketA(s, _eventId, _vendorTicketRefHash, _ticketMetadata, _vendorProof, _doorData, _ticketOwnerProof);
       LEvents.listTicketB(s, _eventId, _vendorTicketRefHash, _merklePath);
-      LEvents.listTicketC(s, _eventId, _vendorTicketRefHash, _vendorProof, _doorData);
+      LEvents.listTicketC(s, _eventId, _vendorTicketRefHash, _vendorProof);
   }
 
   function registerMemberOnEvent(uint _eventId, address _memberAddress, string _memberType) external {
@@ -76,11 +72,4 @@ contract EventsManager is IEventsManager, Owned, Versioned {
     eventDeposit_ = LEvents.getExistingEventDeposit(s, _eventId);
   }
 
-  function challengeEvent(uint _eventId) external {
-    LEvents.challengeEvent(s, _eventId);
-  }
-
-  function endEventChallenge(uint _eventId) external {
-    LEvents.endEventChallenge(s, _eventId);
-  }
 }
