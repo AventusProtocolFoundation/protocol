@@ -2,8 +2,8 @@ const avtsaleJson = require('./AVTSale.json');
 const eip55 = require('eip55');
 const fs = require('fs');
 
-const Migrations = artifacts.require("Migrations");
-const AventusStorage = artifacts.require("AventusStorage");
+const Migrations = artifacts.require('Migrations');
+const AventusStorage = artifacts.require('AventusStorage');
 
 const storageJsonFile = './api/storage.json';
 
@@ -31,7 +31,7 @@ module.exports = function(_deployer, _network, _accounts) {
     return AventusStorage.deployed();
   }).then((storage) => {
     const avtAddress = _network === 'rinkeby' ? rinkebyAvtAddress : mainNetAvtAddress;
-    console.log("Saving AVT address:", avtAddress);
+    console.log('Saving AVT address:', avtAddress);
     return storage.setAddress(web3.sha3('AVTERC20Instance'), eip55.encode(avtAddress));
   }).then(() => {
     console.log('*** SETUP COMPLETE');
