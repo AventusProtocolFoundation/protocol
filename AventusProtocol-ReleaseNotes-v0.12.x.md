@@ -12,7 +12,7 @@ Breaking changes:
 - Combine Broker and Scaling Provider into new member type and event role: Validator
 - Updates to createEvent
 - Remove vendorProof and door data from sellTicket - can no longer sell via Broker/Validator or sell "blank tickets" (must sell via merkle trees for these)
-- Primary and Secondary event roles are longer registered on the protocol
+- Primary and Secondary event roles are no longer registered as members on the protocol
 - Roles can no longer be deregistered from events
 - Events can no longer be cancelled or ended
 - All deposits now specified in AVT not US cents
