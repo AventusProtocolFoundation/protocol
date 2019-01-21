@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LAventusTime.sol";
@@ -13,7 +13,7 @@ library LAVTManager  {
   event LogAVTWithdrawn(address indexed sender, string fund, uint amount);
   event LogAVTDeposited(address indexed sender, string fund, uint amount);
 
-  function withdraw(IAventusStorage _storage, string _fund, uint _amount)
+  function withdraw(IAventusStorage _storage, string calldata _fund, uint _amount)
     external
   {
     if (keccak256(abi.encodePacked(_fund)) == stakeFundHash) {
@@ -28,7 +28,7 @@ library LAVTManager  {
     emit LogAVTWithdrawn(msg.sender, _fund, _amount);
   }
 
-  function deposit(IAventusStorage _storage, string _fund, uint _amount)
+  function deposit(IAventusStorage _storage, string calldata _fund, uint _amount)
     external
   {
     if (keccak256(abi.encodePacked(_fund)) == stakeFundHash) {
@@ -42,13 +42,15 @@ library LAVTManager  {
     emit LogAVTDeposited(msg.sender, _fund, _amount);
   }
 
-  function transfer(IAventusStorage _storage, string _fromFund, uint _amount, address _toAddress, string _toFund) external {
+  function transfer(IAventusStorage _storage, string calldata _fromFund, uint _amount, address _toAddress,
+      string calldata _toFund)
+    external
+  {
     if (keccak256(abi.encodePacked(_fromFund)) == stakeFundHash) {
       require(!stakeChangeIsBlocked(_storage, msg.sender), "A blocked stake cannot be transferred");
     } else {
       require(keccak256(abi.encodePacked(_fromFund)) == depositFundHash, "Transfer must be from stake or deposit fund only");
-      require(!depositWithdrawlIsBlocked(_storage, _amount, msg.sender), "A blocked deposit cannot be transferred"
-      );
+      require(!depositWithdrawlIsBlocked(_storage, _amount, msg.sender), "A blocked deposit cannot be transferred");
     }
 
     if (keccak256(abi.encodePacked(_toFund)) == stakeFundHash) {
@@ -76,12 +78,7 @@ library LAVTManager  {
     LAVTStorage.setExpectedDeposits(_storage, _depositHolder, expectedDeposits - _deposit);
   }
 
-  function getAVTDecimals(IAventusStorage _storage, uint _usCents) external view returns (uint avtDecimals_) {
-    uint oneAvtInUSCents = LAVTStorage.getOneAVTInUSCents(_storage);
-    avtDecimals_ = (_usCents * (10**18)) / oneAvtInUSCents;
-  }
-
-  function getBalance(IAventusStorage _storage, address _avtHolder, string _fund)
+  function getBalance(IAventusStorage _storage, address _avtHolder, string memory _fund)
     public
     view
     returns (uint balance_)
@@ -92,18 +89,18 @@ library LAVTManager  {
     balance_ = LAVTStorage.getFundBalance(_storage, _avtHolder, _fund);
   }
 
-  function decreaseFund(IAventusStorage _storage, address _account, string _fund, uint _amount) public {
+  function decreaseFund(IAventusStorage _storage, address _account, string memory _fund, uint _amount) public {
     LAVTStorage.decreaseFund(_storage, _account, _fund, _amount);
   }
 
-  function increaseFund(IAventusStorage _storage,  address _account, string _fund, uint _amount) public {
+  function increaseFund(IAventusStorage _storage,  address _account, string memory _fund, uint _amount) public {
     LAVTStorage.increaseFund(_storage, _account, _fund, _amount);
   }
 
   // NOTE: This version has NO CHECKS on whether the transfer should be blocked so should only be
   // used internally. Consider transfer() instead.
-  function doTransfer(IAventusStorage _storage, uint _amount, address _fromAddress, string _fromFund, address _toAddress,
-      string _toFund)
+  function doTransfer(IAventusStorage _storage, uint _amount, address _fromAddress, string memory _fromFund,
+      address _toAddress, string memory _toFund)
     private
   {
     require(_amount != 0, "The amount of a transfer must be positive");

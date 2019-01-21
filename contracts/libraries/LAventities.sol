@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LAVTManager.sol";
@@ -12,7 +12,7 @@ library LAventities {
   event LogVoterWinningsClaimed(uint indexed proposalId);
 
   modifier onlyActiveAndNotUnderChallengeAventity(IAventusStorage _storage, uint _aventityId) {
-    require(aventityIsActiveAndNotUnderChallenge(_storage, _aventityId), "Aventity must be valid and not under challenge");
+    require(aventityIsActiveAndNotUnderChallenge(_storage, _aventityId), "Must be valid and not under challenge");
     _;
   }
 
@@ -134,26 +134,38 @@ library LAventities {
     uint totalDisagreedStake = LProposals.getTotalRevealedStake(_storage, _proposalId, 2);
 
     // Note: a "draw" is taken as the community NOT agreeing with the challenge.
-    uint winningOption = totalAgreedStake > totalDisagreedStake ? 1 : 2;
+    challengeWon_ = totalAgreedStake > totalDisagreedStake;
 
     // Get deposit now in case it is cleared by marking as fraudulent.
     uint deposit = getExistingAventityDeposit(_storage, _aventityId);
 
-    challengeWon_ = winningOption == 1;
+    address challenger = LProposals.getOwner(_storage, _proposalId);
+    address challengee = getAventityDepositor(_storage, _aventityId);
+
+    uint winningOption;
+    address winner;
+    address loser;
+    uint totalWinningStake;
+
     if (challengeWon_) {
+      winningOption = 1;
+      winner = challenger;
+      loser = challengee;
+      totalWinningStake = totalAgreedStake;
       setAventityStatusFraudulent(_storage, _aventityId);
     } else {
+      winningOption = 2;
+      winner = challengee;
+      loser = challenger;
+      totalWinningStake = totalDisagreedStake;
       setAventityAsClearFromChallenge(_storage, _aventityId);
     }
-
-    address winner = challengeWon_ ? LProposals.getOwner(_storage, _proposalId) : getAventityDepositor(_storage, _aventityId);
-    address loser = challengeWon_ ? getAventityDepositor(_storage, _aventityId) : LProposals.getOwner(_storage, _proposalId);
-    bool winningsForVoters = challengeWon_ || totalDisagreedStake > 0;
+    
+    bool winningsForVoters = totalWinningStake > 0;
     LAventitiesChallenges.doWinningsDistribution(_storage, _proposalId, winningsForVoters, deposit, winner, loser);
 
     // Save the information we need to calculate voter winnings when they make their claim.
     LAventitiesStorage.setWinningProposalOption(_storage, _proposalId, winningOption);
-    LAventitiesStorage.setTotalWinningStake(_storage, _proposalId,
-        challengeWon_ ? totalAgreedStake : totalDisagreedStake);
+    LAventitiesStorage.setTotalWinningStake(_storage, _proposalId, totalWinningStake);
   }
 }

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LAVTManager.sol";
@@ -25,7 +25,7 @@ library LProposalsVoting {
     _;
   }
 
-  modifier onlyWhenVoterIsSender(uint _proposalId, uint _optId, bytes _signedMessage) {
+  modifier onlyWhenVoterIsSender(uint _proposalId, uint _optId, bytes memory _signedMessage) {
     require(checkVoterIsSender(_proposalId, _optId, _signedMessage), "Voter must be the sender");
     _;
   }
@@ -59,7 +59,7 @@ library LProposalsVoting {
     doRemoveVote(_storage, _proposalId);
   }
 
-  function revealVote(IAventusStorage _storage, bytes _signedMessage, uint _proposalId, uint _optId)
+  function revealVote(IAventusStorage _storage, bytes memory _signedMessage, uint _proposalId, uint _optId)
     public
     onlyInRevealingPeriodOrLater(_storage, _proposalId)
     onlyValidOptionId(_optId)
@@ -84,7 +84,7 @@ library LProposalsVoting {
     if (LProposalsStorage.getVoteCountForRevealTime(_storage, voter, proposalRevealTime) != 0) {
       // We have an entry in the DLL for this time already.
       prevTime_ = LProposalsStorage.getPreviousRevealTime(_storage, voter, proposalRevealTime);
-      return;
+      return prevTime_;
     }
     // Find where we would insert a new node; start looking at the head.
     prevTime_ = 0;
@@ -160,7 +160,10 @@ library LProposalsVoting {
     LProposalsStorage.setVoterSecret(_storage, msg.sender, _proposalId, 0);
   }
 
-  function checkVoterIsSender(uint _proposalId, uint _optId, bytes _signedMessage) private view returns (bool voterIsSender_)
+  function checkVoterIsSender(uint _proposalId, uint _optId, bytes memory _signedMessage)
+    private
+    view
+    returns (bool voterIsSender_)
   {
     // Get voter public key from message and signature
     bytes32 msgHash = keccak256(abi.encodePacked((_proposalId * 10) + _optId));
@@ -174,12 +177,11 @@ library LProposalsVoting {
     uint stake = LAVTManager.getBalance(_storage, _voter, "stake");
 
     if (stake == 0) return;
-    // increment the total stake for this option with the voter's stake...
-    uint totalStakeForOption = LProposalsStorage.getTotalRevealedStake(_storage, _proposalId, _optId);
-    LProposalsStorage.setTotalRevealedStake(_storage, _proposalId, _optId, totalStakeForOption + stake);
-    // ...and store it so we can use it later to calculate winnings.
-    uint revealedVotersCount = LProposalsStorage.getRevealedVotersCount(_storage, _proposalId, _optId);
-    LProposalsStorage.setRevealedVotersCount(_storage, _proposalId, _optId, revealedVotersCount + 1);
+
+    LProposalsStorage.increaseTotalRevealedStake(_storage, _proposalId, _optId, stake);
+
+    LProposalsStorage.incrementNumVotersRevealedWithStake(_storage, _proposalId, _optId);
+
     LProposalsStorage.setRevealedVoterStake(_storage, _proposalId, _voter, _optId, stake);
   }
 }
