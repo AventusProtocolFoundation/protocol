@@ -14,12 +14,7 @@ library LEventsEvents {
     require(bytes(_eventDesc).length > 0, "Event requires a non-empty description");
 
     bytes32 descHash = keccak256(abi.encodePacked(_eventDesc));
-    bytes32 eventHash;
-    if(_eventTime == 0) { // Old style
-      eventHash = keccak256(abi.encodePacked(descHash, _offSaleTime));
-    } else { // New style
-      eventHash = keccak256(abi.encodePacked(descHash, _eventTime, _offSaleTime));
-    }
+    bytes32 eventHash = keccak256(abi.encodePacked(descHash, _offSaleTime));
     eventOwner_ = LECRecovery.recover(eventHash, _createEventEventOwnerProof);
 
     if (msg.sender != eventOwner_) {
