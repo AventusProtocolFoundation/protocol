@@ -47,11 +47,7 @@ library LEvents {
   {
     (address eventOwner, uint eventId) = LEventsEvents.createEvent(_storage, _eventDesc, _eventTime, _offSaleTime,
         _createEventOwnerProof);
-    if (_eventTime == 0) { // Old style
-      emit LogEventCreated(eventId, eventOwner, _eventDesc, _offSaleTime);
-    } else { // New style
-      emit LogEventCreated2(eventId, eventOwner, _eventDesc, _eventTime, _offSaleTime);
-    }
+    emit LogEventCreated(eventId, eventOwner, _eventDesc, _offSaleTime);
   }
 
   function sellTicket(IAventusStorage _storage, uint _eventId, bytes32 _vendorTicketRefHash,
