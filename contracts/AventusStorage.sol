@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 import "./proxies/PDelegate.sol";
 import "./interfaces/IAventusStorage.sol";
@@ -33,33 +33,35 @@ contract AventusStorage is Owned, PDelegate, IAventusStorage {
   mapping(bytes32 => bool) Boolean;
   mapping(bytes32 => int) Int;
 
-  function allowAccess(string _accessType, address _address) external onlyOwner {
+  function allowAccess(string calldata _accessType, address _address) external onlyOwner {
     accessAllowed[getKey(_accessType, _address)] = true;
     emit LogAccessAllowed(_accessType, _address);
   }
 
-  function denyAccess(string _accessType, address _address) external onlyOwner {
+  function denyAccess(string calldata _accessType, address _address) external onlyOwner {
     accessAllowed[getKey(_accessType, _address)] = false;
     emit LogAccessDenied(_accessType, _address);
   }
 
   function transferAVTTo(address _to, uint _tokens) external onlyWithTransferAVTAccess {
     IERC20 avt = IERC20(doGetAddress(avtContractAddressKey));
+    // RELEASE_ONLY avt.transfer(_to, _tokens);
     assert(avt.transfer(_to, _tokens));
   }
 
   function transferAVTFrom(address _from, uint _tokens) external onlyWithTransferAVTAccess {
     IERC20 avt = IERC20(doGetAddress(avtContractAddressKey));
-    assert(avt.transferFrom(_from, this, _tokens));
+    // RELEASE_ONLY avt.transferFrom(_from, address(this), _tokens);
+    assert(avt.transferFrom(_from, address(this), _tokens));
   }
 
   /**
    * @dev In case we need to extend functionality - avoids copying state
    */
-  function () payable external {
+  function () external {
     address target = doGetAddress(keccak256(abi.encodePacked("StorageInstance")));
 
-    require(target > 0, "Extended functionality StorageContract not found");
+    require(target != address(0), "Extended functionality StorageContract not found");
 
     delegatedFwd(target, msg.data);
   }
@@ -82,12 +84,12 @@ contract AventusStorage is Owned, PDelegate, IAventusStorage {
   function getString(bytes32 _record)
     external
     view
-    returns (string value_)
+    returns (string memory value_)
   {
     value_ = String[_record];
   }
 
-  function setString(bytes32 _record, string _value)
+  function setString(bytes32 _record, string calldata _value)
     external
     onlyWithWriteAccess
   {
@@ -112,12 +114,12 @@ contract AventusStorage is Owned, PDelegate, IAventusStorage {
   function getBytes(bytes32 _record)
     external
     view
-    returns (bytes value_)
+    returns (bytes memory value_)
   {
     value_ = Bytes[_record];
   }
 
-  function setBytes(bytes32 _record, bytes _value)
+  function setBytes(bytes32 _record, bytes calldata _value)
     external
     onlyWithWriteAccess
   {
@@ -177,11 +179,11 @@ contract AventusStorage is Owned, PDelegate, IAventusStorage {
     value_ = Address[_record];
   }
 
-  function isAllowedAccess(string _accessType) private view {
+  function isAllowedAccess(string memory _accessType) private view {
     require(msg.sender == owner || accessAllowed[getKey(_accessType, msg.sender)], "Access denied for storage");
   }
 
-  function getKey(string _accessType, address _address)
+  function getKey(string memory _accessType, address _address)
     private
     pure
     returns (bytes32 key_)

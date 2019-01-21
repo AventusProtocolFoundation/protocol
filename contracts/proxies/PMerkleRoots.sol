@@ -1,10 +1,10 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 import "./PLibraryDelegate.sol";
 
 contract PMerkleRoots is PLibraryDelegate {
 
-  function () payable public {
+  function () external {
     libraryDelegateFwd("LMerkleRootsInstance");
   }
 

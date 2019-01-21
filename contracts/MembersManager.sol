@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 import "./interfaces/IMembersManager.sol";
 import "./interfaces/IAventusStorage.sol";
@@ -14,33 +14,34 @@ contract MembersManager is IMembersManager, Owned, Versioned {
       s = _s;
     }
 
-    function registerMember(address _memberAddress, string _memberType, string _evidenceUrl, string _desc)
+    function registerMember(address _memberAddress, string calldata _memberType, string calldata _evidenceUrl,
+        string calldata _desc)
       external
       onlyOwner
     {
       LMembers.registerMember(s, _memberAddress, _memberType, _evidenceUrl, _desc);
     }
 
-    function deregisterMember(address _memberAddress, string _memberType)
+    function deregisterMember(address _memberAddress, string calldata _memberType)
       external
       onlyOwner
     {
       LMembers.deregisterMember(s, _memberAddress, _memberType);
     }
 
-    function challengeMember(address _memberAddress, string _memberType) external {
+    function challengeMember(address _memberAddress, string calldata _memberType) external {
       LMembers.challengeMember(s, _memberAddress, _memberType);
     }
 
-    function endMemberChallenge(address _memberAddress, string _memberType) external {
+    function endMemberChallenge(address _memberAddress, string calldata _memberType) external {
       LMembers.endMemberChallenge(s, _memberAddress, _memberType);
     }
 
-    function getNewMemberDeposit(string _type) external view returns (uint memberDepositInAVT_) {
+    function getNewMemberDeposit(string calldata _type) external view returns (uint memberDepositInAVT_) {
       memberDepositInAVT_ = LMembers.getNewMemberDeposit(s, _type);
     }
 
-    function getExistingMemberDeposit(address _memberAddress, string _memberType)
+    function getExistingMemberDeposit(address _memberAddress, string calldata _memberType)
       external
       view
       returns (uint memberDepositInAVT_)
@@ -48,7 +49,7 @@ contract MembersManager is IMembersManager, Owned, Versioned {
       memberDepositInAVT_ = LMembers.getExistingMemberDeposit(s, _memberAddress, _memberType);
     }
 
-    function memberIsActive(address _memberAddress, string _memberType)
+    function memberIsActive(address _memberAddress, string calldata _memberType)
       external
       view
       returns (bool isActive_)

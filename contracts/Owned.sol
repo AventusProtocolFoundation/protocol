@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 contract Owned {
   address public owner = msg.sender;
@@ -12,7 +12,7 @@ contract Owned {
     public
     onlyOwner
   {
-    require(_owner != 0x0, "Owner cannot be zero address");
+    require(_owner != address(0), "Owner cannot be zero address");
     owner = _owner;
   }
 }
