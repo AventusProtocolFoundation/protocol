@@ -25,6 +25,7 @@ New functionality:
 Minor changes:
 - eventTime parameter added to createEvent internals for future support
 - Debug only mode for better coverage
+- Splitting out of migration files into separate, properly ordered, files due to new truffle timeouts
 
 Internal only major changes:
 - Events are no longer Aventities
