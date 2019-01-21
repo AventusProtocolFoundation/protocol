@@ -6,7 +6,6 @@ const signingTestHelper = require('./helpers/signingTestHelper');
 const votingTestHelper = require('./helpers/votingTestHelper');
 
 contract('Misc testing', async () => {
-  const accounts = testHelper.getAccounts('governanceProposalOwner', 'voter');
 
   it('incorrect version for ecrecover', async () => {
     await testHelper.init();
@@ -15,6 +14,7 @@ contract('Misc testing', async () => {
     await signingTestHelper.init(testHelper);
     await votingTestHelper.init(testHelper, timeTestHelper, signingTestHelper);
     await governanceProposalsTestHelper.init(testHelper, avtTestHelper, votingTestHelper);
+    const accounts = testHelper.getAccounts('governanceProposalOwner', 'voter');
 
     const proposalId = await governanceProposalsTestHelper.depositAndCreateGovernanceProposal();
 
@@ -24,7 +24,7 @@ contract('Misc testing', async () => {
     await votingTestHelper.castVote(voter, proposalId, optionId);
 
     await votingTestHelper.advanceTimeToRevealingStart(proposalId);
-    const signedMessage = signingTestHelper.getRevealVoteSignedMessage(voter, proposalId, optionId);
+    const signedMessage = await signingTestHelper.getRevealVoteSignedMessage(voter, proposalId, optionId);
     const badSignedMessage = signedMessage.substr(0, signedMessage.length - 2) + '55';
     const proposalsManager = testHelper.getProposalsManager();
     testHelper.expectRevert(() => proposalsManager.revealVote(badSignedMessage, proposalId, optionId, {from: voter}),

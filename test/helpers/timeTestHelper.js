@@ -4,11 +4,11 @@ const profilingHelper = require('./profilingHelper');
 
 let testHelper, realTimeInstance, mockTimeInstance, aventusStorage;
 let mockTimeKey;
-let blockChainTime = new web3.BigNumber(0);
+let blockChainTime = new web3.utils.BN(0);
 
 // one day in seconds
-const oneDay = 24 * 60 * 60;
-const oneWeek = oneDay * 7;
+const oneDay = new web3.utils.BN(24 * 60 * 60);
+const oneWeek = oneDay.mul(new web3.utils.BN(7));
 
 async function init(_testHelper) {
   testHelper = _testHelper;
@@ -16,7 +16,8 @@ async function init(_testHelper) {
   aventusStorage = testHelper.getAventusStorage();
 
   mockTimeKey = testHelper.hash('MockCurrentTime');
-  blockChainTime = new web3.BigNumber(web3.eth.getBlock(web3.eth.blockNumber).timestamp);
+  const block = await web3.eth.getBlock('latest');
+  blockChainTime = new web3.utils.BN(block.timestamp);
 
   realTimeInstance = await LAventusTime.deployed();
   realTimeInstance = profilingHelper.profileContract(realTimeInstance, 'realTimeInstance');
@@ -55,8 +56,16 @@ async function getTimeKey() {
   return testHelper.hash('LAventusTimeInstance' + '-' + versionMajorMinor);
 }
 
+async function advanceByNumDays(_numDays) {
+  const currentTime = await aventusStorage.getUInt(mockTimeKey);
+  const timeToAdvance = oneDay.mul(new web3.utils.BN(_numDays));
+  const timestamp = currentTime.add(timeToAdvance);
+  await setMockTime(timestamp);
+}
+
 // Keep exports alphabetical.
 module.exports = {
+  advanceByNumDays,
   advanceToTime,
   init,
   now: () => blockChainTime,

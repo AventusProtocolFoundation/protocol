@@ -1,29 +1,29 @@
 const testHelper = require('./helpers/testHelper');
 const merkleProofTestHelper = require('./helpers/merkleProofTestHelper');
 const avtTestHelper = require('./helpers/avtTestHelper');
+const timeTestHelper = require('./helpers/timeTestHelper');
 const membersTestHelper = require('./helpers/membersTestHelper');
 
 contract('MerkleRootsManager', async () => {
-  let merkleRootsManager;
+  let merkleRootsManager, accounts, goodValidator, badSender;
   let hashCount = 0;
-  const accounts = testHelper.getAccounts('scalingProvider', 'alternateScalingProvider');
-  const scalingProviderType = membersTestHelper.memberTypes.scalingProvider;
-
-  const goodScalingProvider = accounts.scalingProvider;
-  const badSender = accounts.alternateScalingProvider;
+  const validatorType = membersTestHelper.memberTypes.validator;
 
   before(async () => {
     await testHelper.init();
     await merkleProofTestHelper.init(testHelper);
     await avtTestHelper.init(testHelper);
-    await membersTestHelper.init(testHelper, avtTestHelper);
+    await membersTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
 
     merkleRootsManager = testHelper.getMerkleRootsManager();
-    await membersTestHelper.depositAndRegisterMember(goodScalingProvider, scalingProviderType);
+    accounts = testHelper.getAccounts('validator', 'alternateValidator');
+    goodValidator = accounts.validator;
+    badSender = accounts.alternateValidator;
+    await membersTestHelper.depositAndRegisterMember(goodValidator, validatorType);
   });
 
   after(async () => {
-    await membersTestHelper.deregisterMemberAndWithdrawDeposit(goodScalingProvider, scalingProviderType);
+    await membersTestHelper.deregisterMemberAndWithdrawDeposit(goodValidator, validatorType);
     await avtTestHelper.checkFundsEmpty(accounts, false);
   });
 
@@ -34,9 +34,9 @@ contract('MerkleRootsManager', async () => {
   context('registerMerkleRoot()', async () => {
     async function registerMerkleRootSucceeds() {
       const goodRootHash = goodUniqueRootHash();
-      await merkleRootsManager.registerMerkleRoot(goodRootHash, {from: goodScalingProvider});
-      const logArgs = await testHelper.getLogArgs(merkleRootsManager.LogMerkleRootRegistered);
-      assert.equal(logArgs.ownerAddress, goodScalingProvider);
+      await merkleRootsManager.registerMerkleRoot(goodRootHash, {from: goodValidator});
+      const logArgs = await testHelper.getLogArgs(merkleRootsManager, 'LogMerkleRootRegistered');
+      assert.equal(logArgs.ownerAddress, goodValidator);
       assert.equal(logArgs.rootHash, goodRootHash);
     }
 
@@ -54,22 +54,22 @@ contract('MerkleRootsManager', async () => {
     context('fails with', async () => {
       context('bad parameters', async () => {
         it('sender', async () => {
-          await registerMerkleRootFails(goodUniqueRootHash(), badSender, 'Sender must be an active scaling provider');
+          await registerMerkleRootFails(goodUniqueRootHash(), badSender, 'Sender must be an active validator');
         });
       });
 
       context('bad states', async () => {
         it('the same rootHash has already been registered', async () => {
           const goodRootHash = goodUniqueRootHash();
-          await merkleRootsManager.registerMerkleRoot(goodRootHash, {from: goodScalingProvider});
-          await registerMerkleRootFails(goodRootHash, goodScalingProvider, 'Merkle root is already active');
+          await merkleRootsManager.registerMerkleRoot(goodRootHash, {from: goodValidator});
+          await registerMerkleRootFails(goodRootHash, goodValidator, 'Merkle root is already active');
         });
 
-        it('the address is not registered as a scaling provider', async () => {
-          await membersTestHelper.deregisterMemberAndWithdrawDeposit(goodScalingProvider, scalingProviderType);
-          await registerMerkleRootFails(goodUniqueRootHash(), goodScalingProvider,
-              'Sender must be an active scaling provider');
-          await membersTestHelper.depositAndRegisterMember(goodScalingProvider, scalingProviderType);
+        it('the address is not registered as a validator', async () => {
+          await membersTestHelper.deregisterMemberAndWithdrawDeposit(goodValidator, validatorType);
+          await registerMerkleRootFails(goodUniqueRootHash(), goodValidator,
+              'Sender must be an active validator');
+          await membersTestHelper.depositAndRegisterMember(goodValidator, validatorType);
         });
       });
     });

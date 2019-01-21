@@ -5,14 +5,15 @@ const timeTestHelper = require('./helpers/timeTestHelper');
 const votingTestHelper = require('./helpers/votingTestHelper');
 const signingTestHelper = require('./helpers/signingTestHelper');
 const challengesTestHelper = require('./helpers/challengesTestHelper');
+const BN = testHelper.BN;
 
 contract('Member challenges', async () => {
 
-  const accounts = testHelper.getAccounts('member', 'challenger', 'otherMember',
-      'voter', 'claimant', 'challengeEnder');
-  const goodType = membersTestHelper.memberTypes.primary;
+  let accounts;
+  const goodType = membersTestHelper.memberTypes.validator;
   const badType = membersTestHelper.memberTypes.bad;
-  const stake = avtTestHelper.oneAVTTo18SigFig;
+  const stake1 = avtTestHelper.oneAVTTo18SigFig;
+  const stake2 = stake1.mul(new BN(2));
   const checkStakes = true;
 
   let membersManager, proposalsManager;
@@ -20,14 +21,15 @@ contract('Member challenges', async () => {
   before(async () => {
     await testHelper.init();
     await avtTestHelper.init(testHelper);
-    await membersTestHelper.init(testHelper, avtTestHelper);
     await timeTestHelper.init(testHelper);
+    await membersTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
     await signingTestHelper.init(testHelper);
     await votingTestHelper.init(testHelper, timeTestHelper, signingTestHelper);
     await challengesTestHelper.init(testHelper, avtTestHelper, votingTestHelper);
 
     membersManager = testHelper.getMembersManager();
     proposalsManager = testHelper.getProposalsManager();
+    accounts = testHelper.getAccounts('member', 'challenger', 'otherMember', 'voter1', 'voter2', 'claimant','challengeEnder');
   });
 
   after(async () => {
@@ -40,23 +42,27 @@ contract('Member challenges', async () => {
   }
 
   context('challengeMember()', async () => {
-
-    const goodMember = accounts.member;
-    const goodChallenger = accounts.challenger;
+    let goodMember, goodChallenger;
 
     async function challengeMemberSucceeds() {
       await membersManager.challengeMember(goodMember, goodType, {from: goodChallenger});
-      const logArgs = await testHelper.getLogArgs(membersManager.LogMemberChallenged);
+      const logArgs = await testHelper.getLogArgs(membersManager, 'LogMemberChallenged');
 
       assert.equal(logArgs.memberAddress, goodMember);
       assert.equal(logArgs.memberType, goodType);
       assert.notEqual(logArgs.proposalId.toNumber(), 0);
       return logArgs.proposalId.toNumber();
     }
+
     async function challengeMemberFails(_memberAddress, _memberType, _challenger, _expectedError) {
       await testHelper.expectRevert(() => membersManager.challengeMember(_memberAddress, _memberType, {from: _challenger}),
           _expectedError);
     }
+
+    before(async () => {
+      goodMember = accounts.member;
+      goodChallenger = accounts.challenger;
+    });
 
     context('good state', async () => {
 
@@ -75,24 +81,26 @@ contract('Member challenges', async () => {
         await avtTestHelper.clearAVTFund(goodChallenger, 'deposit');
       });
 
-      it('good parameters', async () => {
-        let proposalId = await challengeMemberSucceeds();
-        await challengesTestHelper.advanceTimeAndEndMemberChallenge(goodMember, goodType, proposalId, goodChallenger);
+      context('succeeds with', async () => {
+        it('good parameters', async () => {
+          let proposalId = await challengeMemberSucceeds();
+          await challengesTestHelper.advanceTimeAndEndMemberChallenge(goodMember, goodType, proposalId, goodChallenger);
+        });
       });
 
-      context('with bad parameters', async () => {
-        it('member does not exist', async () => {
+      context('fails with bad parameters', async () => {
+        it('member address', async () => {
           await challengeMemberFails(accounts.otherMember, goodType, goodChallenger,
-              'Aventity must be valid and not under challenge');
+              'Must be valid and not under challenge');
         });
 
-        it('member type is invalid', async () => {
-          await challengeMemberFails(goodMember, badType, goodChallenger, 'Member type is not valid');
+        it('member type', async () => {
+          await challengeMemberFails(goodMember, badType, goodChallenger, 'Must be valid and not under challenge');
         });
       });
     });
 
-    context('bad state', async () => {
+    context('fails with bad state', async () => {
 
       before(async () => {
         await membersTestHelper.depositAndRegisterMember(goodMember, goodType);
@@ -105,23 +113,21 @@ contract('Member challenges', async () => {
         await avtTestHelper.clearAVTFund(goodChallenger, 'deposit');
       });
 
-      it('member is being challenged', async () => {
+      it('member is under challenge', async () => {
         let challenge = await challengesTestHelper.challengeMember(goodMember, goodType, goodChallenger);
-        await challengeMemberFails(goodMember, goodType, goodChallenger, 'Aventity must be valid and not under challenge');
+        await challengeMemberFails(goodMember, goodType, goodChallenger, 'Must be valid and not under challenge');
         await challengesTestHelper.advanceTimeAndEndMemberChallenge(goodMember, goodType, challenge.proposalId, goodChallenger);
       });
     });
   });
 
   context('endMemberChallenge()', async () => {
-    const goodMember = accounts.member;
-    const challengeEnder = accounts.challenger;
-    let goodProposalId;
+    let goodMember, challengeEnder, goodProposalId;
 
     async function endMemberChallengeSucceeds() {
       await membersManager.endMemberChallenge(goodMember, goodType, {from: challengeEnder});
 
-      const logArgs = await testHelper.getLogArgs(membersManager.LogMemberChallengeEnded);
+      const logArgs = await testHelper.getLogArgs(membersManager, 'LogMemberChallengeEnded');
       assert.equal(logArgs.memberAddress, goodMember);
       assert.equal(logArgs.memberType, goodType);
       assert.equal(logArgs.proposalId.toNumber(), goodProposalId);
@@ -136,7 +142,12 @@ contract('Member challenges', async () => {
           {from: challengeEnder}), _expectedError);
     }
 
-    context('good state: proposal is ready to be ended', async () => {
+    before(async () => {
+      goodMember = accounts.member;
+      challengeEnder = accounts.challenger;
+    });
+
+    context('good state', async () => {
       before(async () => {
         await membersTestHelper.depositAndRegisterMember(goodMember, goodType);
       });
@@ -156,9 +167,11 @@ contract('Member challenges', async () => {
         await votingTestHelper.advanceTimeToEndOfProposal(goodProposalId);
       });
 
-      it('succeeds with good state and good parameters', async () => {
-        await endMemberChallengeSucceeds();
-        await avtTestHelper.clearAVTFund(challengeEnder, 'deposit');
+      context('succeeds with', async () => {
+        it('good parameters', async () => {
+          await endMemberChallengeSucceeds();
+          await avtTestHelper.clearAVTFund(challengeEnder, 'deposit');
+        });
       });
 
       context('fails with bad parameters', async () => {
@@ -167,18 +180,18 @@ contract('Member challenges', async () => {
           await avtTestHelper.clearAVTFund(challengeEnder, 'deposit');
         });
 
-        it('member does not exist', async () => {
-          let badMemberAddress = 0;
+        it('member address', async () => {
+          let badMemberAddress = testHelper.zeroAddress;
           await endMemberChallengeFails(badMemberAddress, goodType, 'Member is not registered');
         });
 
-        it('member type is invalid', async () => {
-          await endMemberChallengeFails(goodMember, badType, 'Member type is not valid');
+        it('member type', async () => {
+          await endMemberChallengeFails(goodMember, badType, 'Member is not registered');
         });
       });
     });
 
-    context('fails if bad state', async () => {
+    context('fails with bad state', async () => {
       it('member is fraudulent', async () => {
         await membersTestHelper.depositAndRegisterMember(goodMember, goodType);
         // The next action effectively deregisters goodMember, so no tearDown will be done for this test
@@ -197,29 +210,25 @@ contract('Member challenges', async () => {
     });
   });
 
-  context('claimVoterWinnings', async () => {
-    let goodChallenge;
-    const challengedAddress = accounts.otherMember;
-    const challenger = accounts.challenger;
-    const challengeEnder = accounts.challengeEnder;
-    const badClaimant = accounts.claimant;
-    const voter = accounts.voter;
-
-    let deposit, winnerWinnings, enderWinnings, voterWinnings;
+  context('claimVoterWinnings()', async () => {
+    let goodChallenge, challengedAddress, challenger, challengeEnder, badClaimant, voter1, voter2;
+    let deposit, winnerWinnings, enderWinnings, voter1Winnings, voter2Winnings;
 
     async function claimWinningsForAllVoters() {
-      await proposalsManager.claimVoterWinnings(goodChallenge.proposalId, {from: voter});
+      await proposalsManager.claimVoterWinnings(goodChallenge.proposalId, {from: voter1});
+      await proposalsManager.claimVoterWinnings(goodChallenge.proposalId, {from: voter2});
     }
 
     async function withdrawDepositsAfterWinningsDistribution() {
       await avtTestHelper.withdrawAVTFromFund(winnerWinnings, challengedAddress, 'deposit');
       await avtTestHelper.withdrawAVTFromFund(enderWinnings, challengeEnder, 'deposit');
-      await avtTestHelper.withdrawAVTFromFund(voterWinnings, voter, 'deposit');
+      await avtTestHelper.withdrawAVTFromFund(voter1Winnings, voter1, 'deposit');
+      await avtTestHelper.withdrawAVTFromFund(voter2Winnings, voter2, 'deposit');
     }
 
     async function claimVoterWinningsSucceeds(_voter) {
       await proposalsManager.claimVoterWinnings(goodChallenge.proposalId, {from: _voter});
-      const logArgs = await testHelper.getLogArgs(proposalsManager.LogVoterWinningsClaimed);
+      const logArgs = await testHelper.getLogArgs(proposalsManager, 'LogVoterWinningsClaimed');
 
       assert.equal(logArgs.proposalId, goodChallenge.proposalId);
     }
@@ -230,24 +239,32 @@ contract('Member challenges', async () => {
 
     function depositAmountToWinner(_deposit) {
       // Winner currently gets 10%.
-      return _deposit.dividedToIntegerBy(10);
+      return _deposit.div(new BN(10));
     }
 
     function depositAmountToChallengeEnder(_deposit) {
       // Challenge ender currently gets 10%
-      return _deposit.dividedToIntegerBy(10);
+      return _deposit.div(new BN(10));
     }
 
     before(async () => {
+      challengedAddress = accounts.otherMember;
+      challenger = accounts.challenger;
+      challengeEnder = accounts.challengeEnder;
+      badClaimant = accounts.claimant;
+      voter1 = accounts.voter1;
+      voter2 = accounts.voter2;
       await membersTestHelper.depositAndRegisterMember(challengedAddress, goodType);
 
-      await avtTestHelper.addAVTToFund(stake, voter, 'stake');
+      await avtTestHelper.addAVTToFund(stake1, voter1, 'stake');
+      await avtTestHelper.addAVTToFund(stake2, voter2, 'stake');
     });
 
     after(async () => {
       await membersTestHelper.deregisterMemberAndWithdrawDeposit(challengedAddress, goodType);
 
-      await avtTestHelper.withdrawAVTFromFund(stake, voter, 'stake');
+      await avtTestHelper.withdrawAVTFromFund(stake1, voter1, 'stake');
+      await avtTestHelper.withdrawAVTFromFund(stake2, voter2, 'stake');
     });
 
     beforeEach(async () => {
@@ -255,56 +272,64 @@ contract('Member challenges', async () => {
       deposit = goodChallenge.deposit;
       winnerWinnings = depositAmountToWinner(deposit);
       enderWinnings = depositAmountToChallengeEnder(deposit);
-      voterWinnings = deposit.minus(winnerWinnings).minus(enderWinnings);
+      voter1Winnings = (deposit.sub(winnerWinnings).sub(enderWinnings)).div(new BN(3));
+      voter2Winnings = voter1Winnings.mul(new BN(2));
 
       await votingTestHelper.advanceTimeCastAndRevealVotes(goodChallenge.proposalId,
-          [{voter: voter, option: 2}]);
+          [{voter: voter1, option: 2}, {voter: voter2, option: 2}]);
 
       await challengesTestHelper.advanceTimeAndEndMemberChallenge(challengedAddress, goodType, goodChallenge.proposalId,
           challengeEnder);
     });
 
-    it('winnings are correctly distributed for different voter, challenger and challengee', async () => {
-      await claimVoterWinningsSucceeds(voter);
-
-      await withdrawDepositsAfterWinningsDistribution();
+    afterEach(async() => {
+      // Voter2 has been given the remainder; clear it out.
+      await avtTestHelper.withdrawAVTFromFund(1, voter2, 'deposit');
     });
 
-    context('fails', async () => {
-
-      afterEach(async () => {
-        await claimWinningsForAllVoters();
+    context('succeeds with', async () => {
+      it('good parameters', async () => {
+        await claimVoterWinningsSucceeds(voter1);
+        await claimVoterWinningsSucceeds(voter2);
 
         await withdrawDepositsAfterWinningsDistribution();
       });
-
-      it('bad parameter proposalId', async () => {
-        let badProposalId = 9999;
-
-        await claimVoterWinningsFails(badProposalId, voter, 'Voter has no winnings for this proposal');
-      });
-
-      it('bad parameter: claimant has not voted for this proposal', async () => {
-        await claimVoterWinningsFails(goodChallenge.proposalId, badClaimant, 'Voter has no winnings for this proposal');
-      });
-
     });
 
-    context('if bad state', async () => {
+    context('fails with', async () => {
+      context('bad parameters', async () => {
+        afterEach(async () => {
+          await claimWinningsForAllVoters();
+          await withdrawDepositsAfterWinningsDistribution();
+        });
 
-      // Must be beforeEach, and not before, because this depends on a beforeEach of an outer context
-      beforeEach(async () => {
-        await claimWinningsForAllVoters();
+        it('proposalId', async () => {
+          let badProposalId = 9999;
+
+          await claimVoterWinningsFails(badProposalId, voter1, 'Voter has no winnings for this proposal');
+          await claimVoterWinningsFails(badProposalId, voter2, 'Voter has no winnings for this proposal');
+        });
+
+        it('claimant', async () => {
+          await claimVoterWinningsFails(goodChallenge.proposalId, badClaimant, 'Voter has no winnings for this proposal');
+        });
       });
 
-      afterEach(async () => {
-        await withdrawDepositsAfterWinningsDistribution();
-      });
+      context('bad state', async () => {
+        // Must be beforeEach, and not before, because this depends on a beforeEach of an outer context
+        beforeEach(async () => {
+          await claimWinningsForAllVoters();
+        });
 
-      it('voter claims twice', async () => {
-        await claimVoterWinningsFails(goodChallenge.proposalId, voter, 'Voter has no winnings for this proposal');
-      });
+        afterEach(async () => {
+          await withdrawDepositsAfterWinningsDistribution();
+        });
 
+        it('claimant has already claimed winnings', async () => {
+          await claimVoterWinningsFails(goodChallenge.proposalId, voter1, 'Voter has no winnings for this proposal');
+          await claimVoterWinningsFails(goodChallenge.proposalId, voter2, 'Voter has no winnings for this proposal');
+        });
+      });
     });
   });
 });

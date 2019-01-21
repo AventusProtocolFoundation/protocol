@@ -1,19 +1,22 @@
-let testHelper, avtTestHelper, membersManager, evidenceURL;
+let testHelper, avtTestHelper, timeTestHelper, membersManager, evidenceURL;
 
 const memberDesc = 'Some description';
 
 const memberTypes = {
-  broker: 'Broker',
-  primary: 'Primary',
-  secondary: 'Secondary',
   tokenBondingCurve: 'TokenBondingCurve',
-  scalingProvider: 'ScalingProvider',
-  bad: 'invalid',
+  validator: 'Validator',
+  bad: 'invalid'
 };
 
-async function init(_testHelper, _avtTestHelper) {
+const coolingOffPeriods = {
+  validator: 90,
+  maximum: 90
+}
+
+async function init(_testHelper, _avtTestHelper, _timeTestHelper) {
   testHelper = _testHelper;
   avtTestHelper = _avtTestHelper;
+  timeTestHelper = _timeTestHelper;
 
   membersManager = testHelper.getMembersManager();
 
@@ -29,6 +32,7 @@ async function depositAndRegisterMember(_memberAddress, _memberType) {
 
 async function deregisterMemberAndWithdrawDeposit(_memberAddress, _memberType) {
   const deposit = await membersManager.getExistingMemberDeposit(_memberAddress, _memberType);
+  await timeTestHelper.advanceByNumDays(coolingOffPeriods.maximum);
   await membersManager.deregisterMember(_memberAddress, _memberType);
   await avtTestHelper.withdrawAVTFromFund(deposit, _memberAddress, 'deposit');
 }
@@ -39,9 +43,10 @@ async function getExistingMemberDeposit(_memberAddress, _memberType) {
 
 // Keep exports alphabetical.
 module.exports = {
+  coolingOffPeriods,
   depositAndRegisterMember,
   deregisterMemberAndWithdrawDeposit,
   getExistingMemberDeposit,
   init,
-  memberTypes,
+  memberTypes
 };

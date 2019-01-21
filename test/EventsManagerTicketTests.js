@@ -9,13 +9,13 @@ let eventsManager;
 
 contract('Events manager - tickets', async () => {
 
-  const accounts = testHelper.getAccounts('eventOwner', 'broker', 'buyer', 'newBuyer', 'nobody');
+  let accounts;
   const ticketMetadata = 'Some metadata';
-  const doorData = '0x';
+  const doorData = testHelper.randomBytes32();
   const baseVendorTicketRef = 'Vendor ref ';
 
   let vendorTicketNumber = 0;
-  let goodEventId, vendorTicketRefHash, goodSellTicketVendorProof;
+  let goodEventId, vendorTicketRefHash;
 
   before(async () => {
     await testHelper.init();
@@ -23,17 +23,19 @@ contract('Events manager - tickets', async () => {
     await timeTestHelper.init(testHelper);
     await signingTestHelper.init(testHelper);
     await eventsTestHelper.init(testHelper, timeTestHelper, avtTestHelper, signingTestHelper);
-    await membersTestHelper.init(testHelper, avtTestHelper);
+    await membersTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
 
     eventsManager = await testHelper.getEventsManager();
-    goodEventId = await eventsTestHelper.depositAndCreateEvent(accounts.eventOwner);
-    await eventsTestHelper.advanceTimeToOnSaleTime(goodEventId);
-    await membersTestHelper.depositAndRegisterMember(accounts.broker, membersTestHelper.memberTypes.broker);
+
+    accounts = testHelper.getAccounts('eventOwner', 'validator', 'buyer', 'newBuyer', 'nobody');
+    goodEventId = await eventsTestHelper.createEvent(accounts.eventOwner);
+    await membersTestHelper.depositAndRegisterMember(accounts.validator, membersTestHelper.memberTypes.validator);
+    await eventsManager.registerRoleOnEvent(goodEventId, accounts.validator, eventsTestHelper.roles.validator,
+      {from: accounts.eventOwner});
   });
 
   after(async () => {
-    await eventsTestHelper.advanceTimeEndEventAndWithdrawDeposit(accounts.eventOwner, goodEventId);
-    await membersTestHelper.deregisterMemberAndWithdrawDeposit(accounts.broker, membersTestHelper.memberTypes.broker);
+    await membersTestHelper.deregisterMemberAndWithdrawDeposit(accounts.validator, membersTestHelper.memberTypes.validator);
     await avtTestHelper.checkFundsEmpty(accounts);
   });
 
@@ -41,15 +43,13 @@ contract('Events manager - tickets', async () => {
     const vendorTicketRef = baseVendorTicketRef + vendorTicketNumber;
     vendorTicketRefHash = testHelper.hash(vendorTicketRef);
     vendorTicketNumber++;
-    goodSellTicketVendorProof = signingTestHelper.getSellTicketVendorProof(accounts.eventOwner, goodEventId,
-        vendorTicketRefHash, accounts.buyer);
   });
 
   async function doSellTicket(_params) {
-    eventsManager.sellTicket(_params.eventId, vendorTicketRefHash, ticketMetadata, accounts.buyer, _params.vendorProof,
-        doorData, {from: _params.sender});
+    await eventsManager.sellTicket(_params.eventId, vendorTicketRefHash, ticketMetadata, accounts.buyer,
+        {from: _params.sender});
 
-    const logArgs = await testHelper.getLogArgs(eventsManager.LogTicketSold);
+    const logArgs = await testHelper.getLogArgs(eventsManager, 'LogTicketSold');
     return logArgs.ticketId;
   }
 
@@ -63,23 +63,21 @@ contract('Events manager - tickets', async () => {
         {from: _params.sender});
   }
 
+  async function sellTicketFails(_params, _expectedError) {
+    await testHelper.expectRevert(() => eventsManager.sellTicket(_params.eventId, vendorTicketRefHash, ticketMetadata,
+        accounts.buyer, {from: _params.sender}), _expectedError);
+  }
+
   context('sellTicket()', async () => {
     async function sellTicketSucceeds(_params) {
-      eventsManager.sellTicket(_params.eventId, vendorTicketRefHash, ticketMetadata, accounts.buyer, _params.vendorProof,
-          doorData, {from: _params.sender});
+      await eventsManager.sellTicket(_params.eventId, vendorTicketRefHash, ticketMetadata, accounts.buyer,
+          {from: _params.sender});
 
-      const logArgs = await testHelper.getLogArgs(eventsManager.LogTicketSold);
-      assert.equal(logArgs.eventId.toNumber(), _params.eventId);
+      const logArgs = await testHelper.getLogArgs(eventsManager, 'LogTicketSold');
+      testHelper.assertBNEquals(logArgs.eventId, _params.eventId);
       assert.equal(logArgs.vendorTicketRefHash, vendorTicketRefHash);
       assert.equal(logArgs.ticketMetadata, ticketMetadata);
-      assert.equal(logArgs.vendorProof, _params.vendorProof);
-      assert.equal(logArgs.doorData, doorData);
       assert.equal(logArgs.buyer, accounts.buyer);
-    }
-
-    async function sellTicketFails(_params, _expectedError) {
-      await testHelper.expectRevert(() => eventsManager.sellTicket(_params.eventId, vendorTicketRefHash, ticketMetadata,
-          accounts.buyer, _params.vendorProof, doorData, {from: _params.sender}), _expectedError);
     }
 
     context('good parameters', async () => {
@@ -88,31 +86,25 @@ contract('Events manager - tickets', async () => {
       beforeEach(async () => {
         goodParams = {
           eventId: goodEventId,
-          vendorProof: goodSellTicketVendorProof,
           sender: accounts.eventOwner
         };
       });
 
-      context('all-good', async () => {
-        it('primary integrated via event owner', async () => {
-          await sellTicketSucceeds(goodParams);
-        });
-
-        it('primary not integrated via event owner', async () => {
-          goodParams.vendorProof = signingTestHelper.getSellTicketVendorProof(accounts.eventOwner, goodEventId,
-              vendorTicketRefHash);
-
+      context('succeeds with good state', async () => {
+        it('via event owner', async () => {
           await sellTicketSucceeds(goodParams);
         });
       });
 
-      it('bad state: ticket has already been sold', async () => {
-        await doSellTicket(goodParams);
-        await sellTicketFails(goodParams, 'Ticket must not already be active');
+      context('fails with bad state', async () => {
+        it('ticket has already been sold', async () => {
+          await doSellTicket(goodParams);
+          await sellTicketFails(goodParams, 'Ticket must not already be active');
+        });
       });
     });
 
-    context('bad parameters', async () => {
+    context('fails with bad parameters', async () => {
       let badParams;
 
       beforeEach(async () => {
@@ -123,38 +115,19 @@ contract('Events manager - tickets', async () => {
       });
 
       async function sellTicketFailsWithBadParams(_expectedError) {
-        if (badParams.vendorProof === undefined) {
-          badParams.vendorProof = signingTestHelper.getSellTicketVendorProof(accounts.eventOwner, badParams.eventId,
-              vendorTicketRefHash, accounts.buyer);
-        }
-
         await sellTicketFails(badParams, _expectedError);
       }
 
-      it('event id (does not exist)', async () => {
+      it('event id', async () => {
         badParams.eventId = 9999;
 
         await sellTicketFailsWithBadParams('Event must be trading');
       });
 
-      it('vendor proof (not provided)', async () => {
-        badParams.vendorProof = '0x';
-
-        await sellTicketFailsWithBadParams('Invalid Primary proof');
-      });
-
-      it('sender (not a registered vendor or broker)', async () => {
+      it('sender', async () => {
         badParams.sender = accounts.nobody;
 
-        await sellTicketFailsWithBadParams('Primary or protocol active broker only');
-      });
-
-      it('sender (protocol registered broker for a non-integrated primary)', async () => {
-        badParams.vendorProof = signingTestHelper.getSellTicketVendorProof(accounts.eventOwner, goodEventId,
-            vendorTicketRefHash);
-        badParams.sender = accounts.broker;
-
-        await sellTicketFailsWithBadParams('Primary or event active broker only');
+        await sellTicketFailsWithBadParams('Sender must be vendor on event');
       });
     });
   });
@@ -163,17 +136,16 @@ contract('Events manager - tickets', async () => {
     let goodTicketId;
 
     beforeEach(async () => {
-      goodTicketId = await doSellTicket({eventId: goodEventId, vendorProof: goodSellTicketVendorProof,
-          sender: accounts.eventOwner}); //eslint-disable-line indent
+      goodTicketId = await doSellTicket({eventId: goodEventId, sender: accounts.eventOwner});
     });
 
     async function resellTicketSucceeds(_params) {
       await eventsManager.resellTicket(_params.eventId, _params.ticketId, _params.ticketOwnerProof, accounts.newBuyer,
           _params.resellerProof, doorData, {from: _params.sender});
 
-      const logArgs = await testHelper.getLogArgs(eventsManager.LogTicketResold);
-      assert.equal(logArgs.eventId.toNumber(), _params.eventId);
-      assert.equal(logArgs.ticketId.toNumber(), _params.ticketId);
+      const logArgs = await testHelper.getLogArgs(eventsManager, 'LogTicketResold');
+      testHelper.assertBNEquals(logArgs.eventId, _params.eventId);
+      testHelper.assertBNEquals(logArgs.ticketId, _params.ticketId);
       assert.equal(logArgs.resellerProof, _params.resellerProof);
       assert.equal(logArgs.doorData, doorData);
       assert.equal(logArgs.newBuyer, accounts.newBuyer);
@@ -188,9 +160,10 @@ contract('Events manager - tickets', async () => {
       let goodParams;
 
       beforeEach(async () => {
-        const ticketOwnerProof = signingTestHelper.getResellTicketTicketOwnerProof(accounts.buyer, goodEventId, goodTicketId);
-        const resellerProof = signingTestHelper.getResellTicketResellerProof(accounts.eventOwner, goodEventId, goodTicketId,
-            ticketOwnerProof, accounts.newBuyer);
+        const ticketOwnerProof = await signingTestHelper.getResellTicketTicketOwnerProof(accounts.buyer, goodEventId,
+            goodTicketId);
+        const resellerProof = await signingTestHelper.getResellTicketResellerProof(accounts.eventOwner, goodEventId,
+            goodTicketId, ticketOwnerProof, accounts.newBuyer);
 
         goodParams = {
           eventId: goodEventId,
@@ -201,27 +174,43 @@ contract('Events manager - tickets', async () => {
         };
       });
 
-      it('all-good: via event owner', async () => {
-        await resellTicketSucceeds(goodParams);
+      context('succeeds with good state', async () => {
+        it('via event owner', async () => {
+          await resellTicketSucceeds(goodParams);
+        });
+
+        it('via non-integrated event owner', async () => {
+          goodParams.resellerProof = await signingTestHelper.getResellTicketResellerProof(goodParams.sender,
+              goodParams.eventId, goodParams.ticketId, goodParams.ticketOwnerProof);
+
+          await resellTicketSucceeds(goodParams);
+        });
+
+        it('via validator', async () => {
+          goodParams.sender = accounts.validator;
+          await resellTicketSucceeds(goodParams);
+        });
       });
 
-      it('bad state: ticket has already been resold', async () => {
-        await doResellTicket(goodParams);
-        await resellTicketFails(goodParams, 'Resale must be signed by current owner');
+      context('fails with bad state', async () => {
+        it('ticket has already been resold', async () => {
+          await doResellTicket(goodParams);
+          await resellTicketFails(goodParams, 'Resale must be signed by current owner');
+        });
       });
     });
 
-    context('bad parameters', async () => {
+    context('fails with bad parameters', async () => {
       let badParams;
 
       async function resellTicketFailsWithBadParams(_expectedError) {
         if (badParams.ticketOwnerProof === undefined) {
-          badParams.ticketOwnerProof = signingTestHelper.getResellTicketTicketOwnerProof(accounts.buyer, badParams.eventId,
-              badParams.ticketId);
+          badParams.ticketOwnerProof = await signingTestHelper.getResellTicketTicketOwnerProof(accounts.buyer,
+              badParams.eventId, badParams.ticketId);
         }
 
         if (badParams.resellerProof === undefined) {
-          badParams.resellerProof = signingTestHelper.getResellTicketResellerProof(accounts.eventOwner, badParams.eventId,
+          badParams.resellerProof = await signingTestHelper.getResellTicketResellerProof(accounts.eventOwner, badParams.eventId,
               badParams.ticketId, badParams.ticketOwnerProof, accounts.newBuyer);
         }
 
@@ -236,34 +225,34 @@ contract('Events manager - tickets', async () => {
         };
       });
 
-      it('event id (does not exist)', async () => {
+      it('event id', async () => {
         badParams.eventId = 9999;
 
         await resellTicketFailsWithBadParams('Event must be trading');
       });
 
-      it('ticket id (does not exist)', async () => {
+      it('ticket id', async () => {
         badParams.ticketId = 9999;
 
         await resellTicketFailsWithBadParams('Ticket must be active');
       });
 
-      it('ticket owner proof (not provided)', async () => {
+      it('ticket owner proof', async () => {
         badParams.ticketOwnerProof = '0x';
 
         await resellTicketFailsWithBadParams('Resale must be signed by current owner');
       });
 
-      it('reseller proof (not provided)', async () => {
+      it('reseller proof', async () => {
         badParams.resellerProof = '0x';
 
         await resellTicketFailsWithBadParams('Invalid Secondary proof');
       });
 
-      it('sender (not a registered reseller or broker)', async () => {
+      it('sender', async () => {
         badParams.sender = accounts.nobody;
 
-        await resellTicketFailsWithBadParams('Secondary or protocol active broker only');
+        await resellTicketFailsWithBadParams('Sender must be validator or reseller on event');
       });
     });
   });
@@ -272,17 +261,16 @@ contract('Events manager - tickets', async () => {
     let goodTicketId;
 
     beforeEach(async () => {
-      goodTicketId = await doSellTicket({eventId: goodEventId, vendorProof: goodSellTicketVendorProof,
-          sender: accounts.eventOwner}); //eslint-disable-line indent
+      goodTicketId = await doSellTicket({eventId: goodEventId, sender: accounts.eventOwner});
     });
 
     async function cancelTicketSucceeds(_params) {
       await eventsManager.cancelTicket(_params.eventId, _params.ticketId, _params.vendorProof,
           {from: _params.sender});
 
-      const logArgs = await testHelper.getLogArgs(eventsManager.LogTicketCancelled);
-      assert.equal(logArgs.eventId.toNumber(), _params.eventId);
-      assert.equal(logArgs.ticketId.toNumber(), _params.ticketId);
+      const logArgs = await testHelper.getLogArgs(eventsManager, 'LogTicketCancelled');
+      testHelper.assertBNEquals(logArgs.eventId, _params.eventId);
+      testHelper.assertBNEquals(logArgs.ticketId, _params.ticketId);
       assert.equal(logArgs.vendorProof, _params.vendorProof);
     }
 
@@ -295,7 +283,7 @@ contract('Events manager - tickets', async () => {
       let goodParams;
 
       beforeEach(async () => {
-        const vendorProof = signingTestHelper.getCancelTicketVendorProof(accounts.eventOwner, goodEventId, goodTicketId,
+        const vendorProof = await signingTestHelper.getCancelTicketVendorProof(accounts.eventOwner, goodEventId, goodTicketId,
             accounts.buyer);
 
         goodParams = {
@@ -306,17 +294,26 @@ contract('Events manager - tickets', async () => {
         };
       });
 
-      it('all-good: via event owner', async () => {
-        await cancelTicketSucceeds(goodParams);
+      context('succeeds with good state', async () => {
+        it('via event owner', async () => {
+          await cancelTicketSucceeds(goodParams);
+        });
+
+        it('via validator', async () => {
+          goodParams.sender = accounts.validator;
+          await cancelTicketSucceeds(goodParams);
+        });
       });
 
-      it('bad state: ticket has already been cancelled', async () => {
-        await doCancelTicket(goodParams);
-        await cancelTicketFails(goodParams, 'Proof must be valid and signed by vendor');
+      context('fails with bad state', async () => {
+        it('ticket has already been cancelled', async () => {
+          await doCancelTicket(goodParams);
+          await cancelTicketFails(goodParams, 'Proof must be valid and signed by vendor');
+        });
       });
     });
 
-    context('bad parameters', async () => {
+    context('fails with bad parameters', async () => {
       let badParams;
 
       beforeEach(async () => {
@@ -329,36 +326,51 @@ contract('Events manager - tickets', async () => {
 
       async function cancelTicketFailsWithBadParams(_expectedError) {
         if (badParams.vendorProof === undefined) {
-          badParams.vendorProof = signingTestHelper.getCancelTicketVendorProof(accounts.eventOwner, badParams.eventId,
+          badParams.vendorProof = await signingTestHelper.getCancelTicketVendorProof(accounts.eventOwner, badParams.eventId,
               badParams.ticketId, accounts.buyer);
         }
 
         await cancelTicketFails(badParams, _expectedError);
       }
 
-      it('event id (does not exist)', async () => {
+      it('event id', async () => {
         badParams.eventId = 9999;
 
         await cancelTicketFailsWithBadParams('Event must be trading');
       });
 
-      it('ticket id (does not exist)', async () => {
+      it('ticket id', async () => {
         badParams.ticketId = 9999;
 
         await cancelTicketFailsWithBadParams('Ticket must be active');
       });
 
-      it('vendor proof (not provided)', async () => {
+      it('vendor proof', async () => {
         badParams.vendorProof = '0x';
 
         await cancelTicketFailsWithBadParams('Proof must be valid and signed by vendor');
       });
 
-      it('sender (not registered vendor or broker)', async () => {
+      it('sender', async () => {
         badParams.sender = accounts.nobody;
 
-        await cancelTicketFailsWithBadParams('Must be vendor or registered broker on this event');
+        await cancelTicketFailsWithBadParams('Sender must be validator or vendor on event');
       });
+    });
+  });
+
+  // TODO: This has to be done last because all the tests use the same event which must always be in the correct state.
+  // This is BAD! We should not be sharing such state between contexts as it means we can't have ANY bad event state tests :(
+  // Refactor this file so they don't share this state then move this into the sellTicket context.
+  context('extra tests for coverage', async () => {
+    it ('sellTicket bad state', async () => {
+      const goodParams = {
+        eventId: goodEventId,
+        sender: accounts.eventOwner
+      };
+
+      await eventsTestHelper.advanceTimeToOffSaleTime(goodEventId);
+      await sellTicketFails(goodParams, 'Event must be trading');
     });
   });
 });

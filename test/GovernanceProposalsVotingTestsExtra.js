@@ -8,8 +8,7 @@ const governanceProposalsTestHelper = require('./helpers/governanceProposalsTest
 // These tests are required to achieve 100% line and branch coverage and are based on GovernanceProposalsVotingTests
 // The setup for these tests does not fit with our standard test structure so they have been split out in a new file
 contract('Governance proposals voting - extra', async () => {
-  let proposalsManager;
-  const accounts = testHelper.getAccounts('goodVoterAddress');
+  let proposalsManager, accounts;
 
   before(async () => {
     await testHelper.init();
@@ -19,6 +18,7 @@ contract('Governance proposals voting - extra', async () => {
     await votingTestHelper.init(testHelper, timeTestHelper, signingTestHelper);
     await governanceProposalsTestHelper.init(testHelper, avtTestHelper, votingTestHelper);
     proposalsManager = testHelper.getProposalsManager();
+    accounts = testHelper.getAccounts('goodVoterAddress');
   });
 
   after(async () => {
@@ -28,15 +28,14 @@ contract('Governance proposals voting - extra', async () => {
   context('line coverage tests', async () => {
     let goodGovernanceProposalId, governanceProposalId2, governanceProposalId3;
     let governanceProposalDeposit;
-    let goodPrevTime, goodRevealVoteSignedMessage;
+    let goodPrevTime, goodCastVoteSecret, goodRevealVoteSignedMessage;
 
     const goodVoteOption = 2;
-    const goodCastVoteSecret = 0;
 
     async function castVoteSucceeds() {
       await proposalsManager.castVote(goodGovernanceProposalId, goodCastVoteSecret, goodPrevTime,
           {from: accounts.goodVoterAddress});
-      const logArgs = await testHelper.getLogArgs(proposalsManager.LogVoteCast);
+      const logArgs = await testHelper.getLogArgs(proposalsManager, 'LogVoteCast');
       assert.equal(logArgs.proposalId.toNumber(), goodGovernanceProposalId.toNumber());
       assert.equal(logArgs.sender, accounts.goodVoterAddress);
       assert.equal(logArgs.secret, goodCastVoteSecret);
@@ -53,7 +52,7 @@ contract('Governance proposals voting - extra', async () => {
     async function revealVoteSucceeds() {
       await proposalsManager.revealVote(goodRevealVoteSignedMessage, goodGovernanceProposalId, goodVoteOption,
           {from: accounts.goodVoterAddress});
-      const logArgs = await testHelper.getLogArgs(proposalsManager.LogVoteRevealed);
+      const logArgs = await testHelper.getLogArgs(proposalsManager, 'LogVoteRevealed');
       assert.equal(logArgs.proposalId.toNumber(), goodGovernanceProposalId.toNumber());
       assert.equal(logArgs.optId, goodVoteOption);
     }
@@ -64,12 +63,14 @@ contract('Governance proposals voting - extra', async () => {
       //  - 1 starting after the other 2
       goodGovernanceProposalId = await governanceProposalsTestHelper.depositAndCreateGovernanceProposal();
       governanceProposalId2 = await governanceProposalsTestHelper.depositAndCreateGovernanceProposal();
-      await timeTestHelper.advanceToTime(timeTestHelper.now().plus(timeTestHelper.oneDay));
+      await timeTestHelper.advanceToTime(timeTestHelper.now().add(timeTestHelper.oneDay));
       governanceProposalId3 = await governanceProposalsTestHelper.depositAndCreateGovernanceProposal();
 
       goodPrevTime = await proposalsManager.getPrevTimeParamForCastVote(goodGovernanceProposalId,
           {from: accounts.goodVoterAddress});
-      goodRevealVoteSignedMessage = signingTestHelper.getRevealVoteSignedMessage(accounts.goodVoterAddress,
+      goodCastVoteSecret = await signingTestHelper.getCastVoteSecret(accounts.goodVoterAddress, goodGovernanceProposalId, 
+          goodVoteOption);
+      goodRevealVoteSignedMessage = await signingTestHelper.getRevealVoteSignedMessage(accounts.goodVoterAddress,
           goodGovernanceProposalId, goodVoteOption);
 
       await votingTestHelper.advanceTimeToVotingStart(governanceProposalId3);
@@ -100,15 +101,18 @@ contract('Governance proposals voting - extra', async () => {
     });
 
     it('reveal vote succeeds when revealing vote after voting more than once', async () => {
-      await votingTestHelper.castVote(accounts.goodVoterAddress, goodGovernanceProposalId, goodVoteOption);
       await votingTestHelper.advanceTimeToRevealingStart(governanceProposalId3);
       await revealVoteSucceeds();
     });
   });
 
   context('branch coverage tests', async () => {
-    const voter = accounts.goodVoterAddress;
+    let voter;
     const optionId = 2;
+
+    before(async () => {
+      voter = accounts.goodVoterAddress;
+    });
 
     it('successfully revealing outside the revealing period', async () => {
       const governanceProposalId = await governanceProposalsTestHelper.depositAndCreateGovernanceProposal();
@@ -119,7 +123,7 @@ contract('Governance proposals voting - extra', async () => {
 
     it('successfully voting in a different order to proposal creation', async () => {
       const governanceProposalId_1 = await governanceProposalsTestHelper.depositAndCreateGovernanceProposal();
-      await timeTestHelper.advanceToTime(timeTestHelper.now().plus(timeTestHelper.oneDay));
+      await timeTestHelper.advanceToTime(timeTestHelper.now().add(timeTestHelper.oneDay));
       const governanceProposalId_2 = await governanceProposalsTestHelper.depositAndCreateGovernanceProposal();
       await votingTestHelper.advanceTimeToVotingStart(governanceProposalId_2);
       await votingTestHelper.castVote(voter, governanceProposalId_2, optionId);

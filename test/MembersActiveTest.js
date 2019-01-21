@@ -1,10 +1,11 @@
 const testHelper = require('./helpers/testHelper');
 const avtTestHelper = require('./helpers/avtTestHelper');
+const timeTestHelper = require('./helpers/timeTestHelper');
 const membersTestHelper = require('./helpers/membersTestHelper');
 
 contract('MembersManager - activity', async () => {
-  const accounts = testHelper.getAccounts('goodMember', 'badMember');
-  const goodMemberType = membersTestHelper.memberTypes.broker;
+  let accounts;
+  const goodMemberType = membersTestHelper.memberTypes.validator;
   const badMemberType = membersTestHelper.memberTypes.bad;
 
   let membersManager;
@@ -12,9 +13,11 @@ contract('MembersManager - activity', async () => {
   before(async () => {
     await testHelper.init();
     await avtTestHelper.init(testHelper);
-    await membersTestHelper.init(testHelper, avtTestHelper);
+    await timeTestHelper.init(testHelper);
+    await membersTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
 
     membersManager = testHelper.getMembersManager();
+    accounts = testHelper.getAccounts('goodMember', 'badMember');
     await membersTestHelper.depositAndRegisterMember(accounts.goodMember, goodMemberType);
   });
 

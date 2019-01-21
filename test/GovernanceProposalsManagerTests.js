@@ -6,10 +6,10 @@ const governanceProposalsTestHelper = require('./helpers/governanceProposalsTest
 
 contract('Governance proposals', async () => {
   let proposalsManager;
-  let governanceProposalDeposit = new web3.BigNumber(0);
+  let governanceProposalDeposit = testHelper.BN_ZERO;
   let goodGovernanceProposalDescription = 'I think we should change something';
 
-  const accounts = testHelper.getAccounts('governanceProposalOwner');
+  let accounts;
 
   before(async () => {
     await testHelper.init();
@@ -20,6 +20,7 @@ contract('Governance proposals', async () => {
 
     proposalsManager = testHelper.getProposalsManager();
 
+    accounts = testHelper.getAccounts('governanceProposalOwner');
     governanceProposalDeposit = await proposalsManager.getGovernanceProposalDeposit();
   });
 
@@ -32,10 +33,10 @@ contract('Governance proposals', async () => {
     async function createGovernanceProposalSucceeds() {
       await proposalsManager.createGovernanceProposal(goodGovernanceProposalDescription,
           {from: accounts.governanceProposalOwner});
-      const logArgs = await testHelper.getLogArgs(proposalsManager.LogGovernanceProposalCreated);
+      const logArgs = await testHelper.getLogArgs(proposalsManager, 'LogGovernanceProposalCreated');
       assert.equal(logArgs.desc, goodGovernanceProposalDescription);
       assert.equal(logArgs.sender, accounts.governanceProposalOwner);
-      assert.equal(logArgs.deposit.toNumber(), governanceProposalDeposit.toNumber());
+      testHelper.assertBNEquals(logArgs.deposit, governanceProposalDeposit);
       return logArgs.proposalId;
     }
 
@@ -44,19 +45,23 @@ contract('Governance proposals', async () => {
           {from: accounts.governanceProposalOwner}), _expectedError);
     }
 
-    context('good state', async () => {
+    context('succeeds with', async () => {
       beforeEach(async () => {
         await avtTestHelper.addAVTToFund(governanceProposalDeposit, accounts.governanceProposalOwner, 'deposit');
       });
 
-      it('all good', async () => {
+      it('good state', async () => {
         const governanceProposalId = await createGovernanceProposalSucceeds();
         await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(governanceProposalId);
       });
     });
 
-    it('bad state: not enough deposit', async () => {
-      await createGovernanceProposalFails('Insufficient deposits');
+    context('fails with', async () => {
+      context('bad state', async () => {
+        it('not enough deposit', async () => {
+          await createGovernanceProposalFails('Insufficient deposits');
+        });
+      });
     });
   });
 
@@ -65,7 +70,7 @@ contract('Governance proposals', async () => {
 
     async function endGovernanceProposalSucceeds(_governanceProposalId) {
       await proposalsManager.endGovernanceProposal(_governanceProposalId);
-      const logArgs = await testHelper.getLogArgs(proposalsManager.LogGovernanceProposalEnded);
+      const logArgs = await testHelper.getLogArgs(proposalsManager, 'LogGovernanceProposalEnded');
       assert.equal(logArgs.proposalId.toNumber(), _governanceProposalId.toNumber());
       assert.equal(logArgs.votesFor.toNumber(), 0);
       assert.equal(logArgs.votesAgainst.toNumber(), 0);
@@ -79,33 +84,39 @@ contract('Governance proposals', async () => {
       goodGovernanceProposalId = await governanceProposalsTestHelper.depositAndCreateGovernanceProposal();
     });
 
-    it('succeeds if proposal is after the revealing end period and has not ended', async() => {
-      await votingTestHelper.advanceTimeToEndOfProposal(goodGovernanceProposalId);
-      await endGovernanceProposalSucceeds(goodGovernanceProposalId);
-      await avtTestHelper.withdrawAVTFromFund(governanceProposalDeposit, accounts.governanceProposalOwner, 'deposit');
+    context('succeeds with', async () => {
+      it('good parameters (in end proposal period)', async() => {
+        await votingTestHelper.advanceTimeToEndOfProposal(goodGovernanceProposalId);
+        await endGovernanceProposalSucceeds(goodGovernanceProposalId);
+        await avtTestHelper.withdrawAVTFromFund(governanceProposalDeposit, accounts.governanceProposalOwner, 'deposit');
+      });
     });
 
-    it('fails if proposal id does not exist', async() => {
-      const badGovernanceProposalId = 9999;
-      await endGovernanceProposalFails(badGovernanceProposalId, 'Proposal is not a governance proposal');
-      await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
-    });
-
-    context('fails if state is', async () => {
-      it('in the lobbying period', async() => {
-        await endGovernanceProposalFails(goodGovernanceProposalId, 'Proposal has the wrong status');
-        await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
+    context('fails with', async () => {
+      context('bad parameters', async () => {
+        it('governanceProposalId', async() => {
+          const badGovernanceProposalId = 9999;
+          await endGovernanceProposalFails(badGovernanceProposalId, 'Proposal is not a governance proposal');
+          await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
+        });
       });
 
-      it('in the voting period', async() => {
-        await votingTestHelper.advanceTimeToVotingStart(goodGovernanceProposalId);
-        await endGovernanceProposalFails(goodGovernanceProposalId, 'Proposal has the wrong status');
-        await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
-      });
+      context('bad state', async () => {
+        it('in the lobbying period', async() => {
+          await endGovernanceProposalFails(goodGovernanceProposalId, 'Proposal has the wrong status');
+          await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
+        });
 
-      it('ended', async() => {
-        await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
-        await endGovernanceProposalFails(goodGovernanceProposalId, 'Proposal has the wrong status');
+        it('in the voting period', async() => {
+          await votingTestHelper.advanceTimeToVotingStart(goodGovernanceProposalId);
+          await endGovernanceProposalFails(goodGovernanceProposalId, 'Proposal has the wrong status');
+          await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
+        });
+
+        it('has already ended', async() => {
+          await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
+          await endGovernanceProposalFails(goodGovernanceProposalId, 'Proposal has the wrong status');
+        });
       });
     });
   });
@@ -117,5 +128,4 @@ contract('Governance proposals', async () => {
       assert.equal(aventusTime.toNumber(), timeTestHelper.now().toNumber());
     });
   });
-
 });

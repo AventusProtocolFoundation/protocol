@@ -33,3 +33,7 @@ Internal only major changes:
 
 Internal only minor changes:
 - Remove all ternary operators - they are not support by solcover
+Upgrade tests to web3 1.0 for compatibility with truffle 5.0
+Split members and roles within tests
+All javascript method parameters now begin with an underscore
+Reformat test contexts for consistency and readability
