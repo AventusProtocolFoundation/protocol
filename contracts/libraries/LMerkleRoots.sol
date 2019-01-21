@@ -1,8 +1,7 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LMembers.sol";
-import "./LAVTManager.sol";
 import "./LMerkleRootsStorage.sol";
 
 library LMerkleRoots {
@@ -10,8 +9,8 @@ library LMerkleRoots {
   // See IMerkleRootsManager interface for logs description
   event LogMerkleRootRegistered(address indexed ownerAddress, bytes32 indexed rootHash);
 
-  modifier onlyActiveScalingProvider(IAventusStorage _storage) {
-    require(LMembers.memberIsActive(_storage, msg.sender, "ScalingProvider"), "Sender must be an active scaling provider");
+  modifier onlyActiveValidator(IAventusStorage _storage) {
+    require(LMembers.memberIsActive(_storage, msg.sender, "Validator"), "Sender must be an active validator");
     _;
   }
 
@@ -21,7 +20,7 @@ library LMerkleRoots {
   }
 
   // NOTE: IAventusStorage is not used here but is required for proxying
-  function generateMerkleRoot(IAventusStorage, bytes32[] _merklePath, bytes32 _leafHash)
+  function generateMerkleRoot(IAventusStorage, bytes32[] calldata _merklePath, bytes32 _leafHash)
     external
     pure
     returns (bytes32 rootHash_)
@@ -44,16 +43,16 @@ library LMerkleRoots {
 
   function registerMerkleRoot(IAventusStorage _storage, bytes32 _rootHash)
     external
-    onlyActiveScalingProvider(_storage)
+    onlyActiveValidator(_storage)
     onlyIfNotAlreadyActive(_storage, _rootHash)
   {
     LMerkleRootsStorage.setRootHashOwner(_storage, _rootHash, msg.sender);
-    LMembers.recordInteraction(_storage, msg.sender, "ScalingProvider");
+    LMembers.recordInteraction(_storage, msg.sender, "Validator");
     emit LogMerkleRootRegistered(msg.sender, _rootHash);
   }
 
   function merkleRootIsActive(IAventusStorage _storage, bytes32 _rootHash) public view returns (bool merkleRootIsActive_) {
-    // TODO: Consider checking that the scaling provider is valid here as this is also called directly from listTicket.
+    // TODO: Consider checking that the validator is valid here as this is also called directly from listTicket.
     merkleRootIsActive_ = LMerkleRootsStorage.getRootHashOwner(_storage, _rootHash) != address(0);
   }
 }
