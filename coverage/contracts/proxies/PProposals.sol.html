@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <title>Code coverage report for contracts/interfaces/IMerkleRootsManager.sol</title>
+    <title>Code coverage report for contracts/proxies/PProposals.sol</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../prettify.css" />
     <link rel="stylesheet" href="../../base.css" />
@@ -16,13 +16,13 @@
 <div class='wrapper'>
   <div class='pad1'>
     <h1>
-      <a href="../../index.html">all files</a> / <a href="index.html">contracts/interfaces/</a> IMerkleRootsManager.sol
+      <a href="../../index.html">all files</a> / <a href="index.html">contracts/proxies/</a> PProposals.sol
     </h1>
     <div class='clearfix'>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Statements</span>
-        <span class='fraction'>0/0</span>
+        <span class='fraction'>1/1</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
@@ -32,12 +32,12 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Functions</span>
-        <span class='fraction'>0/0</span>
+        <span class='fraction'>1/1</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Lines</span>
-        <span class='fraction'>0/0</span>
+        <span class='fraction'>1/1</span>
       </div>
     </div>
   </div>
@@ -53,35 +53,26 @@
 8
 9
 10
-11
-12
-13
-14</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+11</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">317×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.5.2;
 &nbsp;
-interface IMerkleRootsManager {
+import "./PLibraryDelegate.sol";
 &nbsp;
-  /**
-   * @notice Event emitted for a registerMerkleRoot transaction.
-   */
-  event LogMerkleRootRegistered(address indexed ownerAddress, bytes32 indexed rootHash);
+contract PProposals is PLibraryDelegate {
 &nbsp;
-  /**
-   * @notice Register the given merkleRoot on the Aventus Protocol.
-   */
-  function registerMerkleRoot(bytes32 _rootHash) external;
+  function () external {
+    libraryDelegateFwd("LProposalsInstance");
+  }
+&nbsp;
 }</pre></td></tr>
 </table></pre>
 <div class='push'></div><!-- for sticky footer -->

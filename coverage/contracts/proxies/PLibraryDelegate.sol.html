@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <title>Code coverage report for contracts\proxies\PLibraryDelegate.sol</title>
+    <title>Code coverage report for contracts/proxies/PLibraryDelegate.sol</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../prettify.css" />
     <link rel="stylesheet" href="../../base.css" />
@@ -22,12 +22,12 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Statements</span>
-        <span class='fraction'>7/7</span>
+        <span class='fraction'>3/3</span>
       </div>
       <div class='fl pad1y space-right2'>
-        <span class="strong">100% </span>
+        <span class="strong">50% </span>
         <span class="quiet">Branches</span>
-        <span class='fraction'>0/0</span>
+        <span class='fraction'>1/2</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
@@ -37,7 +37,7 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Lines</span>
-        <span class='fraction'>7/7</span>
+        <span class='fraction'>4/4</span>
       </div>
     </div>
   </div>
@@ -69,14 +69,7 @@
 24
 25
 26
-27
-28
-29
-30
-31
-32
-33
-34</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+27</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -87,37 +80,30 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">10977×</span>
+<span class="cline-any cline-yes">1834×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">10977×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1834×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1834×</span>
+<span class="cline-any cline-yes">1834×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">10977×</span>
-<span class="cline-any cline-yes">10977×</span>
-<span class="cline-any cline-yes">219540×</span>
-<span class="cline-any cline-yes">219540×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">10977×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.4.24;
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.5.2;
 &nbsp;
-import '../interfaces/IAventusStorage.sol';
-import './PDelegate.sol';
-import '../Versioned.sol';
+import "../interfaces/IAventusStorage.sol";
+import "./PDelegate.sol";
+import "../Versioned.sol";
 &nbsp;
 contract PLibraryDelegate is PDelegate, Versioned {
 &nbsp;
-  function libraryDelegateFwd(string _libraryInstanceKey) internal  {
+  function libraryDelegateFwd(string memory _libraryInstanceKey) internal  {
     // NOTE: The first parameter from msg.data MUST be the AventusStorage contract
     // address or this will not work!
     address target = IAventusStorage(addressFromMsgData(msg.data)).getAddress(
@@ -126,20 +112,13 @@ contract PLibraryDelegate is PDelegate, Versioned {
   }
 &nbsp;
   // The first 4 bytes of msg.data are the method name. The next 32 bytes are
-  // the 20 bytes of address padded to bytes32. From this 36 bytes of data,
-  // we ignore the first 16 bytes and then proceed from MSB to LSB, adding
-  // each byte to the total one by one.
-  // We keep a running total (result) of all the bytes we have seen.
-  // Every time we add a new byte, we "push" all the existing bytes one place
-  // to the left, multiplying the result by 256 and adding the new one.
-  // This avoids explicit exponentiations and unnecessary multiplications
-  function addressFromMsgData(bytes _data) private pure returns (address result_) {
-    uint result = 0;
-    for (uint i = 16; i &lt; 36; ++i) {
-      result *= 256;
-      result += uint(_data[i]);
+  // the 20 bytes of address padded to bytes32. Loading these 36 bytes of data into
+  // an address variable will yield the address we require (the first 16 bytes will be ignored)
+  function addressFromMsgData(bytes memory _data) private pure returns (address result_) {
+    <span class="missing-if-branch" title="else path not taken" >E</span>assert(_data.length &gt;= 36);
+    assembly {
+      result_ := mload(add(_data, 36))
     }
-    result_ = address(result);
   }
 &nbsp;
 }</pre></td></tr>
@@ -148,7 +127,7 @@ contract PLibraryDelegate is PDelegate, Versioned {
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Oct 18 2018 13:27:15 GMT+0100 (GMT Daylight Time)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Jan 21 2019 16:59:59 GMT+0000 (GMT)
 </div>
 </div>
 <script src="../../prettify.js"></script>
