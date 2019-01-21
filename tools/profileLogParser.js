@@ -1,42 +1,42 @@
 const helper = require('./helpers/profileLogsHelper');
 
-function processLines(database, lines) {
-  lines.forEach(function(line) {
-    doProcessLine(line, database);
+function processLines(_database, _lines) {
+  _lines.forEach(function(line) {
+    doProcessLine(line, _database);
   });
 }
 
-function doProcessLine(line, database) {
-  if (!line) return;
+function doProcessLine(_line, _database) {
+  if (!_line) return;
   let id, context, restOfLine, data;
-  [id, restOfLine] = helper.getIdFromLine(line);
+  [id, restOfLine] = helper.getIdFromLine(_line);
   [context, restOfLine] = helper.getContextfromLine(restOfLine);
   data = restOfLine.split(',');
 
   if (helper.isSummaryLine(data)) {
-    processSummaryLine(database, id, context, data);
+    processSummaryLine(_database, id, context, data);
   } else {
-    processStatLine(database, id, context, data);
+    processStatLine(_database, id, context, data);
   }
 
 }
 
-function processSummaryLine(database, id, context, data) {
-  helper.registerTestIfNeeded(database, id);
-  let test = helper.getTest(database, id);
-  helper.addSummaryToTest(test, context, data);
+function processSummaryLine(_database, _id, _context, _data) {
+  helper.registerTestIfNeeded(_database, _id);
+  let test = helper.getTest(_database, _id);
+  helper.addSummaryToTest(test, _context, _data);
 
-  if (!helper.isBlockType(context) && !test.test) {
-    test.test = context;
+  if (!helper.isBlockType(_context) && !test.test) {
+    test.test = _context;
   }
 }
 
-function processStatLine(database, id, context, data) {
+function processStatLine(_database, _id, _context, _data) {
   let contract, method;
   let nCalls, totalTime, avgTime;
-  [contract, method] = data[0].split('.');
-  [nCalls, totalTime, avgTime] = data.slice(1);
-  database.stats.push([id, context, contract, method, nCalls, totalTime, avgTime]);
+  [contract, method] = _data[0].split('.');
+  [nCalls, totalTime, avgTime] = _data.slice(1);
+  _database.stats.push([_id, _context, contract, method, nCalls, totalTime, avgTime]);
 }
 
 let database = {

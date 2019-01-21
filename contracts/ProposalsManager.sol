@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 import "./interfaces/IAventusStorage.sol";
 import "./interfaces/IProposalsManager.sol";
@@ -15,7 +15,7 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
     s = _s;
   }
 
-  function createGovernanceProposal(string _desc) external {
+  function createGovernanceProposal(string calldata _desc) external {
     LProposals.createGovernanceProposal(s, _desc);
   }
 
@@ -31,7 +31,7 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
     LProposals.cancelVote(s, _proposalId);
   }
 
-  function revealVote(bytes _signedMessage, uint _proposalId, uint _optId) external {
+  function revealVote(bytes calldata _signedMessage, uint _proposalId, uint _optId) external {
     LProposals.revealVote(s, _signedMessage, _proposalId, _optId);
   }
 

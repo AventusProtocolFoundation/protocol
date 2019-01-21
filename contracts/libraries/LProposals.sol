@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LProposalsEnact.sol";
@@ -9,8 +9,8 @@ import "./LProposalsStorage.sol";
 library LProposals {
 
   // See IProposalsManager interface for logs description.
-  event LogGovernanceProposalCreated(uint indexed proposalId, address indexed sender, string desc, uint lobbyingStart, uint votingStart,
-      uint revealingStart, uint revealingEnd, uint deposit);
+  event LogGovernanceProposalCreated(uint indexed proposalId, address indexed sender, string desc, uint lobbyingStart,
+      uint votingStart, uint revealingStart, uint revealingEnd, uint deposit);
   event LogVoteCast(uint indexed proposalId, address indexed sender, bytes32 secret, uint prevTime);
   event LogVoteCancelled(uint indexed proposalId, address indexed sender);
   event LogVoteRevealed(uint indexed proposalId, address indexed sender, uint indexed optId, uint revealingStart,
@@ -33,9 +33,9 @@ library LProposals {
     _;
   }
 
-  function createGovernanceProposal(IAventusStorage _storage, string _desc) external {
+  function createGovernanceProposal(IAventusStorage _storage, string calldata _desc) external {
     uint deposit = getGovernanceProposalDeposit(_storage);
-    uint proposalId = doCreateGovernanceProposal(_storage, deposit) ;
+    uint proposalId = doCreateGovernanceProposal(_storage, deposit);
     (uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd) = getTimestamps(_storage, proposalId);
 
     // set a flag to mark this proposal as a governance proposal
@@ -76,7 +76,7 @@ library LProposals {
     emit LogVoteCancelled(_proposalId, msg.sender);
   }
 
-  function revealVote(IAventusStorage _storage, bytes _signedMessage, uint _proposalId, uint _optId) external {
+  function revealVote(IAventusStorage _storage, bytes calldata _signedMessage, uint _proposalId, uint _optId) external {
     LProposalsVoting.revealVote(_storage, _signedMessage, _proposalId, _optId);
     uint revealingStart = LProposalsStorage.getRevealingStart(_storage, _proposalId);
     uint revealingEnd = LProposalsStorage.getRevealingEnd(_storage, _proposalId);
@@ -127,9 +127,16 @@ library LProposals {
     LProposalsStorage.setRevealedVoterStake(_storage, _proposalId, _voter, _optionId, 0);
   }
 
+  function getNumVotersRevealedWithStake(IAventusStorage _storage, uint _proposalId, uint _optionId)
+    external
+    view
+    returns (uint numRevealedVoters_)
+  {
+    numRevealedVoters_ = LProposalsStorage.getNumVotersRevealedWithStake(_storage, _proposalId, _optionId);
+  }
+
   function getGovernanceProposalDeposit(IAventusStorage _storage) public view returns (uint depositInAVT_) {
-    uint depositInUSCents = LProposalsStorage.getGovernanceProposalDepositInUSCents(_storage);
-    depositInAVT_ = LAVTManager.getAVTDecimals(_storage, depositInUSCents);
+    depositInAVT_ = LProposalsStorage.getGovernanceProposalDeposit(_storage);
   }
 
   function endProposal(IAventusStorage _storage, uint _proposalId)

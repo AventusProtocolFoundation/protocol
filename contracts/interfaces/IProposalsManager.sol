@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 interface IProposalsManager {
   /**
@@ -43,7 +43,7 @@ interface IProposalsManager {
    * @notice Create a governance proposal to be voted on
    * @param _desc Either just a title or a pointer to IPFS details
    */
-  function createGovernanceProposal(string _desc) external;
+  function createGovernanceProposal(string calldata _desc) external;
 
   /**
    * @notice End the governance proposal: will unlock the deposit.
@@ -77,7 +77,7 @@ interface IProposalsManager {
    * @param _proposalId Proposal ID
    * @param _optId ID of option that was voted on
    */
-  function revealVote( bytes _signedMessage, uint _proposalId, uint _optId) external;
+  function revealVote( bytes calldata _signedMessage, uint _proposalId, uint _optId) external;
 
   /**
    * @notice Claim winnings from a proposal if caller voted on the winning side.

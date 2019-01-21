@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 import "./interfaces/IAventusStorage.sol";
 import "./interfaces/IEventsManager.sol";
@@ -14,62 +14,37 @@ contract EventsManager is IEventsManager, Owned, Versioned {
     s = _s;
   }
 
-  function createEvent(string _eventDesc, string _eventSupportURL, uint _onSaleTime, uint _offSaleTime,
-    uint _averageTicketPriceInUSCents, bytes _ownerProof)
+  function createEvent(string calldata _eventDesc, uint _offSaleTime, bytes calldata _ownerProof)
     external
   {
-    LEvents.createEvent(s, _eventDesc, _eventSupportURL, _onSaleTime, _offSaleTime, _averageTicketPriceInUSCents, _ownerProof);
+    // TODO: Add new eventTime parameter instead of hard-coded zero - would be breaking change we don't want right now.
+    LEvents.createEvent(s, _eventDesc, 0, _offSaleTime, _ownerProof);
   }
 
-  function cancelEvent(uint _eventId, bytes _ownerProof) external {
-    LEvents.cancelEvent(s, _eventId, _ownerProof);
+  function sellTicket(uint _eventId, bytes32 _vendorTicketRefHash, string calldata _ticketMetadata, address _buyer) external {
+    LEvents.sellTicket(s, _eventId, _vendorTicketRefHash, _ticketMetadata, _buyer);
   }
 
-  function endEvent(uint _eventId) external {
-    LEvents.endEvent(s, _eventId);
-  }
-
-  function sellTicket(uint _eventId, bytes32 _vendorTicketRefHash, string _ticketMetadata, address _buyer, bytes _vendorProof,
-    bytes _doorData) external {
-    LEvents.sellTicket(s, _eventId, _vendorTicketRefHash, _ticketMetadata, _buyer, _vendorProof, _doorData);
-  }
-
-  function cancelTicket(uint _eventId, uint _ticketId, bytes _vendorProof) external {
+  function cancelTicket(uint _eventId, uint _ticketId, bytes calldata _vendorProof) external {
     LEvents.cancelTicket(s, _eventId, _ticketId, _vendorProof);
   }
 
-  function resellTicket(uint _eventId, uint _ticketId, bytes _ticketOwnerPermission, address _newBuyer, bytes _resellerProof,
-    bytes _doorData)
+  function resellTicket(uint _eventId, uint _ticketId, bytes calldata _ticketOwnerPermission, address _newBuyer, bytes calldata _resellerProof,
+    bytes calldata _doorData)
     external {
       LEvents.resellTicket(s, _eventId, _ticketId, _ticketOwnerPermission, _newBuyer, _resellerProof, _doorData);
   }
 
-  function listTicket(uint _eventId, bytes32 _vendorTicketRefHash, string _ticketMetadata, bytes _vendorProof,
-    bytes _doorData, bytes _ticketOwnerProof, bytes32[] _merklePath)
-    external {
-      LEvents.listTicketA(s, _eventId, _vendorTicketRefHash, _ticketMetadata, _vendorProof, _doorData, _ticketOwnerProof);
-      LEvents.listTicketB(s, _eventId, _vendorTicketRefHash, _merklePath);
-      LEvents.listTicketC(s, _eventId, _vendorTicketRefHash, _vendorProof);
-  }
-
-  function registerMemberOnEvent(uint _eventId, address _memberAddress, string _memberType) external {
-    LEvents.registerMemberOnEvent(s, _eventId, _memberAddress, _memberType);
-  }
-
-  function deregisterMemberFromEvent(uint _eventId, address _memberAddress, string _memberType) external {
-    LEvents.deregisterMemberFromEvent(s, _eventId, _memberAddress, _memberType);
-  }
-
-  function getNewEventDeposit(uint _averageTicketPriceInUSCents)
+  function listTicket(uint _eventId, bytes32 _vendorTicketRefHash, string calldata _ticketMetadata, bytes calldata _vendorProof,
+      bytes calldata _doorData, bytes calldata _ticketOwnerProof, bytes32[] calldata _merklePath)
     external
-    view
-    returns (uint depositInUSCents_, uint depositInAVT_)
   {
-    (depositInUSCents_, depositInAVT_) = LEvents.getNewEventDeposit(s, _averageTicketPriceInUSCents);
+    LEvents.listTicketA(s, _eventId, _vendorTicketRefHash, _ticketMetadata, _vendorProof, _doorData, _ticketOwnerProof);
+    LEvents.listTicketB(s, _eventId, _vendorTicketRefHash, _merklePath);
+    LEvents.listTicketC(s, _eventId, _vendorTicketRefHash, _vendorProof);
   }
 
-  function getExistingEventDeposit(uint _eventId) external view returns(uint eventDeposit_) {
-    eventDeposit_ = LEvents.getExistingEventDeposit(s, _eventId);
+  function registerRoleOnEvent(uint _eventId, address _roleAddress, string calldata _role) external {
+    LEvents.registerRoleOnEvent(s, _eventId, _roleAddress, _role);
   }
-
 }

@@ -1,7 +1,8 @@
+const BN = web3.utils.BN;
+
 let testHelper, avtManager, aventusStorage, avt, accounts;
 
-const oneAVTTo18SigFig = (new web3.BigNumber(10)).pow(18);
-const oneAVTInUSCents = 97; // Matches value in ParameterRegistry.
+const oneAVTTo18SigFig = (new BN(10)).pow(new BN(18));
 
 async function init(_testHelper) {
   testHelper = _testHelper;
@@ -51,16 +52,16 @@ async function checkFundsEmpty(_accounts, _alsoCheckStakes) {
     if (_alsoCheckStakes) checkFundIsEmpty('stake', account, accountName);
   }
   let totalAVTFunds = await totalBalance();
-  assert.equal(totalAVTFunds.toNumber(), 0, 'Total balance not cleared');
+  testHelper.assertBNZero(totalAVTFunds, 'Total balance not cleared');
 }
 
 async function checkFundIsEmpty(_fund, _account, _accountName) {
-  const depositBalance = (await avtManager.getBalance(_fund, _account)).toNumber();
-  assert.equal(depositBalance, 0, (_fund + ' account ' + _accountName + ' has AVT: ' + depositBalance));
+  const depositBalance = await avtManager.getBalance(_fund, _account);
+  testHelper.assertBNZero(depositBalance, (_fund + ' account ' + _accountName + ' has AVT: ' + depositBalance));
 }
 
-function getAVTFromUSCents(_numUSCents) {
-  return oneAVTTo18SigFig.mul(_numUSCents).dividedToIntegerBy(oneAVTInUSCents);
+function toNat(_amountInAVT) {
+  return _amountInAVT.mul(oneAVTTo18SigFig);
 }
 
 // Keep exports alphabetical.
@@ -70,9 +71,9 @@ module.exports = {
   balanceOf,
   checkFundsEmpty,
   clearAVTFund,
-  getAVTFromUSCents,
   init,
   oneAVTTo18SigFig,
+  toNat,
   totalBalance,
   withdrawAVTFromFund,
 };

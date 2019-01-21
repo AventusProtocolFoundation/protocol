@@ -1,36 +1,31 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
 
 library LAVTStorage {
+  string constant avtSchema = "AVT";
+  string constant avtFundSchema = "AVTFund";
 
-  bytes32 constant oneAVTInUSCentsKey = keccak256(abi.encodePacked("OneAVTInUSCents"));
+  // TODO: Callers should get Voting data from LProposals instead.
+  string constant votingSchema = "Voting";
 
-  function getOneAVTInUSCents(IAventusStorage _storage)
-    external
-    view
-    returns (uint oneAVTInUSCents_)
-  {
-    oneAVTInUSCents_ = _storage.getUInt(oneAVTInUSCentsKey);
-  }
-
-  function getFundBalance(IAventusStorage _storage, address _avtHolder, string _fund)
+  function getFundBalance(IAventusStorage _storage, address _avtHolder, string calldata _fund)
     external
     view
     returns (uint balance_)
   {
-    balance_ = _storage.getUInt(keccak256(abi.encodePacked("AVTFund", _avtHolder, _fund)));
+    balance_ = _storage.getUInt(keccak256(abi.encodePacked(avtFundSchema, _avtHolder, _fund)));
   }
 
-  function decreaseFund(IAventusStorage _storage, address _account, string _fund, uint _amount) external {
-    bytes32 key = keccak256(abi.encodePacked("AVTFund", _account, _fund));
+  function decreaseFund(IAventusStorage _storage, address _account, string calldata _fund, uint _amount) external {
+    bytes32 key = keccak256(abi.encodePacked(avtFundSchema, _account, _fund));
     uint currDeposit = _storage.getUInt(key);
     require(_amount <= currDeposit, "Amount taken must be less than current deposit");
     _storage.setUInt(key, currDeposit - _amount);
   }
 
-  function increaseFund(IAventusStorage _storage,  address _account, string _fund, uint _amount) external {
-    bytes32 key = keccak256(abi.encodePacked("AVTFund", _account, _fund));
+  function increaseFund(IAventusStorage _storage,  address _account, string calldata _fund, uint _amount) external {
+    bytes32 key = keccak256(abi.encodePacked(avtFundSchema, _account, _fund));
     uint currDeposit = _storage.getUInt(key);
     require(_amount != 0, "Added amount must be greater than zero");
     _storage.setUInt(key, currDeposit + _amount);
@@ -41,11 +36,11 @@ library LAVTStorage {
     view
     returns (uint expectedDeposits_)
   {
-    expectedDeposits_ = _storage.getUInt(keccak256(abi.encodePacked("ExpectedDeposits", _depositHolder)));
+    expectedDeposits_ = _storage.getUInt(keccak256(abi.encodePacked(avtSchema, "ExpectedDeposits", _depositHolder)));
   }
 
   function setExpectedDeposits(IAventusStorage _storage, address _depositHolder, uint _expectedDeposits) external {
-    _storage.setUInt(keccak256(abi.encodePacked("ExpectedDeposits", _depositHolder)), _expectedDeposits);
+    _storage.setUInt(keccak256(abi.encodePacked(avtSchema, "ExpectedDeposits", _depositHolder)), _expectedDeposits);
   }
 
   function getStakeUnblockTime(IAventusStorage _storage, address _stakeHolder)
@@ -53,7 +48,7 @@ library LAVTStorage {
     view
     returns (uint unblockTime_)
   {
-    unblockTime_ = _storage.getUInt(keccak256(abi.encodePacked("Voting", _stakeHolder, uint(0), "nextTime")));
+    unblockTime_ = _storage.getUInt(keccak256(abi.encodePacked(votingSchema, _stakeHolder, uint(0), "nextTime")));
   }
 
 }

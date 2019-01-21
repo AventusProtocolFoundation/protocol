@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 contract PDelegate {
 
@@ -7,7 +7,7 @@ contract PDelegate {
   * @param _dst Destination address to perform the delegatecall
   * @param _calldata Calldata for the delegatecall
   */
-  function delegatedFwd(address _dst, bytes _calldata) internal {
+  function delegatedFwd(address _dst, bytes memory _calldata) internal {
     assert(isContract(_dst));
 
     assembly {
@@ -24,6 +24,7 @@ contract PDelegate {
     }
   }
 
+// DEBUG_ONLY:
   function isContract(address _target)
     view
     internal
@@ -37,4 +38,5 @@ contract PDelegate {
 
     result_ = (size != 0);
   }
+// :DEBUG_ONLY
 }

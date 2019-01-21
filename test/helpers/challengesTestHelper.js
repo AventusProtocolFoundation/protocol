@@ -1,6 +1,8 @@
 let testHelper, avtTestHelper, votingTestHelper;
 let membersManager;
 
+const BN = web3.utils.BN;
+
 async function init(_testHelper, _avtTestHelper, _votingTestHelper) {
   testHelper = _testHelper;
   avtTestHelper  =_avtTestHelper;
@@ -27,7 +29,7 @@ async function challengeMember(_memberAddress, _memberType, _challengeOwner) {
   const existingDeposit = await membersManager.getExistingMemberDeposit(_memberAddress, _memberType);
   await avtTestHelper.addAVTToFund(existingDeposit, _challengeOwner, 'deposit');
   await membersManager.challengeMember(_memberAddress, _memberType, {from: _challengeOwner});
-  const logArgs = await testHelper.getLogArgs(membersManager.LogMemberChallenged);
+  const logArgs = await testHelper.getLogArgs(membersManager, 'LogMemberChallenged');
   return {proposalId : logArgs.proposalId.toNumber(), deposit : existingDeposit};
 }
 
@@ -37,16 +39,16 @@ async function advanceTimeAndEndMemberChallenge(_memberAddress, _memberType, _ch
 }
 
 async function withdrawSuccessfulChallengeWinnings(_challengeProposalId, _challengeOwner, _challengeEnder, _voter, _deposit) {
-  const challengeOwnerAndEnderWinnings = _deposit.dividedToIntegerBy(10);
+  const challengeOwnerAndEnderWinnings = _deposit.div(new BN(10));
   await avtTestHelper.withdrawAVTFromFund(challengeOwnerAndEnderWinnings, _challengeOwner, 'deposit');
   await avtTestHelper.withdrawAVTFromFund(challengeOwnerAndEnderWinnings, _challengeEnder, 'deposit');
 
   await votingTestHelper.claimVoterWinnings(_challengeProposalId, _voter);
-  const totalVoterWinnings = _deposit.minus(challengeOwnerAndEnderWinnings).minus(challengeOwnerAndEnderWinnings);
+  const totalVoterWinnings = _deposit.sub(challengeOwnerAndEnderWinnings).sub(challengeOwnerAndEnderWinnings);
 
   await avtTestHelper.withdrawAVTFromFund(totalVoterWinnings, _voter, 'deposit');
   await avtTestHelper.withdrawAVTFromFund(_deposit, _challengeOwner, 'deposit');
-  return totalVoterWinnings.mod(2).toNumber();
+  return totalVoterWinnings.mod(new BN(2));
 }
 
 // Keep exports alphabetical.

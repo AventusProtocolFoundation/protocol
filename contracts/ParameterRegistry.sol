@@ -1,42 +1,36 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 import "./interfaces/IAventusStorage.sol";
 import "./Owned.sol";
 import "./Versioned.sol";
 
 contract ParameterRegistry is Owned, Versioned {
+  string constant aventitiesSchema = "Aventities";
+  string constant avtSchema = "AVT";
+  string constant eventsSchema = "Events";
+  string constant membersSchema = "Members";
+  string constant parameterRegistrySchema = "ParameterRegistry";
+  string constant proposalsSchema = "Proposals";
+
+  uint private constant oneAVTInNat = 10**18;
 
   // Proposal default values.
   uint private constant GOVERNANCE_PROPOSAL_LOBBYING_PERIOD_DAYS = 14;
   uint private constant GOVERNANCE_PROPOSAL_VOTING_PERIOD_DAYS = 7;
   uint private constant GOVERNANCE_PROPOSAL_REVEALING_PERIOD_DAYS = 7;
-  uint private constant GOVERNANCE_PROPOSAL_DEPOSIT_US_CENTS = 10000;
+  uint private constant GOVERNANCE_PROPOSAL_DEPOSIT = 100 * oneAVTInNat; // In AVT
   uint private constant AVENTITY_CHALLENGE_LOBBYING_PERIOD_DAYS = 14;
   uint private constant AVENTITY_CHALLENGE_VOTING_PERIOD_DAYS = 7;
   uint private constant AVENTITY_CHALLENGE_REVEALING_PERIOD_DAYS = 7;
   uint private constant AVENTITY_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE = 10;
   uint private constant AVENTITY_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE = 10;
 
-  // Events default values.
-  uint private constant EVENT_FREE_DEPOSIT_US_CENTS = 1000000;
-  uint private constant EVENT_PAID_DEPOSIT_US_CENTS = 2000000;
-  uint private constant EVENT_MINIMUM_REPORTING_PERIOD_DAYS = 30;
-
-  // Aventity default values.
-  uint private constant BROKER_DEPOSIT = 100000; // In US cents
-  uint private constant PRIMARY_DEPOSIT = 100000; // In US cents
-  uint private constant SECONDARY_DEPOSIT = 100000; // In US cents
-  uint private constant TOKEN_BONDING_CURVE_DEPOSIT = 100000; // In US cents
-  uint private constant SCALING_PROVIDER_DEPOSIT = 100000; // In US cents
+  // Member default values.
+  uint private constant TOKEN_BONDING_CURVE_DEPOSIT = 1000 * oneAVTInNat; // In AVT
+  uint private constant VALIDATOR_DEPOSIT = 5000 * oneAVTInNat; // In AVT
 
   // Member deregistration cooling off periods
-  // TODO: set values for these
-  uint private constant BROKER_COOLING_OFF_PERIOD_DAYS = 0;
-  uint private constant PRIMARY_COOLING_OFF_PERIOD_DAYS = 0;
-  uint private constant SECONDARY_COOLING_OFF_PERIOD_DAYS = 0;
-  uint private constant SCALING_PROVIDER_COOLING_OFF_PERIOD_DAYS = 0;
-
-  uint private constant AVT_IN_US_CENTS = 97;
+  uint private constant VALIDATOR_COOLING_OFF_PERIOD_DAYS = 90;
 
   IAventusStorage public s;
 
@@ -46,45 +40,34 @@ contract ParameterRegistry is Owned, Versioned {
 
   // @dev This must be called ONCE and ONCE ONLY, after the permission is given to write to storage as part of migration.
   function init() external onlyOwner {
-    if (s.getBoolean(keccak256(abi.encodePacked("ParameterRegistry", "init")))) return;
-    s.setBoolean(keccak256(abi.encodePacked("ParameterRegistry", "init")), true);
+    if (s.getBoolean(keccak256(abi.encodePacked(parameterRegistrySchema, "init")))) return;
+    s.setBoolean(keccak256(abi.encodePacked(parameterRegistrySchema, "init")), true);
 
-    s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalLobbyingPeriodDays")),
+    s.setUInt(keccak256(abi.encodePacked(proposalsSchema, "governanceProposalLobbyingPeriodDays")),
         GOVERNANCE_PROPOSAL_LOBBYING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalVotingPeriodDays")),
+    s.setUInt(keccak256(abi.encodePacked(proposalsSchema, "governanceProposalVotingPeriodDays")),
         GOVERNANCE_PROPOSAL_VOTING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalRevealingPeriodDays")),
+    s.setUInt(keccak256(abi.encodePacked(proposalsSchema, "governanceProposalRevealingPeriodDays")),
         GOVERNANCE_PROPOSAL_REVEALING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalFixedDepositInUSCents")),
-        GOVERNANCE_PROPOSAL_DEPOSIT_US_CENTS);
+    s.setUInt(keccak256(abi.encodePacked(proposalsSchema, "governanceProposalFixedDeposit")),
+        GOVERNANCE_PROPOSAL_DEPOSIT);
 
-    s.setUInt(keccak256(abi.encodePacked("Aventities", "challengeLobbyingPeriodDays")),
+    s.setUInt(keccak256(abi.encodePacked(aventitiesSchema, "challengeLobbyingPeriodDays")),
         AVENTITY_CHALLENGE_LOBBYING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Aventities", "challengeVotingPeriodDays")),
+    s.setUInt(keccak256(abi.encodePacked(aventitiesSchema, "challengeVotingPeriodDays")),
         AVENTITY_CHALLENGE_VOTING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Aventities", "challengeRevealingPeriodDays")),
+    s.setUInt(keccak256(abi.encodePacked(aventitiesSchema, "challengeRevealingPeriodDays")),
         AVENTITY_CHALLENGE_REVEALING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Aventities", "winningsForChallengeEnderPercentage")),
+    s.setUInt(keccak256(abi.encodePacked(aventitiesSchema, "winningsForChallengeEnderPercentage")),
         AVENTITY_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE);
-    s.setUInt(keccak256(abi.encodePacked("Aventities", "winningsForChallengeWinnerPercentage")),
+    s.setUInt(keccak256(abi.encodePacked(aventitiesSchema, "winningsForChallengeWinnerPercentage")),
         AVENTITY_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE);
 
-    s.setUInt(keccak256(abi.encodePacked("Events", "freeEventDepositAmountUSCents")), EVENT_FREE_DEPOSIT_US_CENTS);
-    s.setUInt(keccak256(abi.encodePacked("Events", "paidEventDepositAmountUSCents")), EVENT_PAID_DEPOSIT_US_CENTS);
-    s.setUInt(keccak256(abi.encodePacked("Events", "minimumEventReportingPeriodDays")), EVENT_MINIMUM_REPORTING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked(membersSchema, "TokenBondingCurve", "fixedDepositAmount")),
+        TOKEN_BONDING_CURVE_DEPOSIT);
+    s.setUInt(keccak256(abi.encodePacked(membersSchema, "Validator", "fixedDepositAmount")), VALIDATOR_DEPOSIT);
 
-    s.setUInt(keccak256(abi.encodePacked("Members", "Broker", "fixedDepositAmount")), BROKER_DEPOSIT);
-    s.setUInt(keccak256(abi.encodePacked("Members", "Primary", "fixedDepositAmount")), PRIMARY_DEPOSIT);
-    s.setUInt(keccak256(abi.encodePacked("Members", "Secondary", "fixedDepositAmount")), SECONDARY_DEPOSIT);
-    s.setUInt(keccak256(abi.encodePacked("Members", "TokenBondingCurve", "fixedDepositAmount")), TOKEN_BONDING_CURVE_DEPOSIT);
-    s.setUInt(keccak256(abi.encodePacked("Members", "ScalingProvider", "fixedDepositAmount")), SCALING_PROVIDER_DEPOSIT);
-
-    s.setUInt(keccak256(abi.encodePacked("Members", "Broker", "coolingOffPeriodDays")), BROKER_COOLING_OFF_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Members", "Primary", "coolingOffPeriodDays")), PRIMARY_COOLING_OFF_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Members", "Secondary", "coolingOffPeriodDays")), SECONDARY_COOLING_OFF_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Members", "ScalingProvider", "coolingOffPeriodDays")),
-        SCALING_PROVIDER_COOLING_OFF_PERIOD_DAYS);
-
-    s.setUInt(keccak256(abi.encodePacked("OneAVTInUSCents")), AVT_IN_US_CENTS);
+    s.setUInt(keccak256(abi.encodePacked(membersSchema, "Validator", "coolingOffPeriodDays")),
+        VALIDATOR_COOLING_OFF_PERIOD_DAYS);
   }
 }

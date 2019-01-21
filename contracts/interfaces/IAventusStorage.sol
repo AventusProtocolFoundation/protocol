@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 interface IAventusStorage {
   /**
@@ -16,14 +16,14 @@ interface IAventusStorage {
    * @param _accessType type of access to allow
    * @param _address address of contract that is granted access
    */
-  function allowAccess(string _accessType, address _address) external;
+  function allowAccess(string calldata _accessType, address _address) external;
 
   /**
    * @notice Deny access to storage.
    * @param _accessType type of access to deny
    * @param _address address of contract that is denied access
    */
-  function denyAccess(string _accessType, address _address) external;
+  function denyAccess(string calldata _accessType, address _address) external;
 
   /**
    * @notice Transfer AVT to address from erc20 contract.
@@ -58,14 +58,14 @@ interface IAventusStorage {
    * @param _record The key for finding a given record value
    * @return value_ the value in the requested record
    */
-  function getString(bytes32 _record) external view returns (string value_);
+  function getString(bytes32 _record) external view returns (string memory value_);
 
   /**
    * @notice Store a string record
    * @param _record The key that will be used to obtain value
    * @param _value The value to be stored
    */
-  function setString(bytes32 _record, string _value) external;
+  function setString(bytes32 _record, string calldata _value) external;
 
   /**
    * @notice Get a stored address value
@@ -86,14 +86,14 @@ interface IAventusStorage {
    * @param _record The key for finding a given record value
    * @return value_ the value in the requested record
    */
-  function getBytes(bytes32 _record) external view returns (bytes value_);
+  function getBytes(bytes32 _record) external view returns (bytes memory value_);
 
   /**
    * @notice Store a bytes record
    * @param _record The key that will be used to obtain value
    * @param _value The value to be stored
    */
-  function setBytes(bytes32 _record, bytes _value) external;
+  function setBytes(bytes32 _record, bytes calldata _value) external;
 
   /**
    * @notice Get a stored bytes32 value

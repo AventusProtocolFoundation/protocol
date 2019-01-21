@@ -42,13 +42,13 @@ async function castVote(_voter, _proposalId, _optionId) {
 }
 
 async function revealVote(_voter, _proposalId, _optionId) {
-  const signedMessage = signingTestHelper.getRevealVoteSignedMessage(_voter, _proposalId, _optionId);
+  const signedMessage = await signingTestHelper.getRevealVoteSignedMessage(_voter, _proposalId, _optionId);
   await proposalsManager.revealVote(signedMessage, _proposalId, _optionId, {from: _voter});
 }
 
 async function advanceTimeAndRevealVote(_voter, _proposalId, _optionId) {
   await advanceTimeToRevealingStart(_proposalId);
-  const signedMessage = signingTestHelper.getRevealVoteSignedMessage(_voter, _proposalId, _optionId);
+  const signedMessage = await signingTestHelper.getRevealVoteSignedMessage(_voter, _proposalId, _optionId);
   await proposalsManager.revealVote(signedMessage, _proposalId, _optionId, {from: _voter});
 }
 

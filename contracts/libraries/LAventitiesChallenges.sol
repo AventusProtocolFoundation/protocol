@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LAVTManager.sol";
@@ -25,10 +25,20 @@ library LAventitiesChallenges {
       uint totalWinningStake = LAventitiesStorage.getTotalWinningStake(_storage, _proposalId);
       assert(totalWinningStake != 0);
 
-      uint voterReward = (totalWinnings * voterStake) / totalWinningStake;
+      uint voterReward;
+
+      bool lastClaimant = LProposals.getNumVotersRevealedWithStake(_storage, _proposalId, winningOption) ==
+          LAventitiesStorage.incrementNumVotersClaimed(_storage, _proposalId);
+      if (lastClaimant) {
+        voterReward = LAventitiesStorage.getVotersWinningsPot(_storage, _proposalId);
+      } else {
+        voterReward = (totalWinnings * voterStake) / totalWinningStake;
+      }
       giveWinnings(_storage, voterReward, voter);
 
       LAventitiesStorage.reduceVotersWinningsPot(_storage, _proposalId, voterReward);
+
+      assert(!lastClaimant || LAventitiesStorage.getVotersWinningsPot(_storage, _proposalId) == 0);
 
       // Stop the voter from claiming again.
       LProposals.clearRevealedStake(_storage, _proposalId, voter, winningOption);

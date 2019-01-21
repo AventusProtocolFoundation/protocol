@@ -6,11 +6,13 @@ const MembersManager = artifacts.require('MembersManager');
 const MerkleRootsManager = artifacts.require('MerkleRootsManager');
 const EventsManager = artifacts.require('EventsManager');
 const IERC20 = artifacts.require('IERC20');
-const web3Utils = require('web3-utils');
 const profilingHelper = require('./profilingHelper');
 
-const accounts = web3.eth.accounts;
+let accounts;
 const validEvidenceURL = 'http://www.example.com/members?memberid=1111';
+const zeroAddress = '0x0000000000000000000000000000000000000000';
+const BN_ZERO = new web3.utils.BN(0);
+const BN_ONE = new web3.utils.BN(1);
 
 let aventusStorage, versioned, proposalsManager, membersManager, avtManager, merkleRootsManager, eventsManager, avtIERC20;
 let profiledLogArgs = profilingHelper.profileFunction('TestHelper.getLogArgs', getLogArgs);
@@ -23,7 +25,7 @@ async function init() {
   aventusStorage = profilingHelper.profileContract(aventusStorage, 'aventusStorage');
   eventsManager = await EventsManager.deployed();
   eventsManager = profilingHelper.profileContract(eventsManager, 'eventsManager');
-  avtIERC20 = IERC20.at(await aventusStorage.getAddress(hash('AVTERC20Instance')));
+  avtIERC20 = await IERC20.at(await aventusStorage.getAddress(hash('AVTERC20Instance')));
   membersManager = await MembersManager.deployed();
   membersManager = profilingHelper.profileContract(membersManager, 'membersManager');
   merkleRootsManager = await MerkleRootsManager.deployed();
@@ -33,10 +35,12 @@ async function init() {
   versioned = await Versioned.deployed();
   versioned = profilingHelper.profileContract(versioned, 'versioned');
   lastEventBlockNumber = -1;
+
+  accounts = await web3.eth.getAccounts();
 }
 
 async function expectRevert(_myFunc, _expectedError) {
-  const ganacheRevert = 'Error: VM Exception while processing transaction: revert';
+  const ganacheRevert = 'VM Exception while processing transaction: revert';
   try {
     await _myFunc();
     assert(false, 'Test did not revert as expected');
@@ -49,25 +53,23 @@ async function expectRevert(_myFunc, _expectedError) {
 }
 
 function hash() {
-  return web3Utils.soliditySha3(...arguments);
+  return web3.utils.soliditySha3(...arguments);
 }
 
 function sign(_signer, _plainData) {
-  return web3.eth.sign(_signer, _plainData);
+  return web3.eth.sign( _plainData, _signer);
 }
 
-function getLogArgs(_eventListenerFunction) {
-  return new Promise((resolve, reject) => {
-    let eventListener = _eventListenerFunction({}, {fromBlock: lastEventBlockNumber + 1});
-    return eventListener.get((error, log) => {
-      if (error) {
-        reject(error);
-      } else {
-        let event = log[log.length-1];
-        lastEventBlockNumber = event.blockNumber;
-        resolve(event.args);
-      }
-    });
+function getLogArgs(_contract, _event) {
+  return new Promise(async (resolve, reject) => {
+    const log = await _contract.getPastEvents(_event, {fromBlock: lastEventBlockNumber + 1})
+    if (log.length == 0) {
+      reject(new Error('No events found'));
+    } else {
+      const event = log[log.length - 1];
+      lastEventBlockNumber = event.blockNumber;
+      resolve(event.args);
+    }
   });
 }
 
@@ -90,8 +92,26 @@ async function getVersionMajorMinor() {
   return await versioned.getVersionMajorMinor();
 }
 
+function assertBNEquals(_actual, _expected, _msg) {
+  const msg = _msg || `Expected ${_expected} to equal ${_actual}`;
+  assert(_actual.eq(_expected), msg);
+}
+
+function assertBNZero(_actual, _msg) {
+  assertBNEquals(_actual, BN_ZERO, _msg);
+}
+
+function toBN(_number) {
+  return web3.utils.toBN(_number);
+}
+
 // Keep exports alphabetical.
 module.exports = {
+  assertBNEquals,
+  assertBNZero,
+  BN: web3.utils.BN,
+  BN_ONE,
+  BN_ZERO,
   expectRevert,
   getAccounts,
   getAventusStorage: () => aventusStorage,
@@ -107,6 +127,9 @@ module.exports = {
   hash,
   init,
   profilingHelper,
+  randomBytes32: () => web3.utils.randomHex(32),
   sign,
+  toBN,
   validEvidenceURL,
+  zeroAddress 
 };
