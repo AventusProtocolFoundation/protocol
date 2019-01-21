@@ -5,7 +5,7 @@ const timeTestHelper = require('./helpers/timeTestHelper');
 const votingTestHelper = require('./helpers/votingTestHelper');
 
 contract('Proxy testing', async () => {
-  const accounts = testHelper.getAccounts('accountZero');
+  let accounts;
   let proposalsManager, aventusStorage;
   let newLibraryAddress, oldLibraryAddress;
   let proposalDeposit;
@@ -25,6 +25,7 @@ contract('Proxy testing', async () => {
 
     newLibraryAddress = (await LProposalForTesting.deployed()).address;
     oldLibraryAddress = await aventusStorage.getAddress(libraryKey);
+    accounts = testHelper.getAccounts('accountZero');
   });
 
   after(async () => await avtTestHelper.checkFundsEmpty());
@@ -33,7 +34,7 @@ contract('Proxy testing', async () => {
     proposalDeposit = await proposalsManager.getGovernanceProposalDeposit();
     await avtTestHelper.addAVTToFund(proposalDeposit, accounts.accountZero, 'deposit');
     await proposalsManager.createGovernanceProposal(_desc);
-    const logArgs = await testHelper.getLogArgs(proposalsManager.LogGovernanceProposalCreated);
+    const logArgs = await testHelper.getLogArgs(proposalsManager, 'LogGovernanceProposalCreated');
     return logArgs.proposalId.toNumber();
   }
 

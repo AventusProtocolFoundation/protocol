@@ -5,13 +5,14 @@ const votingTestHelper = require('./helpers/votingTestHelper');
 const timeTestHelper = require('./helpers/timeTestHelper');
 const signingTestHelper = require('./helpers/signingTestHelper');
 
+const BN = testHelper.BN;
+
 contract('AVTManager', async () => {
-  let avtManager, avt, aventusStorage;
-  const accounts = testHelper.getAccounts('goodAVTOwner', 'otherAccount');
+  let avtManager, avt, aventusStorage, accounts;
 
   const optionId = 1;
 
-  const goodAVTAmount = new web3.BigNumber(1000000);
+  const goodAVTAmount = new BN(1000000);
   const goodDepositFund = 'deposit';
   const goodStakeFund = 'stake';
 
@@ -27,6 +28,7 @@ contract('AVTManager', async () => {
     avt = testHelper.getAVTIERC20();
     avtManager = testHelper.getAVTManager();
 
+    accounts = testHelper.getAccounts('goodAVTOwner', 'otherAccount');
     await avt.transfer(accounts.otherAccount, goodAVTAmount);
   });
 
@@ -45,12 +47,12 @@ contract('AVTManager', async () => {
   context('deposit()', async () => {
     async function depositSucceeds(_fund) {
       await avtManager.deposit(_fund, goodAVTAmount, {from: accounts.goodAVTOwner});
-      const logArgs = await testHelper.getLogArgs(avtManager.LogAVTDeposited);
+      const logArgs = await testHelper.getLogArgs(avtManager, 'LogAVTDeposited');
       assert.equal(logArgs.sender, accounts.goodAVTOwner);
       assert.equal(logArgs.fund, _fund);
       assert.equal(logArgs.amount.toNumber(), goodAVTAmount);
 
-      await checkBalance(accounts.goodAVTOwner, _fund, goodAVTAmount.toNumber());
+      await checkBalance(accounts.goodAVTOwner, _fund, goodAVTAmount);
     }
 
     async function depositFails(_fund, _amount, _avtOwner, _expectedError) {
@@ -92,12 +94,12 @@ contract('AVTManager', async () => {
         });
 
         it('amount (deposit higher than approved)', async () => {
-          const badAmount = goodAVTAmount.plus(1);
+          const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
           await depositFailsDueToERC20Error(goodDepositFund, badAmount, accounts.goodAVTOwner);
         });
 
         it('amount (stake higher than approved)', async () => {
-          const badAmount = goodAVTAmount.plus(1);
+          const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
           await depositFailsDueToERC20Error(goodStakeFund, badAmount, accounts.goodAVTOwner);
         });
 
@@ -141,7 +143,7 @@ contract('AVTManager', async () => {
 
     async function withdrawSucceeds(_fund) {
       await avtManager.withdraw(_fund, goodAVTAmount, {from: accounts.goodAVTOwner});
-      const logArgs = await testHelper.getLogArgs(avtManager.LogAVTWithdrawn);
+      const logArgs = await testHelper.getLogArgs(avtManager, 'LogAVTWithdrawn');
       assert.equal(logArgs.sender, accounts.goodAVTOwner);
       assert.equal(logArgs.fund, _fund);
       assert.equal(logArgs.amount.toNumber(), goodAVTAmount);
@@ -187,13 +189,13 @@ contract('AVTManager', async () => {
         });
 
         it('amount (withdraw more deposit than current balance)', async () => {
-          const badAmount = goodAVTAmount.plus(1);
+          const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
           await withdrawFails(goodDepositFund, badAmount, accounts.goodAVTOwner,
               'Withdrawn amount must not exceed the deposit');
         });
 
         it('amount (withdraw more stake than current balance)', async () => {
-          const badAmount = goodAVTAmount.plus(1);
+          const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
           await withdrawFails(goodStakeFund, badAmount, accounts.goodAVTOwner,
               'Amount taken must be less than current deposit');
         });
@@ -275,19 +277,19 @@ contract('AVTManager', async () => {
         });
 
         it('amount (transfer more deposit than current balance)', async () => {
-          const badAmount = goodAVTAmount.plus(1);
+          const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
           await transferFails(accounts.goodAVTOwner, goodDepositFund, badAmount, goodDepositFund,
               'Withdrawn amount must not exceed the deposit');
         });
 
         it('amount (transfer more stake than current balance)', async () => {
-          const badAmount = goodAVTAmount.plus(1);
+          const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
           await transferFails(accounts.goodAVTOwner, goodStakeFund, badAmount, goodStakeFund,
               'Amount taken must be less than current deposit');
         });
 
         it('amount (zero)', async () => {
-          const badAmount = 0;
+          const badAmount = testHelper.BN_ZERO;
           await transferFails(accounts.goodAVTOwner, goodDepositFund, badAmount, goodDepositFund,
               'The amount of a transfer must be positive');
         });
@@ -349,12 +351,12 @@ contract('AVTManager', async () => {
       context('good parameters', async () => {
         it('deposit fund', async () => {
           const balance = await getBalanceSucceeds(accounts.goodAVTOwner, goodDepositFund);
-          assert.equal(balance.toNumber(), goodAVTAmount.toNumber());
+          assert.equal(balance.toNumber(), goodAVTAmount);
         });
 
         it('stake fund', async () => {
           const balance = await getBalanceSucceeds(accounts.goodAVTOwner, goodStakeFund);
-          assert.equal(balance.toNumber(), goodAVTAmount.toNumber());
+          assert.equal(balance.toNumber(), goodAVTAmount);
         });
       });
 

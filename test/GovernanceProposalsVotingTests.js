@@ -5,11 +5,13 @@ const votingTestHelper = require('./helpers/votingTestHelper');
 const signingTestHelper = require('./helpers/signingTestHelper');
 const governanceProposalsTestHelper = require('./helpers/governanceProposalsTestHelper');
 
+const BN = testHelper.BN;
+
 contract('Governance proposals voting', async () => {
   let proposalsManager;
   let goodGovernanceProposalId;
   const goodVoteOption = 2;
-  const accounts = testHelper.getAccounts('goodVoterAddress', 'badVoterAddress');
+  let accounts;
 
   before(async () => {
     await testHelper.init();
@@ -19,6 +21,7 @@ contract('Governance proposals voting', async () => {
     await votingTestHelper.init(testHelper, timeTestHelper, signingTestHelper);
     await governanceProposalsTestHelper.init(testHelper, avtTestHelper, votingTestHelper);
     proposalsManager = testHelper.getProposalsManager();
+    accounts = testHelper.getAccounts('goodVoterAddress', 'badVoterAddress');
   });
 
   after(async () => {
@@ -34,13 +37,13 @@ contract('Governance proposals voting', async () => {
   });
 
   context('castVote()', async () => {
-    const goodCastVoteSecret = 0;
+    const goodCastVoteSecret = testHelper.randomBytes32();
     let goodPrevTime;
 
     async function castVoteSucceeds() {
       await proposalsManager.castVote(goodGovernanceProposalId, goodCastVoteSecret, goodPrevTime,
           {from: accounts.goodVoterAddress});
-      const logArgs = await testHelper.getLogArgs(proposalsManager.LogVoteCast);
+      const logArgs = await testHelper.getLogArgs(proposalsManager, 'LogVoteCast');
       assert.equal(logArgs.proposalId.toNumber(), goodGovernanceProposalId.toNumber());
       assert.equal(logArgs.sender, accounts.goodVoterAddress);
       assert.equal(logArgs.secret, goodCastVoteSecret);
@@ -74,7 +77,7 @@ contract('Governance proposals voting', async () => {
         });
 
         it('prevTime', async() => {
-          const badPrevTime = goodPrevTime.plus(10);
+          const badPrevTime = goodPrevTime.add(new BN(10));
           await castVoteFails(goodGovernanceProposalId, badPrevTime, 'Invalid previous time');
         });
       });
@@ -94,14 +97,14 @@ contract('Governance proposals voting', async () => {
     beforeEach(async () => {
       await votingTestHelper.advanceTimeAndCastVote(accounts.goodVoterAddress, goodGovernanceProposalId, goodVoteOption);
       await votingTestHelper.advanceTimeToRevealingStart(goodGovernanceProposalId);
-      goodRevealVoteSignedMessage = signingTestHelper.getRevealVoteSignedMessage(accounts.goodVoterAddress,
+      goodRevealVoteSignedMessage = await signingTestHelper.getRevealVoteSignedMessage(accounts.goodVoterAddress,
           goodGovernanceProposalId, goodVoteOption);
     });
 
     async function revealVoteSucceeds() {
       await proposalsManager.revealVote(goodRevealVoteSignedMessage, goodGovernanceProposalId, goodVoteOption,
           {from: accounts.goodVoterAddress});
-      const logArgs = await testHelper.getLogArgs(proposalsManager.LogVoteRevealed);
+      const logArgs = await testHelper.getLogArgs(proposalsManager, 'LogVoteRevealed');
       assert.equal(logArgs.proposalId.toNumber(), goodGovernanceProposalId.toNumber());
       assert.equal(logArgs.optId, goodVoteOption);
     }
@@ -151,7 +154,7 @@ contract('Governance proposals voting', async () => {
   context('cancelVote()', async () => {
     async function cancelVoteSucceeds() {
       await proposalsManager.cancelVote(goodGovernanceProposalId, {from: accounts.goodVoterAddress});
-      const logArgs = await testHelper.getLogArgs(proposalsManager.LogVoteCancelled);
+      const logArgs = await testHelper.getLogArgs(proposalsManager, 'LogVoteCancelled');
       assert.equal(logArgs.proposalId.toNumber(), goodGovernanceProposalId.toNumber(), 'wrong governance proposal Id');
       assert.equal(logArgs.sender, accounts.goodVoterAddress, 'wrong sender');
     }
@@ -228,9 +231,9 @@ contract('Governance proposals voting', async () => {
   context('getGovernanceProposalDeposit()', async () => {
     context('succeeds with', async() => {
       it('good parameters', async() => {
-        const expectedDepositInUSCents = avtTestHelper.getAVTFromUSCents(10000); // value from parameter registry;
-        const depositInUSCents = await proposalsManager.getGovernanceProposalDeposit();
-        assert.equal(depositInUSCents.toNumber(), expectedDepositInUSCents);
+        const expectedDeposit = avtTestHelper.toNat(new BN(100)); // value from parameter registry;
+        const actualDeposit = await proposalsManager.getGovernanceProposalDeposit();
+        testHelper.assertBNEquals(actualDeposit, expectedDeposit);
       });
     });
     // Note: there are no bad parameters and no bad state tests

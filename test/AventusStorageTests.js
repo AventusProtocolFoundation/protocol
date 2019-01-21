@@ -5,14 +5,16 @@ const avtTestHelper = require('./helpers/avtTestHelper');
 
 contract('AventusStorage', async () => {
   let aventusStorage, parameterRegistry;
-  const key = 'key';
-  const accounts = testHelper.getAccounts('owner', 'newOwner', 'storageUser', 'avtAccount');
+  const key = testHelper.hash('key');
+  let accounts;
 
   before(async () => {
     await testHelper.init();
 
     parameterRegistry = await ParameterRegistry.deployed();
     aventusStorage = testHelper.getAventusStorage();
+
+    accounts = testHelper.getAccounts('owner', 'newOwner', 'storageUser', 'avtAccount');
   });
 
   context('ParameterRegistry test', async () => {
@@ -41,25 +43,25 @@ contract('AventusStorage', async () => {
   });
 
   context('AVT tests', async () => {
-    const someAVTTokens = 100;
+    const someAVTTokens = new testHelper.BN(100);
     let initialStorageBalance, initialOwnerBalance;
 
     before(async () => {
       await avtTestHelper.init(testHelper);
-      initialStorageBalance = (await avtTestHelper.totalBalance()).toNumber();
-      initialOwnerBalance = (await avtTestHelper.balanceOf(accounts.owner)).toNumber();
+      initialStorageBalance = await avtTestHelper.totalBalance();
+      initialOwnerBalance = await avtTestHelper.balanceOf(accounts.owner);
     });
 
     afterEach(async () => {
-      assert.equal(initialStorageBalance, (await avtTestHelper.totalBalance()).toNumber());
-      assert.equal(initialOwnerBalance, (await avtTestHelper.balanceOf(accounts.owner)).toNumber());
+      testHelper.assertBNEquals(initialStorageBalance, await avtTestHelper.totalBalance());
+      testHelper.assertBNEquals(initialOwnerBalance, await avtTestHelper.balanceOf(accounts.owner));
     });
 
     it ('can transfer AVT directly to and from storage if owner', async () => {
       await avtTestHelper.approve(someAVTTokens, accounts.owner);
       await aventusStorage.transferAVTFrom(accounts.owner, someAVTTokens);
-      assert.equal((await avtTestHelper.totalBalance()).toNumber(), initialStorageBalance + someAVTTokens);
-      assert.equal((await avtTestHelper.balanceOf(accounts.owner)).toNumber(), initialOwnerBalance - someAVTTokens);
+      testHelper.assertBNEquals(await avtTestHelper.totalBalance(), initialStorageBalance.add(someAVTTokens));
+      testHelper.assertBNEquals(await avtTestHelper.balanceOf(accounts.owner), initialOwnerBalance.sub(someAVTTokens));
       await aventusStorage.transferAVTTo(accounts.owner, someAVTTokens);
     });
 
@@ -68,8 +70,8 @@ contract('AventusStorage', async () => {
 
       await avtTestHelper.approve(someAVTTokens, accounts.owner);
       await aventusStorage.transferAVTFrom(accounts.owner, someAVTTokens, {from:accounts.avtAccount});
-      assert.equal((await avtTestHelper.totalBalance()).toNumber(), initialStorageBalance + someAVTTokens);
-      assert.equal((await avtTestHelper.balanceOf(accounts.owner)).toNumber(), initialOwnerBalance - someAVTTokens);
+      testHelper.assertBNEquals(await avtTestHelper.totalBalance(), initialStorageBalance.add(someAVTTokens));
+      testHelper.assertBNEquals(await avtTestHelper.balanceOf(accounts.owner), initialOwnerBalance.sub(someAVTTokens));
       await aventusStorage.transferAVTTo(accounts.owner, someAVTTokens, {from:accounts.avtAccount});
 
       await aventusStorage.denyAccess('transferAVT', accounts.avtAccount);
@@ -80,8 +82,8 @@ contract('AventusStorage', async () => {
       await testHelper.expectRevert(() => aventusStorage.transferAVTFrom(accounts.owner, someAVTTokens,
           {from:accounts.avtAccount}), 'Access denied for storage');
       await aventusStorage.transferAVTFrom(accounts.owner, someAVTTokens);
-      assert.equal((await avtTestHelper.totalBalance()).toNumber(), initialStorageBalance + someAVTTokens);
-      assert.equal((await avtTestHelper.balanceOf(accounts.owner)).toNumber(), initialOwnerBalance - someAVTTokens);
+      testHelper.assertBNEquals(await avtTestHelper.totalBalance(), initialStorageBalance.add(someAVTTokens));
+      testHelper.assertBNEquals(await avtTestHelper.balanceOf(accounts.owner), initialOwnerBalance.sub(someAVTTokens));
       await testHelper.expectRevert(() => aventusStorage.transferAVTTo(accounts.owner, someAVTTokens,
           {from:accounts.avtAccount}), 'Access denied for storage');
       await aventusStorage.transferAVTTo(accounts.owner, someAVTTokens);
@@ -102,7 +104,7 @@ contract('AventusStorage', async () => {
     });
 
     it('can store and retrieve an address value from AventusStorage', async () => {
-      const defaultValue = 0;
+      const defaultValue = testHelper.zeroAddress;
       const testValue = aventusStorage.address;
       assert.equal(await aventusStorage.getAddress(key), defaultValue);
 
@@ -128,9 +130,9 @@ contract('AventusStorage', async () => {
     it('can store and retrieve a bytes value from AventusStorage', async () => {
       // Bytes is a dynamic type of variable length.
       // Unlike fixed-size bytes, it is returned as a string and not as a number.
-      // The default value is represented by literal '0x'
-      const defaultValue = '0x';
-      const zeroValue = 0;
+      // The default value is null
+      const defaultValue = null;
+      const zeroValue = '0x';
       const testValue = '0x123456';
 
       assert.equal(await aventusStorage.getBytes(key), defaultValue);
@@ -143,7 +145,7 @@ contract('AventusStorage', async () => {
     });
 
     it('can store and retrieve a bytes32 value from AventusStorage', async () => {
-      const defaultValue = 0;
+      const defaultValue = '0x0000000000000000000000000000000000000000000000000000000000000000';
       const testValue = '0x1234560000000000000000000000000000000000000000000000000000000000';
 
       assert.equal(await aventusStorage.getBytes32(key), defaultValue);
@@ -196,7 +198,7 @@ contract('AventusStorage', async () => {
 
     it('cannot set a storage contract without an owner', async () => {
       assert.equal(await aventusStorage.owner(), accounts.owner);
-      await testHelper.expectRevert(() => aventusStorage.setOwner(0), 'Owner cannot be zero address');
+      await testHelper.expectRevert(() => aventusStorage.setOwner(testHelper.zeroAddress), 'Owner cannot be zero address');
       assert.equal(await aventusStorage.owner(), accounts.owner);
     });
 
