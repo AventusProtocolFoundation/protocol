@@ -17,101 +17,101 @@ function processCommandLineArguments() {
   return options;
 }
 
-function readFile(filename) {
-  var data = fs.readFileSync(filename, 'utf8');
+function readFile(_filename) {
+  var data = fs.readFileSync(_filename, 'utf8');
   return data;
 }
 
-function getIdFromLine(line) {
+function getIdFromLine(_line) {
   let sep = ' - "';
-  let firstDash = line.indexOf(sep);
-  let head = line.slice(0, firstDash);
-  let tail = line.slice(firstDash + sep.length);
+  let firstDash = _line.indexOf(sep);
+  let head = _line.slice(0, firstDash);
+  let tail = _line.slice(firstDash + sep.length);
   return [head, tail];
 }
 
-function getContextfromLine(line) {
+function getContextfromLine(_line) {
   let sep = '",';
-  let firstDash = line.indexOf(sep);
-  let head = line.slice(0, firstDash);
-  let tail = line.slice(firstDash + sep.length);
+  let firstDash = _line.indexOf(sep);
+  let head = _line.slice(0, firstDash);
+  let tail = _line.slice(firstDash + sep.length);
   return [head, tail];
 }
 
-function registerTestIfNeeded(database, id) {
-  if (!(id in database.tests)) {
-    database.tests[id] = {};
+function registerTestIfNeeded(_database, _id) {
+  if (!(_id in _database.tests)) {
+    _database.tests[_id] = {};
   }
 }
 
-function isBlockType(name) {
-  if (name === afterEach) return true;
-  if (name === beforeEach) return true;
+function isBlockType(_name) {
+  if (_name === afterEach) return true;
+  if (_name === beforeEach) return true;
   return false;
 }
 
-function getTest(database, id) {
-  return database.tests[id];
+function getTest(_database, _id) {
+  return _database.tests[_id];
 }
 
-function isSummaryLine(parts) {
-  if (parts[0] === partsTime) return true;
-  if (parts[0] === totalTime) return true;
+function isSummaryLine(_parts) {
+  if (_parts[0] === partsTime) return true;
+  if (_parts[0] === totalTime) return true;
   return false;
 }
 
-function addSummaryToTest(test, context, data) {
-  let time = parseInt(data[1]);
+function addSummaryToTest(_test, _context, _data) {
+  let time = parseInt(_data[1]);
 
-  if (context === afterEach && data[0] === partsTime) {
-    test.afterEachTime = time;
+  if (_context === afterEach && _data[0] === partsTime) {
+    _test.afterEachTime = time;
     return;
   }
 
-  if (context === beforeEach && data[0] === partsTime) {
-    test.beforeEachTime = time;
+  if (_context === beforeEach && _data[0] === partsTime) {
+    _test.beforeEachTime = time;
     return;
   }
 
-  if (data[0] === partsTime) {
-    test.partsTime = time;
+  if (_data[0] === partsTime) {
+    _test.partsTime = time;
     return;
   }
 
-  if (data[0] === totalTime) {
-    test.totalTime = time;
+  if (_data[0] === totalTime) {
+    _test.totalTime = time;
     return;
   }
 }
 
-function getOutFilename(prefix, basename) {
-  return `${prefix}_${basename}.txt`;
+function getOutFilename(_prefix, _basename) {
+  return `${_prefix}_${_basename}.txt`;
 }
 
-function getLogger(prefix, tableName) {
+function getLogger(_prefix, _tableName) {
   let filename;
   let logger;
-  if (prefix) {
-    filename = getOutFilename(prefix, tableName);
+  if (_prefix) {
+    filename = getOutFilename(_prefix, _tableName);
     logger = fs.createWriteStream(filename, {flags: 'w'});
   }
   return logger;
 }
 
-function doWrite(dataString, logger) {
-  if (logger) {
-    logger.write(dataString);
+function doWrite(_dataString, _logger) {
+  if (_logger) {
+    logger.write(_dataString);
     logger.write('\n');
   } else {
-    console.log(dataString);
+    console.log(_dataString);
   }
 }
 
-function dumpTests(table, prefix) {
-  let logger = getLogger(prefix, 'Tests');
+function dumpTests(_table, _prefix) {
+  let logger = getLogger(_prefix, 'Tests');
 
-  Object.keys(table).forEach(function(key) {
-    let test = table[key];
+  Object.keys(_table).forEach(function(key) {
+    let test = _table[key];
     let data = [key, test.test, test.totalTime, test.partsTime, test.beforeEachTime, test.afterEachTime];
     let dataString = data.map(value => (value === undefined ? '0.0' : value)).join('\t');
     doWrite(dataString, logger);
@@ -120,10 +120,10 @@ function dumpTests(table, prefix) {
   if (logger) logger.end();
 }
 
-function dumpStats(table, prefix) {
-  let logger = getLogger(prefix, 'Stats');
+function dumpStats(_table, _prefix) {
+  let logger = getLogger(_prefix, 'Stats');
 
-  table.forEach(function(stats) {
+  _table.forEach(function(stats) {
     let dataString = stats.map(value => (value === undefined ? '0.0' : value)).join('\t');
     doWrite(dataString, logger);
   });

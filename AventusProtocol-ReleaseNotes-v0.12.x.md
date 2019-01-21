@@ -8,7 +8,7 @@ The release notes for this version follow, listed by sub-release and category.
 
 Breaking changes:
 - Upgrade to solidity v0.5.2 and truffle v5
-- Events no longer require deposits
+- Events no longer require deposits and can no longer be challenged
 - Combine Broker and Scaling Provider into new member type and event role: Validator
 - Updates to createEvent
 - Remove vendorProof and door data from sellTicket - can no longer sell via Broker/Validator or sell "blank tickets" (must sell via merkle trees for these)
