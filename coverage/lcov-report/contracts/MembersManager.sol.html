@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <title>Code coverage report for contracts\MembersManager.sol</title>
+    <title>Code coverage report for contracts/MembersManager.sol</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../prettify.css" />
     <link rel="stylesheet" href="../base.css" />
@@ -22,7 +22,7 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Statements</span>
-        <span class='fraction'>3/3</span>
+        <span class='fraction'>4/4</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
@@ -32,12 +32,12 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Functions</span>
-        <span class='fraction'>7/7</span>
+        <span class='fraction'>8/8</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Lines</span>
-        <span class='fraction'>7/7</span>
+        <span class='fraction'>8/8</span>
       </div>
     </div>
   </div>
@@ -93,7 +93,16 @@
 48
 49
 50
-51</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -106,33 +115,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">193×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">187×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">38×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">26×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">377×</span>
+<span class="cline-any cline-yes">2×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -140,16 +123,51 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">37×</span>
+<span class="cline-any cline-yes">30×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.4.24;
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">27×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">16×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">18×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.5.2;
 &nbsp;
-import './interfaces/IMembersManager.sol';
-import './interfaces/IAventusStorage.sol';
-import './libraries/LMembers.sol';
-import './Owned.sol';
-import './Versioned.sol';
+import "./interfaces/IMembersManager.sol";
+import "./interfaces/IAventusStorage.sol";
+import "./libraries/LMembers.sol";
+import "./Owned.sol";
+import "./Versioned.sol";
 &nbsp;
 contract MembersManager is IMembersManager, Owned, Versioned {
 &nbsp;
@@ -159,38 +177,47 @@ contract MembersManager is IMembersManager, Owned, Versioned {
       s = _s;
     }
 &nbsp;
-    function registerMember(address _memberAddress, string _memberType, string _evidenceUrl, string _desc)
+    function registerMember(address _memberAddress, string calldata _memberType, string calldata _evidenceUrl,
+        string calldata _desc)
       external
       onlyOwner
     {
       LMembers.registerMember(s, _memberAddress, _memberType, _evidenceUrl, _desc);
     }
 &nbsp;
-    function deregisterMember(address _memberAddress, string _memberType)
+    function deregisterMember(address _memberAddress, string calldata _memberType)
       external
       onlyOwner
     {
       LMembers.deregisterMember(s, _memberAddress, _memberType);
     }
 &nbsp;
-    function challengeMember(address _memberAddress, string _memberType) external {
+    function challengeMember(address _memberAddress, string calldata _memberType) external {
       LMembers.challengeMember(s, _memberAddress, _memberType);
     }
 &nbsp;
-    function endMemberChallenge(address _memberAddress, string _memberType) external {
+    function endMemberChallenge(address _memberAddress, string calldata _memberType) external {
       LMembers.endMemberChallenge(s, _memberAddress, _memberType);
     }
 &nbsp;
-    function getNewMemberDeposit(string _type) external view returns (uint memberDepositInAVT_) {
+    function getNewMemberDeposit(string calldata _type) external view returns (uint memberDepositInAVT_) {
       memberDepositInAVT_ = LMembers.getNewMemberDeposit(s, _type);
     }
 &nbsp;
-    function getExistingMemberDeposit(address _memberAddress, string _memberType)
+    function getExistingMemberDeposit(address _memberAddress, string calldata _memberType)
       external
       view
       returns (uint memberDepositInAVT_)
     {
       memberDepositInAVT_ = LMembers.getExistingMemberDeposit(s, _memberAddress, _memberType);
+    }
+&nbsp;
+    function memberIsActive(address _memberAddress, string calldata _memberType)
+      external
+      view
+      returns (bool isActive_)
+    {
+      isActive_ = LMembers.memberIsActive(s, _memberAddress, _memberType);
     }
 }
 &nbsp;</pre></td></tr>
@@ -199,7 +226,7 @@ contract MembersManager is IMembersManager, Owned, Versioned {
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Oct 18 2018 13:27:15 GMT+0100 (GMT Daylight Time)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Jan 21 2019 16:59:59 GMT+0000 (GMT)
 </div>
 </div>
 <script src="../prettify.js"></script>

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <title>Code coverage report for contracts\ParameterRegistry.sol</title>
+    <title>Code coverage report for contracts/ParameterRegistry.sol</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../prettify.css" />
     <link rel="stylesheet" href="../base.css" />
@@ -20,14 +20,14 @@
     </h1>
     <div class='clearfix'>
       <div class='fl pad1y space-right2'>
-        <span class="strong">66.67% </span>
+        <span class="strong">100% </span>
         <span class="quiet">Statements</span>
-        <span class='fraction'>2/3</span>
+        <span class='fraction'>3/3</span>
       </div>
       <div class='fl pad1y space-right2'>
-        <span class="strong">50% </span>
+        <span class="strong">100% </span>
         <span class="quiet">Branches</span>
-        <span class='fraction'>1/2</span>
+        <span class='fraction'>2/2</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
@@ -37,11 +37,11 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Lines</span>
-        <span class='fraction'>22/22</span>
+        <span class='fraction'>15/15</span>
       </div>
     </div>
   </div>
-  <div class='status-line medium'></div>
+  <div class='status-line high'></div>
 <pre><table class="coverage">
 <tr><td class="line-count quiet">1
 2
@@ -113,7 +113,9 @@
 68
 69
 70
-71</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+71
+72
+73</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -150,72 +152,74 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">2×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">2×</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.4.24;
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.5.2;
 &nbsp;
-import './interfaces/IAventusStorage.sol';
-import './Owned.sol';
-import './Versioned.sol';
+import "./interfaces/IAventusStorage.sol";
+import "./Owned.sol";
+import "./Versioned.sol";
 &nbsp;
 contract ParameterRegistry is Owned, Versioned {
+  string constant aventitiesSchema = "Aventities";
+  string constant avtSchema = "AVT";
+  string constant eventsSchema = "Events";
+  string constant membersSchema = "Members";
+  string constant parameterRegistrySchema = "ParameterRegistry";
+  string constant proposalsSchema = "Proposals";
+&nbsp;
+  uint private constant oneAVTInNat = 10**18;
 &nbsp;
   // Proposal default values.
   uint private constant GOVERNANCE_PROPOSAL_LOBBYING_PERIOD_DAYS = 14;
   uint private constant GOVERNANCE_PROPOSAL_VOTING_PERIOD_DAYS = 7;
   uint private constant GOVERNANCE_PROPOSAL_REVEALING_PERIOD_DAYS = 7;
-  uint private constant GOVERNANCE_PROPOSAL_DEPOSIT_US_CENTS = 10000;
+  uint private constant GOVERNANCE_PROPOSAL_DEPOSIT = 100 * oneAVTInNat; // In AVT
   uint private constant AVENTITY_CHALLENGE_LOBBYING_PERIOD_DAYS = 14;
   uint private constant AVENTITY_CHALLENGE_VOTING_PERIOD_DAYS = 7;
   uint private constant AVENTITY_CHALLENGE_REVEALING_PERIOD_DAYS = 7;
+  uint private constant AVENTITY_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE = 10;
+  uint private constant AVENTITY_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE = 10;
 &nbsp;
-  // Events default values.
-  uint private constant EVENT_FREE_DEPOSIT_US_CENTS = 1000;
-  uint private constant EVENT_PAID_DEPOSIT_US_CENTS = 100000;
-  uint private constant EVENT_MINIMUM_REPORTING_PERIOD_DAYS = 30;
-  uint private constant EVENT_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE = 10;
-  uint private constant EVENT_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE = 10;
+  // Member default values.
+  uint private constant TOKEN_BONDING_CURVE_DEPOSIT = 1000 * oneAVTInNat; // In AVT
+  uint private constant VALIDATOR_DEPOSIT = 5000 * oneAVTInNat; // In AVT
 &nbsp;
-  // Aventity default values.
-  uint private constant BROKER_DEPOSIT = 100000; // In US cents
-  uint private constant PRIMARY_DEPOSIT = 100000; // In US cents
-  uint private constant SECONDARY_DEPOSIT = 100000; // In US cents
-  uint private constant TOKEN_BONDING_CURVE_DEPOSIT = 100000; // In US cents
-  uint private constant SCALING_PROVIDER_DEPOSIT = 100000; // In US cents
-  uint private constant MERKLE_ROOT_DEPOSIT = 10000; // In US cents
-&nbsp;
-  uint private constant AVT_IN_US_CENTS = 97;
+  // Member deregistration cooling off periods
+  uint private constant VALIDATOR_COOLING_OFF_PERIOD_DAYS = 90;
 &nbsp;
   IAventusStorage public s;
 &nbsp;
@@ -225,33 +229,35 @@ contract ParameterRegistry is Owned, Versioned {
 &nbsp;
   // @dev This must be called ONCE and ONCE ONLY, after the permission is given to write to storage as part of migration.
   function init() external onlyOwner {
-    <span class="missing-if-branch" title="if path not taken" >I</span>if (s.getBoolean(keccak256(abi.encodePacked("ParameterRegistry", "init")))) <span class="cstat-no" title="statement not covered" >return;</span>
-    s.setBoolean(keccak256(abi.encodePacked("ParameterRegistry", "init")), true);
+    if (s.getBoolean(keccak256(abi.encodePacked(parameterRegistrySchema, "init")))) return;
+    s.setBoolean(keccak256(abi.encodePacked(parameterRegistrySchema, "init")), true);
 &nbsp;
-    s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalLobbyingPeriodDays")), GOVERNANCE_PROPOSAL_LOBBYING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalVotingPeriodDays")), GOVERNANCE_PROPOSAL_VOTING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalRevealingPeriodDays")), GOVERNANCE_PROPOSAL_REVEALING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Proposal", "governanceProposalFixedDepositInUSCents")), GOVERNANCE_PROPOSAL_DEPOSIT_US_CENTS);
+    s.setUInt(keccak256(abi.encodePacked(proposalsSchema, "governanceProposalLobbyingPeriodDays")),
+        GOVERNANCE_PROPOSAL_LOBBYING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked(proposalsSchema, "governanceProposalVotingPeriodDays")),
+        GOVERNANCE_PROPOSAL_VOTING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked(proposalsSchema, "governanceProposalRevealingPeriodDays")),
+        GOVERNANCE_PROPOSAL_REVEALING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked(proposalsSchema, "governanceProposalFixedDeposit")),
+        GOVERNANCE_PROPOSAL_DEPOSIT);
 &nbsp;
-    s.setUInt(keccak256(abi.encodePacked("Aventities", "challengeLobbyingPeriodDays")), AVENTITY_CHALLENGE_LOBBYING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Aventities", "challengeVotingPeriodDays")), AVENTITY_CHALLENGE_VOTING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Aventities", "challengeRevealingPeriodDays")), AVENTITY_CHALLENGE_REVEALING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked(aventitiesSchema, "challengeLobbyingPeriodDays")),
+        AVENTITY_CHALLENGE_LOBBYING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked(aventitiesSchema, "challengeVotingPeriodDays")),
+        AVENTITY_CHALLENGE_VOTING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked(aventitiesSchema, "challengeRevealingPeriodDays")),
+        AVENTITY_CHALLENGE_REVEALING_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked(aventitiesSchema, "winningsForChallengeEnderPercentage")),
+        AVENTITY_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE);
+    s.setUInt(keccak256(abi.encodePacked(aventitiesSchema, "winningsForChallengeWinnerPercentage")),
+        AVENTITY_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE);
 &nbsp;
-    s.setUInt(keccak256(abi.encodePacked("Events", "freeEventDepositAmountUSCents")), EVENT_FREE_DEPOSIT_US_CENTS);
-    s.setUInt(keccak256(abi.encodePacked("Events", "paidEventDepositAmountUSCents")), EVENT_PAID_DEPOSIT_US_CENTS);
-    s.setUInt(keccak256(abi.encodePacked("Events", "minimumEventReportingPeriodDays")), EVENT_MINIMUM_REPORTING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked("Events", "winningsForChallengeEnderPercentage")), EVENT_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE);
-    s.setUInt(keccak256(abi.encodePacked("Events", "winningsForChallengeWinnerPercentage")), EVENT_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE);
+    s.setUInt(keccak256(abi.encodePacked(membersSchema, "TokenBondingCurve", "fixedDepositAmount")),
+        TOKEN_BONDING_CURVE_DEPOSIT);
+    s.setUInt(keccak256(abi.encodePacked(membersSchema, "Validator", "fixedDepositAmount")), VALIDATOR_DEPOSIT);
 &nbsp;
-    s.setUInt(keccak256(abi.encodePacked("Members", "Broker", "fixedDepositAmount")), BROKER_DEPOSIT);
-    s.setUInt(keccak256(abi.encodePacked("Members", "Primary", "fixedDepositAmount")), PRIMARY_DEPOSIT);
-    s.setUInt(keccak256(abi.encodePacked("Members", "Secondary", "fixedDepositAmount")), SECONDARY_DEPOSIT);
-    s.setUInt(keccak256(abi.encodePacked("Members", "TokenBondingCurve", "fixedDepositAmount")), TOKEN_BONDING_CURVE_DEPOSIT);
-    s.setUInt(keccak256(abi.encodePacked("Members", "ScalingProvider", "fixedDepositAmount")), SCALING_PROVIDER_DEPOSIT);
-&nbsp;
-    s.setUInt(keccak256(abi.encodePacked("MerkleRoots", "fixedDepositAmount")), MERKLE_ROOT_DEPOSIT);
-&nbsp;
-    s.setUInt(keccak256(abi.encodePacked("OneAVTInUSCents")), AVT_IN_US_CENTS);
+    s.setUInt(keccak256(abi.encodePacked(membersSchema, "Validator", "coolingOffPeriodDays")),
+        VALIDATOR_COOLING_OFF_PERIOD_DAYS);
   }
 }</pre></td></tr>
 </table></pre>
@@ -259,7 +265,7 @@ contract ParameterRegistry is Owned, Versioned {
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Oct 18 2018 13:27:15 GMT+0100 (GMT Daylight Time)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Jan 21 2019 16:59:59 GMT+0000 (GMT)
 </div>
 </div>
 <script src="../prettify.js"></script>

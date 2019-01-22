@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts/libraries/LProposals.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../index.html">all files</a> / <a href="index.html">contracts/libraries/</a> LProposals.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>32/32</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>6/6</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>20/20</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>41/41</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line high'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">40×</span>
+<span class="cline-any cline-yes">38×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">53×</span>
+<span class="cline-any cline-yes">47×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45×</span>
+<span class="cline-any cline-yes">43×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">40×</span>
+<span class="cline-any cline-yes">40×</span>
+<span class="cline-any cline-yes">38×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">38×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">38×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">38×</span>
+<span class="cline-any cline-yes">32×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">43×</span>
+<span class="cline-any cline-yes">37×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">38×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">20×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">51×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">47×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">47×</span>
+<span class="cline-any cline-yes">47×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">48×</span>
+<span class="cline-any cline-yes">48×</span>
+<span class="cline-any cline-yes">48×</span>
+<span class="cline-any cline-yes">48×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">40×</span>
+<span class="cline-any cline-yes">40×</span>
+<span class="cline-any cline-yes">40×</span>
+<span class="cline-any cline-yes">40×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.5.2;
+&nbsp;
+import "../interfaces/IAventusStorage.sol";
+import "./LProposalsEnact.sol";
+import "./LProposalsVoting.sol";
+import "./LProposalsStorage.sol";
+&nbsp;
+// Library for extending voting protocol functionality
+library LProposals {
+&nbsp;
+  // See IProposalsManager interface for logs description.
+  event LogGovernanceProposalCreated(uint indexed proposalId, address indexed sender, string desc, uint lobbyingStart,
+      uint votingStart, uint revealingStart, uint revealingEnd, uint deposit);
+  event LogVoteCast(uint indexed proposalId, address indexed sender, bytes32 secret, uint prevTime);
+  event LogVoteCancelled(uint indexed proposalId, address indexed sender);
+  event LogVoteRevealed(uint indexed proposalId, address indexed sender, uint indexed optId, uint revealingStart,
+      uint revealingEnd);
+  event LogGovernanceProposalEnded(uint indexed proposalId, uint votesFor, uint votesAgainst);
+&nbsp;
+  // Verify a proposal's status (see LProposalsEnact.doGetProposalStatus for values)
+  modifier onlyInVotingPeriod(IAventusStorage _storage, uint _proposalId) {
+    require(LProposalsEnact.inVotingPeriod(_storage, _proposalId), "Proposal has the wrong status");
+    _;
+  }
+&nbsp;
+  modifier onlyAfterRevealingFinishedAndProposalNotEnded(IAventusStorage _storage, uint _proposalId) {
+    require(LProposalsEnact.afterRevealingFinishedAndProposalNotEnded(_storage, _proposalId), "Proposal has the wrong status");
+    _;
+  }
+&nbsp;
+  modifier onlyGovernanceProposals(IAventusStorage _storage, uint _proposalId) {
+    require(LProposalsStorage.isGovernanceProposal(_storage, _proposalId), "Proposal is not a governance proposal");
+    _;
+  }
+&nbsp;
+  function createGovernanceProposal(IAventusStorage _storage, string calldata _desc) external {
+    uint deposit = getGovernanceProposalDeposit(_storage);
+    uint proposalId = doCreateGovernanceProposal(_storage, deposit);
+    (uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd) = getTimestamps(_storage, proposalId);
+&nbsp;
+    // set a flag to mark this proposal as a governance proposal
+    LProposalsStorage.setGovernanceProposal(_storage, proposalId);
+&nbsp;
+    emit LogGovernanceProposalCreated(proposalId, msg.sender, _desc, lobbyingStart, votingStart, revealingStart, revealingEnd, deposit);
+  }
+&nbsp;
+  function createProposal(IAventusStorage _storage, uint deposit, uint numDaysInLobbyingPeriod, uint numDaysInVotingPeriod,
+      uint numDaysInRevealingPeriod)
+    external
+    returns (uint proposalId_)
+  {
+    proposalId_ = LProposalsEnact.doCreateProposal(_storage, deposit, numDaysInLobbyingPeriod, numDaysInVotingPeriod,
+        numDaysInRevealingPeriod);
+  }
+&nbsp;
+  function castVote(
+    IAventusStorage _storage,
+    uint _proposalId,
+    bytes32 _secret,
+    uint _prevTime
+  )
+    external
+    onlyInVotingPeriod(_storage, _proposalId) // Ensure voting period is currently active
+  {
+    LProposalsVoting.castVote(_storage, _proposalId, _secret, _prevTime);
+    emit LogVoteCast(_proposalId, msg.sender, _secret, _prevTime);
+  }
+&nbsp;
+  function cancelVote(
+    IAventusStorage _storage,
+    uint _proposalId
+  )
+    external
+  {
+    LProposalsVoting.cancelVote(_storage, _proposalId);
+    emit LogVoteCancelled(_proposalId, msg.sender);
+  }
+&nbsp;
+  function revealVote(IAventusStorage _storage, bytes calldata _signedMessage, uint _proposalId, uint _optId) external {
+    LProposalsVoting.revealVote(_storage, _signedMessage, _proposalId, _optId);
+    uint revealingStart = LProposalsStorage.getRevealingStart(_storage, _proposalId);
+    uint revealingEnd = LProposalsStorage.getRevealingEnd(_storage, _proposalId);
+    emit LogVoteRevealed(_proposalId, msg.sender, _optId, revealingStart, revealingEnd);
+  }
+&nbsp;
+  function endGovernanceProposal(IAventusStorage _storage, uint _proposalId)
+    external
+    onlyGovernanceProposals(_storage, _proposalId)
+  {
+    (uint votesFor, uint votesAgainst) = endProposal(_storage, _proposalId);
+    emit LogGovernanceProposalEnded(_proposalId, votesFor, votesAgainst);
+  }
+&nbsp;
+  function getPrevTimeParamForCastVote(IAventusStorage _storage, uint _proposalId) external view returns (uint prevTime_) {
+    prevTime_ = LProposalsVoting.getPrevTimeParamForCastVote(_storage, _proposalId);
+  }
+&nbsp;
+  function getAventusTime(IAventusStorage _storage) external view returns (uint time_) {
+    time_ = LAventusTime.getCurrentTime(_storage);
+  }
+&nbsp;
+  function getTotalRevealedStake(IAventusStorage _storage, uint _proposalId, uint _optionId)
+    external
+    view
+    returns (uint totalStake_)
+  {
+    totalStake_ = LProposalsStorage.getTotalRevealedStake(_storage, _proposalId, _optionId);
+  }
+&nbsp;
+  function getOwner(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (address owner_)
+  {
+    owner_ = LProposalsStorage.getOwner(_storage, _proposalId);
+  }
+&nbsp;
+  function getRevealedVoterStake(IAventusStorage _storage, uint _proposalId, address _voter, uint _optionId)
+    external
+    view
+    returns (uint stake_)
+  {
+    stake_ = LProposalsStorage.getRevealedVoterStake(_storage, _proposalId, _voter, _optionId);
+  }
+&nbsp;
+  function clearRevealedStake(IAventusStorage _storage, uint _proposalId, address _voter, uint _optionId) external {
+    LProposalsStorage.setRevealedVoterStake(_storage, _proposalId, _voter, _optionId, 0);
+  }
+&nbsp;
+  function getNumVotersRevealedWithStake(IAventusStorage _storage, uint _proposalId, uint _optionId)
+    external
+    view
+    returns (uint numRevealedVoters_)
+  {
+    numRevealedVoters_ = LProposalsStorage.getNumVotersRevealedWithStake(_storage, _proposalId, _optionId);
+  }
+&nbsp;
+  function getGovernanceProposalDeposit(IAventusStorage _storage) public view returns (uint depositInAVT_) {
+    depositInAVT_ = LProposalsStorage.getGovernanceProposalDeposit(_storage);
+  }
+&nbsp;
+  function endProposal(IAventusStorage _storage, uint _proposalId)
+    public
+    onlyAfterRevealingFinishedAndProposalNotEnded(_storage, _proposalId)
+    returns (uint votesFor_, uint votesAgainst_)
+  {
+    LProposalsEnact.doUnlockProposalDeposit(_storage, _proposalId);
+&nbsp;
+    votesFor_ = LProposalsStorage.getTotalRevealedStake(_storage, _proposalId, 1);
+    votesAgainst_ = LProposalsStorage.getTotalRevealedStake(_storage, _proposalId, 2);
+  }
+&nbsp;
+  function getTimestamps(IAventusStorage _storage, uint _proposalId)
+    public
+    view
+    returns (uint lobbyingStart_, uint votingStart_, uint revealingStart_, uint revealingEnd_)
+  {
+    lobbyingStart_ = LProposalsStorage.getLobbyingStart(_storage, _proposalId);
+    votingStart_ = LProposalsStorage.getVotingStart(_storage, _proposalId);
+    revealingStart_ = LProposalsStorage.getRevealingStart(_storage, _proposalId);
+    revealingEnd_ = LProposalsStorage.getRevealingEnd(_storage, _proposalId);
+  }
+&nbsp;
+  function doCreateGovernanceProposal(IAventusStorage _storage, uint _deposit) private returns (uint proposalId_) {
+    uint numDaysInLobbyingPeriod = LProposalsStorage.getGovernanceProposalLobbyingPeriodDays(_storage);
+    uint numDaysInVotingPeriod = LProposalsStorage.getGovernanceProposalVotingPeriodDays(_storage);
+    uint numDaysInRevealingPeriod = LProposalsStorage.getGovernanceProposalRevealingPeriodDays(_storage);
+    proposalId_ = LProposalsEnact.doCreateProposal(_storage, _deposit, numDaysInLobbyingPeriod, numDaysInVotingPeriod,
+        numDaysInRevealingPeriod);
+  }
+}</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Jan 21 2019 16:59:59 GMT+0000 (GMT)
+</div>
+</div>
+<script src="../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../sorter.js"></script>
+</body>
+</html>

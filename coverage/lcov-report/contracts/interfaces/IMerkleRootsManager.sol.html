@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <title>Code coverage report for contracts\interfaces\IMerkleRootsManager.sol</title>
+    <title>Code coverage report for contracts/interfaces/IMerkleRootsManager.sol</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../prettify.css" />
     <link rel="stylesheet" href="../../base.css" />
@@ -56,54 +56,7 @@
 11
 12
 13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27
-28
-29
-30
-31
-32
-33
-34
-35
-36
-37
-38
-39
-40
-41
-42
-43
-44
-45
-46
-47
-48
-49
-50
-51
-52
-53
-54
-55
-56
-57
-58
-59
-60
-61</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+14</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -116,120 +69,26 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.4.24;
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.5.2;
 &nbsp;
 interface IMerkleRootsManager {
 &nbsp;
   /**
    * @notice Event emitted for a registerMerkleRoot transaction.
    */
-  event LogMerkleRootRegistered(address indexed ownerAddress, bytes32 indexed rootHash, string evidenceUrl, string desc,
-      uint deposit);
-&nbsp;
-  /**
-   * @notice Event emitted for a deregisterMerkleRoot transaction.
-   */
-  event LogMerkleRootDeregistered(bytes32 indexed rootHash);
-&nbsp;
-  /**
-   * @notice Event emitted for a challengeMerkleRoot transaction.
-   */
-  event LogMerkleRootChallenged(bytes32 indexed rootHash, uint indexed proposalId, uint lobbyingStart, uint votingStart,
-      uint revealingStart, uint revealingEnd);
-&nbsp;
-  /**
-   * Event emitted for a endMerkleRootChallenge transaction.
-   */
-  event LogMerkleRootChallengeEnded(bytes32 indexed rootHash, uint indexed proposalId, uint votesFor, uint votesAgainst);
+  event LogMerkleRootRegistered(address indexed ownerAddress, bytes32 indexed rootHash);
 &nbsp;
   /**
    * @notice Register the given merkleRoot on the Aventus Protocol.
-   * NOTE: requires a deposit to be made. See getNewMerkleRootDeposit().
    */
-  function registerMerkleRoot(address _ownerAddress, string _evidenceUrl, string _desc, bytes32 _rootHash) external;
-&nbsp;
-  /**
-   * @notice Stop the given merkleRoot from using the Aventus Protocol. This will unlock
-   * the deposit that was locked when the merkleRoot was registered.
-   */
-  function deregisterMerkleRoot(bytes32 _rootHash) external;
-&nbsp;
-  /**
-   * @notice Create a challenge proposal for the specified Merkle Root
-   * @param _rootHash root hash to be challenged
-   */
-  function challengeMerkleRoot(bytes32 _rootHash) external;
-&nbsp;
-  /**
-   * @notice Ends a challenge on the specified merkle root.
-   * @param _rootHash hash of the merkle root to be cleared of challenge
-   */
-  function endMerkleRootChallenge(bytes32 _rootHash) external;
-&nbsp;
-  /**
-   * @notice Get the deposit value in AVT - to 18 sig fig - required to register a merkleRoot.
-   * See registerMerkleRoot().
-   */
-  function getNewMerkleRootDeposit() external view returns (uint merkleRootDepositInAVT_);
-&nbsp;
-  /**
-   * @notice Gets the deposit paid for the specified merkleRoot.
-   */
-  function getExistingMerkleRootDeposit(bytes32 _rootHash) external view returns (uint merkleRootDepositInAVT_);
+  function registerMerkleRoot(bytes32 _rootHash) external;
 }</pre></td></tr>
 </table></pre>
 <div class='push'></div><!-- for sticky footer -->
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Oct 18 2018 13:27:15 GMT+0100 (GMT Daylight Time)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Jan 21 2019 16:59:59 GMT+0000 (GMT)
 </div>
 </div>
 <script src="../../prettify.js"></script>
