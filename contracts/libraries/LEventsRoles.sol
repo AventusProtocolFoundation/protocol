@@ -46,7 +46,6 @@ library LEventsRoles {
     valid_ = isTraderOnEvent(_storage, _eventId, _address, "Primary");
   }
 
-
   function isResellerOnEvent(IAventusStorage _storage, uint _eventId, address _address)
     external
     view
