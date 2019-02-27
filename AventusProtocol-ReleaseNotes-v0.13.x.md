@@ -9,7 +9,7 @@ The release notes for this version follow, listed by sub-release and category.
 Breaking changes:
 - AVT holdings are no longer split into "stake" and "deposit" fund types but now comprise a single AVT fund
 - The combining AVT funds change affects deposit, withdrawl and transfer methods which no longer require a fund parameter
-- The createEvent method now requires an event time
+- The createEvent method now requires an event time and an event owner
 - Signed proofs have been removed from cancelTicket and resellTicket and their logs
 - The registerMerkleRoot method now requires a tree depth and last event time, for use in autochallenges
 - Validators can no longer be registered as roles on events separately to event creation
