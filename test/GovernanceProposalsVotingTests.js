@@ -21,19 +21,21 @@ contract('Governance proposals voting', async () => {
     await votingTestHelper.init(testHelper, timeTestHelper, signingTestHelper);
     await governanceProposalsTestHelper.init(testHelper, avtTestHelper, votingTestHelper);
     proposalsManager = testHelper.getProposalsManager();
-    accounts = testHelper.getAccounts('goodVoterAddress', 'badVoterAddress');
+    accounts = testHelper.getAccounts('governanceProposalOwner', 'goodVoterAddress', 'badVoterAddress');
   });
 
   after(async () => {
-    await avtTestHelper.checkFundsEmpty(accounts);
+    await avtTestHelper.checkBalancesAreZero(accounts);
   });
 
   beforeEach(async () => {
-    goodGovernanceProposalId = await governanceProposalsTestHelper.depositAndCreateGovernanceProposal();
+    goodGovernanceProposalId =
+        await governanceProposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
   });
 
   afterEach(async () => {
-    await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
+    await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(accounts.governanceProposalOwner,
+        goodGovernanceProposalId);
   });
 
   context('castVote()', async () => {
@@ -78,7 +80,7 @@ contract('Governance proposals voting', async () => {
 
         it('prevTime', async() => {
           const badPrevTime = goodPrevTime.add(new BN(10));
-          await castVoteFails(goodGovernanceProposalId, badPrevTime, 'Invalid previous time');
+          await castVoteFails(goodGovernanceProposalId, badPrevTime, 'Invalid previous value');
         });
       });
     });

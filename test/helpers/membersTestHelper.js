@@ -1,4 +1,4 @@
-let testHelper, avtTestHelper, timeTestHelper, membersManager, evidenceURL;
+let testHelper, avtTestHelper, timeTestHelper, membersManager, evidenceURL, aventusStorage;
 
 const memberDesc = 'Some description';
 
@@ -8,42 +8,46 @@ const memberTypes = {
   bad: 'invalid'
 };
 
-const coolingOffPeriods = {
-  validator: 90,
-  maximum: 90
-}
-
 async function init(_testHelper, _avtTestHelper, _timeTestHelper) {
   testHelper = _testHelper;
   avtTestHelper = _avtTestHelper;
   timeTestHelper = _timeTestHelper;
 
   membersManager = testHelper.getMembersManager();
+  aventusStorage = testHelper.getAventusStorage();
 
   evidenceURL = testHelper.validEvidenceURL;
 }
 
 async function depositAndRegisterMember(_memberAddress, _memberType) {
   const deposit = await membersManager.getNewMemberDeposit(_memberType);
-  await avtTestHelper.addAVTToFund(deposit, _memberAddress, 'deposit');
+  await avtTestHelper.addAVT(deposit, _memberAddress);
   await membersManager.registerMember(_memberAddress, _memberType, evidenceURL, memberDesc);
   return deposit;
 }
 
 async function deregisterMemberAndWithdrawDeposit(_memberAddress, _memberType) {
   const deposit = await membersManager.getExistingMemberDeposit(_memberAddress, _memberType);
-  await timeTestHelper.advanceByNumDays(coolingOffPeriods.maximum);
+  await advanceToDeregistrationTime(_memberAddress, _memberType);
   await membersManager.deregisterMember(_memberAddress, _memberType);
-  await avtTestHelper.withdrawAVTFromFund(deposit, _memberAddress, 'deposit');
+  await avtTestHelper.withdrawAVT(deposit, _memberAddress);
 }
 
 async function getExistingMemberDeposit(_memberAddress, _memberType) {
   return await membersManager.getExistingMemberDeposit(_memberAddress, _memberType);
 }
 
+async function advanceToDeregistrationTime(_memberAddress, _memberType) {
+  const earliestDeregistrationKey = testHelper.hash('Member', _memberAddress, 'type', _memberType,
+      'earliestDeregistrationTime');
+  const earliestDeregistrationTime = await aventusStorage.getUInt(earliestDeregistrationKey);
+  if (earliestDeregistrationTime > 0) {
+    await timeTestHelper.advanceToTime(earliestDeregistrationTime);
+  }
+}
+
 // Keep exports alphabetical.
 module.exports = {
-  coolingOffPeriods,
   depositAndRegisterMember,
   deregisterMemberAndWithdrawDeposit,
   getExistingMemberDeposit,

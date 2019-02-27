@@ -11,22 +11,25 @@ const forceDeployStorage = ((process.env.FORCE_DEPLOY_STORAGE || 1) == 1);
 const forceDeployAvtErc20 = ((process.env.FORCE_DEPLOY_AVTERC20 || 1) == 1);
 
 async function getExistingAVTContract(_storage) {
-  console.log('Using existing AVT ERC20 contract.');
-  const avtAddress = await _storage.getAddress(web3.utils.sha3('AVTERC20Instance'));
-  if (avtAddress == 0) {
+  console.log('Using existing AVT ERC20 contract');
+  const avtErc20Address = await _storage.getAddress(web3.utils.sha3('AVTERC20Instance'));
+  if (avtErc20Address == 0) {
     throw '***ERROR*** can not re-use AVT ERC20 contract because it is not set in storage';
   }
+  return avtErc20Address;
 }
 
 async function initialDeploy(_deployer, _network, _accounts) {
   await _deployer.deploy(Migrations);
   const storage = await getStorageContract(_deployer, _network);
+  console.log('AventusStorage:', storage.address);
+  let avtErc20Address;
   if (forceDeployAvtErc20) {
-    await createAVTContract(storage, _accounts);
+    avtErc20Address = await createAVTContract(storage, _accounts);
   } else {
-    await getExistingAVTContract(storage);
+    avtErc20Address = await getExistingAVTContract(storage);
   }
-  console.log('AVT ERC20 address:', storage.address);
+  console.log('AVT ERC20:', avtErc20Address);
 }
 
 // Deploy a new (or use the old) storage contract.
@@ -40,7 +43,6 @@ async function getStorageContract(_deployer, _network) {
   } else {
     console.log('Using existing storage contract');
     const storage = common.getStorageContractFromJsonFile(AventusStorage, _network);
-    console.log('AventusStorage:', storage.address);
     return storage;
   }
 }
@@ -69,6 +71,7 @@ module.exports = async function(_deployer, _network, _accounts) {
 };
 
 async function createAVTContract(_storage, _accounts) {
+  console.log('Creating new AVT ERC20 contract');
   const account = _accounts[0];
   const block = await web3.eth.getBlock('latest');
 

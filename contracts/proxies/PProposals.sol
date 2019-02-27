@@ -7,5 +7,4 @@ contract PProposals is PLibraryDelegate {
   function () external {
     libraryDelegateFwd("LProposalsInstance");
   }
-
 }

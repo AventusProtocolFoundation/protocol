@@ -14,43 +14,41 @@ import "./LAventitiesStorage.sol";
 
 library LAventitiesChallenges {
 
-    function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) external {
+    function claimVoterWinnings(IAventusStorage _storage, uint _proposalId)
+      external
+    {
       address voter = msg.sender;
-      uint winningOption = LAventitiesStorage.getWinningProposalOption(_storage, _proposalId);
+      uint winningOption = LProposals.getWinningProposalOption(_storage, _proposalId);
       uint voterStake = LProposals.getRevealedVoterStake(_storage, _proposalId, voter, winningOption);
       require(voterStake != 0, "Voter has no winnings for this proposal");
 
-      uint totalWinnings = LAventitiesStorage.getTotalWinningsToVoters(_storage, _proposalId);
+      uint totalWinnings = LProposals.getTotalWinningsToVoters(_storage, _proposalId);
       assert(totalWinnings != 0);
-      uint totalWinningStake = LAventitiesStorage.getTotalWinningStake(_storage, _proposalId);
+      uint totalWinningStake = LProposals.getTotalWinningStake(_storage, _proposalId);
       assert(totalWinningStake != 0);
 
       uint voterReward;
 
       bool lastClaimant = LProposals.getNumVotersRevealedWithStake(_storage, _proposalId, winningOption) ==
-          LAventitiesStorage.incrementNumVotersClaimed(_storage, _proposalId);
+          LProposals.incrementNumVotersClaimed(_storage, _proposalId);
+
       if (lastClaimant) {
-        voterReward = LAventitiesStorage.getVotersWinningsPot(_storage, _proposalId);
+        voterReward = LProposals.getVotersWinningsPot(_storage, _proposalId);
       } else {
         voterReward = (totalWinnings * voterStake) / totalWinningStake;
       }
       giveWinnings(_storage, voterReward, voter);
 
-      LAventitiesStorage.reduceVotersWinningsPot(_storage, _proposalId, voterReward);
+      LProposals.reduceVotersWinningsPot(_storage, _proposalId, voterReward);
 
-      assert(!lastClaimant || LAventitiesStorage.getVotersWinningsPot(_storage, _proposalId) == 0);
+      assert(!lastClaimant || LProposals.getVotersWinningsPot(_storage, _proposalId) == 0);
 
       // Stop the voter from claiming again.
       LProposals.clearRevealedStake(_storage, _proposalId, voter, winningOption);
     }
 
-  function doWinningsDistribution(
-      IAventusStorage _storage,
-      uint _proposalId,
-      bool _distributeToVoters,
-      uint _winnings,
-      address _winner,
-      address _loser)
+  function doWinningsDistribution(IAventusStorage _storage, uint _proposalId, bool _distributeToVoters, uint _winnings,
+      address _winner, address _loser)
     external
   {
     takeAllWinningsFromProposalLoser(_storage, _winnings, _loser);
@@ -66,8 +64,8 @@ library LAventitiesChallenges {
 
     if (_distributeToVoters) {
       // The rest of the winnings is distributed to the voters as they claim it.
-      LAventitiesStorage.setTotalWinningsToVoters(_storage, _proposalId, winningsForVoters);
-      LAventitiesStorage.initialiseVotersWinningsPot(_storage, _proposalId, winningsForVoters);
+      LProposals.setTotalWinningsToVoters(_storage, _proposalId, winningsForVoters);
+      LProposals.initialiseVotersWinningsPot(_storage, _proposalId, winningsForVoters);
     } else {
       // If no one voted, the challenge ender gets the rest of the winnings.
       winningsToChallengeEnderAVT += winningsForVoters;
@@ -76,21 +74,15 @@ library LAventitiesChallenges {
     giveWinnings(_storage, winningsToChallengeEnderAVT, challengeEnder);
   }
 
-  function takeAllWinningsFromProposalLoser(
-      IAventusStorage _storage,
-      uint _winnings,
-      address _loser)
+  function takeAllWinningsFromProposalLoser(IAventusStorage _storage, uint _winnings, address _loser)
     private
   {
-    LAVTManager.decreaseFund(_storage, _loser, "deposit", _winnings);
+    LAVTManager.decreaseAVT(_storage, _loser, _winnings);
   }
 
-  function giveWinnings(
-      IAventusStorage _storage,
-      uint _winnings,
-      address _payee)
+  function giveWinnings(IAventusStorage _storage, uint _winnings, address _payee)
     private
   {
-    LAVTManager.increaseFund(_storage, _payee, "deposit", _winnings);
+    LAVTManager.increaseAVT(_storage, _payee, _winnings);
   }
 }

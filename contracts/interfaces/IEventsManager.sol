@@ -5,7 +5,17 @@ interface IEventsManager {
   /**
    * @notice Event emitted for a createEvent transaction.
    */
-  event LogEventCreated(uint indexed eventId, address indexed eventOwner, string eventDesc, uint offSaleTime);
+  event LogEventCreated(uint indexed eventId, address indexed eventOwner, string eventDesc, uint eventTime, uint offSaleTime);
+
+  /**
+  * @notice Event emitted when an event is taken off sale.
+  */
+  event LogEventTakenOffSale(uint indexed eventId);
+
+  /**
+   * @notice Event emitted for a registerRoleOnEvent transaction.
+   */
+  event LogEventRoleRegistered(uint indexed eventId, address indexed roleAddress, string role);
 
   /**
    * @notice Event emitted for a sellTicket transaction.
@@ -16,31 +26,30 @@ interface IEventsManager {
   /**
    * @notice Event emitted for a resellTicket transaction.
    */
-  event LogTicketResold(uint indexed eventId, uint indexed ticketId, bytes resellerProof, bytes doorData,
-      address indexed newBuyer);
+  event LogTicketResold(uint indexed eventId, uint indexed ticketId, address indexed newBuyer);
 
   /**
    * @notice Event emitted for a cancelTicket transaction.
    */
-  event LogTicketCancelled(uint indexed eventId, uint indexed ticketId, bytes vendorProof);
-
-  /**
-   * @notice Event emitted for a listTicket transaction.
-   */
-  event LogTicketListed(uint indexed eventId, uint ticketId, address indexed ticketOwner, bytes32 indexed leafHash);
-
-  /**
-   * @notice Event emitted for a registerRoleOnEvent transaction.
-   */
-  event LogRoleRegisteredOnEvent(uint indexed eventId, address indexed roleAddress, string role);
+  event LogTicketCancelled(uint indexed eventId, uint indexed ticketId);
 
   /**
    * @notice Create an event
    * @param _eventDesc Description of the event
+   * @param _eventTime Timestamp indicating when tickets for an event expire
    * @param _offSaleTime The end timestamp for ticket sales
    * @param _ownerProof The event details signed by the owner
+   * @param _eventOwner The event owner
    */
-  function createEvent(string calldata _eventDesc, uint _offSaleTime, bytes calldata _ownerProof) external;
+  function createEvent(string calldata _eventDesc, uint _eventTime, uint _offSaleTime, bytes calldata _ownerProof,
+      address _eventOwner) external;
+
+  /**
+   * @notice Take event off sale in order to disable ticket sales/resales
+   * @param _eventId ID of the event
+   * @param _eventOwnerProof signed proof from the event owner
+   */
+  function takeEventOffSale(uint _eventId, bytes calldata _eventOwnerProof) external;
 
   /**
    * @notice Sell ticket on behalf of a signer to a buyer specified by the signer
@@ -55,19 +64,18 @@ interface IEventsManager {
    * @notice Cancel ticket and transfer ownership to event owner
    * @param _eventId event id for the event in context
    * @param _ticketId ticket Id for the ticket to be cancelled
-   * @param _vendorProof signed proof from the event owner/primary if cancelling via a validator
    */
-  function cancelTicket(uint _eventId, uint _ticketId, bytes calldata _vendorProof) external;
+  function cancelTicket(uint _eventId, uint _ticketId) external;
 
   /**
    * @notice Register a member for an event
    * @param _eventId ID of the event
    * @param _roleAddress address associated with the role
-   * @param _role must be either "Primary", "Secondary" or "Validator"
+   * @param _role must be either "Primary" or "Secondary"
+   * @param _registerRoleEventOwnerProof signed proof from the event owner for registering a role
    */
-   // TODO: Add a proof to allow validator to add roles.
-   // TODO: Remove support for adding a validator this way.
-  function registerRoleOnEvent(uint _eventId, address _roleAddress, string calldata _role) external;
+  function registerRoleOnEvent(uint _eventId, address _roleAddress, string calldata _role,
+      bytes calldata _registerRoleEventOwnerProof) external;
 
   /**
    * @notice Sell a ticket on the secondary market.
@@ -75,23 +83,6 @@ interface IEventsManager {
    * @param _ticketId identifier for the ticket: unique to this event.
    * @param _ticketOwnerPermission signed by the owner
    * @param _newBuyer address of the new buyer of the ticket.
-   * @param _resellerProof the details signed by the reseller
-   * @param _doorData the credentials necessary to be authenticated at the event's entrance (can be empty bytes)
    */
-  function resellTicket(uint _eventId, uint _ticketId, bytes calldata _ticketOwnerPermission, address _newBuyer,
-      bytes calldata _resellerProof, bytes calldata _doorData) external;
-
-  /**
-   * @notice List a ticket for resale on the protocol which was originally a merkle tree sale.
-   * @param _eventId ID of the event
-   * @param _vendorTicketRefHash hash of vendor-generated (event owner or primary) unique ticket reference for the event
-   * @param _ticketMetadata ticket details as stored in the merkle tree
-   * @param _vendorProof the vendor (event owner or primary) signed details from the original sale
-   * @param _doorData the credentials necessary to be authenticated at the event's entrance (can be empty bytes)
-   * @param _ticketOwnerProof vendorTicketRefHash signed by the ticket owner
-   * @param _merklePath sibling hash path of the merkle tree
-   */
-  function listTicket(uint _eventId, bytes32 _vendorTicketRefHash, string calldata _ticketMetadata,
-      bytes calldata _vendorProof, bytes calldata _doorData, bytes calldata _ticketOwnerProof, bytes32[] calldata _merklePath)
-    external;
+  function resellTicket(uint _eventId, uint _ticketId, bytes calldata _ticketOwnerPermission, address _newBuyer) external;
 }

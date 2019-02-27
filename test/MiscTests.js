@@ -16,7 +16,7 @@ contract('Misc testing', async () => {
     await governanceProposalsTestHelper.init(testHelper, avtTestHelper, votingTestHelper);
     const accounts = testHelper.getAccounts('governanceProposalOwner', 'voter');
 
-    const proposalId = await governanceProposalsTestHelper.depositAndCreateGovernanceProposal();
+    const proposalId = await governanceProposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
 
     await votingTestHelper.advanceTimeToVotingStart(proposalId);
     const optionId = 1;

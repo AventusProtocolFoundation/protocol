@@ -28,11 +28,11 @@ contract('Proxy testing', async () => {
     accounts = testHelper.getAccounts('accountZero');
   });
 
-  after(async () => await avtTestHelper.checkFundsEmpty());
+  after(async () => await avtTestHelper.checkBalancesAreZero());
 
   async function createProposal(_desc) {
     proposalDeposit = await proposalsManager.getGovernanceProposalDeposit();
-    await avtTestHelper.addAVTToFund(proposalDeposit, accounts.accountZero, 'deposit');
+    await avtTestHelper.addAVT(proposalDeposit, accounts.accountZero);
     await proposalsManager.createGovernanceProposal(_desc);
     const logArgs = await testHelper.getLogArgs(proposalsManager, 'LogGovernanceProposalCreated');
     return logArgs.proposalId.toNumber();
@@ -53,7 +53,7 @@ contract('Proxy testing', async () => {
   async function endProposalAndWithdrawDeposit(_proposalId) {
     await votingTestHelper.advanceTimeToEndOfProposal(_proposalId);
     await proposalsManager.endGovernanceProposal(_proposalId);
-    await avtTestHelper.withdrawAVTFromFund(proposalDeposit, accounts.accountZero, 'deposit');
+    await avtTestHelper.withdrawAVT(proposalDeposit, accounts.accountZero);
   }
 
   it('can access the current version number', async () => {
@@ -72,7 +72,7 @@ contract('Proxy testing', async () => {
     // ...then calling the method again should give different behaviour.
     proposalId = await createProposal('What will the new library print?');
     assert.equal(proposalId, 2018);
-    await avtTestHelper.withdrawAVTFromFund(proposalDeposit, accounts.accountZero, 'deposit');
+    await avtTestHelper.withdrawAVT(proposalDeposit, accounts.accountZero);
 
     // Put the old library back...
     await useOldLibrary();
@@ -95,6 +95,6 @@ contract('Proxy testing', async () => {
     await useOldLibrary();
     // ...and the correct behaviour is restored.
     await proposalsManager.endGovernanceProposal(proposalId);
-    await avtTestHelper.withdrawAVTFromFund(proposalDeposit, accounts.accountZero, 'deposit');
+    await avtTestHelper.withdrawAVT(proposalDeposit, accounts.accountZero);
   });
 });

@@ -47,7 +47,7 @@ async function deploySubLibraries(_deployer, _library) {
     await _deployer.deploy(LEventsStorage);
     await librariesCommon.linkMultiple(_deployer, LEventsStorage, [LEvents, LEventsEvents, LEventsRoles, LEventsTickets]);
     await _deployer.deploy(LEventsRoles);
-    await librariesCommon.linkMultiple(_deployer, LEventsRoles, [LEvents, LEventsTickets]);
+    await librariesCommon.linkMultiple(_deployer, LEventsRoles, [LEvents, LEventsTickets, LEventsEvents]);
     await _deployer.deploy(LEventsEvents);
     await _deployer.link(LEventsEvents, LEvents);
     await _deployer.deploy(LEventsTickets);
@@ -76,7 +76,7 @@ function doDeployLMerkleRoots(_deployer, _storage) {
   const library = LMerkleRoots;
   const proxy = PMerkleRoots;
   const deployLibraryAndProxy = deployLMerkleRoots;
-  const dependents = [MerkleRootsManager, LEvents];
+  const dependents = [MerkleRootsManager, LEventsTickets];
 
   return librariesCommon.doDeployLibraryAndProxy(web3, version, deploySubLibraries, _deployer, _storage, libraryName,
       proxyName, library, proxy, deployLibraryAndProxy, dependents);

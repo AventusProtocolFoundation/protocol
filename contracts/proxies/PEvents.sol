@@ -7,5 +7,4 @@ contract PEvents is PLibraryDelegate {
   function () external {
     libraryDelegateFwd("LEventsInstance");
   }
-
 }

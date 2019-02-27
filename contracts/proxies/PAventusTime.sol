@@ -7,5 +7,4 @@ contract PAventusTime is PLibraryDelegate {
   function () external {
     libraryDelegateFwd("LAventusTimeInstance");
   }
-
 }

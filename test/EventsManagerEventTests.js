@@ -28,29 +28,30 @@ contract('EventsManager - events', async () => {
 
   after(async () => {
     await membersTestHelper.deregisterMemberAndWithdrawDeposit(accounts.validator, membersTestHelper.memberTypes.validator);
-    await avtTestHelper.checkFundsEmpty(accounts);
+    await avtTestHelper.checkBalancesAreZero(accounts);
   });
 
-  // Use old (still in use) style by default.
   async function generateGoodCreateEventParams() {
     const eventDesc = 'My unique event' + Date.now();
     const thirtyDays = timeTestHelper.oneDay.mul(new BN(30));
     const offSaleTime = timeTestHelper.now().add(thirtyDays);
+    const eventTime = offSaleTime.add(thirtyDays);
     const eventOwner = accounts.eventOwner;
-    const eventOwnerProof = await signingTestHelper.getCreateEventEventOwnerProof(eventOwner, eventDesc, offSaleTime);
-    const sender = accounts.eventOwner;
-
+    const sender = accounts.validator;
+    const eventOwnerProof = await signingTestHelper.getCreateEventEventOwnerProof(
+        eventOwner, eventDesc, eventTime, offSaleTime, sender);
     return {
-      eventDesc, offSaleTime, eventOwner, eventOwnerProof, sender
+      eventDesc, eventTime, offSaleTime, eventOwner, eventOwnerProof, eventOwner, sender
     };
   }
 
-  // Use old (still in use) style by default.
   async function createEvent(_createEventParams) {
     await eventsManager.createEvent(
         _createEventParams.eventDesc,
+        _createEventParams.eventTime,
         _createEventParams.offSaleTime,
         _createEventParams.eventOwnerProof,
+        _createEventParams.eventOwner,
         {from: _createEventParams.sender}
     );
     const logArgs = await testHelper.getLogArgs(eventsManager, 'LogEventCreated');
@@ -66,32 +67,41 @@ contract('EventsManager - events', async () => {
     });
 
     async function createEventSucceeds() {
+      if (goodCreateEventParams.eventOwnerProof === undefined) {
+        goodCreateEventParams.eventOwnerProof = await signingTestHelper.getCreateEventEventOwnerProof(
+            goodCreateEventParams.eventOwner, goodCreateEventParams.eventDesc, goodCreateEventParams.eventTime,
+            goodCreateEventParams.offSaleTime, goodCreateEventParams.sender);
+      }
       await eventsManager.createEvent(
           goodCreateEventParams.eventDesc,
+          goodCreateEventParams.eventTime,
           goodCreateEventParams.offSaleTime,
           goodCreateEventParams.eventOwnerProof,
+          goodCreateEventParams.eventOwner,
           {from: goodCreateEventParams.sender}
       );
       const logArgs = await testHelper.getLogArgs(eventsManager, 'LogEventCreated');
       assert.equal(logArgs.eventDesc, goodCreateEventParams.eventDesc);
+      testHelper.assertBNEquals(logArgs.eventTime, goodCreateEventParams.eventTime);
       assert.equal(logArgs.eventOwner, goodCreateEventParams.eventOwner);
       testHelper.assertBNEquals(logArgs.offSaleTime, goodCreateEventParams.offSaleTime);
       return goodEventId = logArgs.eventId;
     }
 
     async function createEventFails(_params, _expectedError) {
-      await testHelper.expectRevert(() => eventsManager.createEvent(_params.eventDesc, _params.offSaleTime,
-          _params.eventOwnerProof, {from: _params.sender}), _expectedError);
+      await testHelper.expectRevert(() => eventsManager.createEvent(_params.eventDesc, _params.eventTime, _params.offSaleTime,
+          _params.eventOwnerProof, _params.eventOwner, {from: _params.sender}), _expectedError);
     }
 
     context('succeeds with', async () => {
       context('good parameters', async () => {
         it('via event owner', async () => {
+          goodCreateEventParams.sender = accounts.eventOwner;
+          goodCreateEventParams.eventOwnerProof = undefined; // Regenerate the proof with this sender.
           await createEventSucceeds();
         });
 
         it('via validator', async () => {
-          goodCreateEventParams.sender = accounts.validator;
           await createEventSucceeds();
         });
       });
@@ -117,7 +127,7 @@ contract('EventsManager - events', async () => {
         async function createEventFailsWithBadParams(_errorString) {
           if (badParams.eventOwnerProof === undefined) {
             badParams.eventOwnerProof = await signingTestHelper.getCreateEventEventOwnerProof(badParams.eventOwner,
-                badParams.eventDesc, badParams.offSaleTime);
+                badParams.eventDesc, badParams.eventTime, badParams.offSaleTime, badParams.sender);
           }
           return createEventFails(badParams, _errorString);
         }
@@ -127,6 +137,11 @@ contract('EventsManager - events', async () => {
           await createEventFailsWithBadParams('Event requires a non-empty description');
         });
 
+        it('event time', async () => {
+          badParams.eventTime = badParams.offSaleTime - 1;
+          await createEventFailsWithBadParams('Event time must be after off-sale time');
+        });
+
         it('off sale time', async () => {
           badParams.offSaleTime = timeTestHelper.now().toNumber() - 1;
           await createEventFailsWithBadParams('Ticket off-sale time must be in the future');
@@ -134,12 +149,71 @@ contract('EventsManager - events', async () => {
 
         it('event owner proof', async () => {
           badParams.eventOwnerProof = testHelper.randomBytes32();
-          await createEventFailsWithBadParams('Sender must be an active validator');
+          await createEventFailsWithBadParams('Creation proof must be valid and signed by event owner');
         });
 
         it('sender', async () => {
           badParams.sender = accounts.notEventOwner;
           await createEventFailsWithBadParams('Sender must be an active validator');
+        });
+      });
+    });
+  });
+
+  context('takeEventOffSale()', async () => {
+    let goodEventOwner, goodValidator, goodSender, goodEventId, goodOffSaleEventOwnerProof;
+
+    beforeEach(async () => {
+      const goodCreateEventParams = await generateGoodCreateEventParams();
+      goodEventOwner = goodCreateEventParams.eventOwner;
+      goodValidator = accounts.validator;
+      goodSender = goodEventOwner;
+      goodEventId = await createEvent(goodCreateEventParams);
+      goodOffSaleEventOwnerProof = await signingTestHelper.getTakeEventOffSaleEventOwnerProof(goodEventOwner, goodEventId);
+    });
+
+    async function takeEventOffSaleSucceeds(_sender) {
+      await eventsManager.takeEventOffSale(goodEventId, goodOffSaleEventOwnerProof, {from: _sender});
+      const logArgs = await testHelper.getLogArgs(eventsManager, 'LogEventTakenOffSale');
+      assert.equal(logArgs.eventId.toNumber(), goodEventId);
+    }
+
+    async function takeEventOffSaleFails(_eventId, _eventOwnerProof, _sender, _expectedError) {
+      await testHelper.expectRevert(() => eventsManager.takeEventOffSale(_eventId, _eventOwnerProof, {from: _sender}),
+          _expectedError);
+    }
+
+    context('succeeds with', async () => {
+      context('good parameters', async () => {
+        it('via event owner', async () => {
+          await takeEventOffSaleSucceeds(goodEventOwner);
+        });
+
+        it('via validator', async () => {
+          await takeEventOffSaleSucceeds(goodValidator);
+        });
+      });
+    });
+
+    context('fails with', async () => {
+      context('bad parameters', async () => {
+        it('event id', async () => {
+          // Update the proof otherwise we'd have two bad parameters.
+          goodOffSaleEventOwnerProof = await signingTestHelper.getTakeEventOffSaleEventOwnerProof(goodEventOwner, badEventId);
+          await takeEventOffSaleFails(badEventId, goodOffSaleEventOwnerProof, goodSender,
+              'Event must be trading');
+        });
+
+        it('event owner proof', async () => {
+          const badEventOwnerProof = testHelper.randomBytes32();
+          await takeEventOffSaleFails(goodEventId, badEventOwnerProof, goodSender,
+              'Offsale proof must be valid and signed by event owner');
+        });
+
+        it('sender', async () => {
+          const badSender = accounts.notEventOwner;
+          await takeEventOffSaleFails(goodEventId, goodOffSaleEventOwnerProof, badSender,
+              'Sender must be owner or validator on event');
         });
       });
     });

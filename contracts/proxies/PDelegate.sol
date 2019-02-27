@@ -7,7 +7,9 @@ contract PDelegate {
   * @param _dst Destination address to perform the delegatecall
   * @param _calldata Calldata for the delegatecall
   */
-  function delegatedFwd(address _dst, bytes memory _calldata) internal {
+  function delegatedFwd(address _dst, bytes memory _calldata)
+    internal
+  {
     assert(isContract(_dst));
 
     assembly {

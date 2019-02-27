@@ -4,6 +4,7 @@ import "../interfaces/IAventusStorage.sol";
 import "./LAventusTime.sol";
 
 library LMembersStorage {
+
   string constant membersSchema = "Members";
   string constant memberSchema = "Member";
 
@@ -30,30 +31,26 @@ library LMembersStorage {
     _storage.setUInt(keccak256(abi.encodePacked(memberSchema, _memberAddress, "type", _memberType, "aventityId")), _aventityId);
   }
 
-  function clearAventityId(IAventusStorage _storage, address _memberAddress, string calldata _memberType) external {
+  function clearAventityId(IAventusStorage _storage, address _memberAddress, string calldata _memberType)
+    external
+  {
     _storage.setUInt(keccak256(abi.encodePacked(memberSchema, _memberAddress, "type", _memberType, "aventityId")), 0);
   }
 
-  function setLastInteractionTime(IAventusStorage _storage, address _memberAddress, string calldata _memberType) external {
-    uint currentTime = LAventusTime.getCurrentTime(_storage);
-    _storage.setUInt(keccak256(abi.encodePacked(memberSchema, _memberAddress, "type", _memberType, "lastInteractionTime")),
-        currentTime);
-  }
-
-  function getLastInteractionTime(IAventusStorage _storage, address _memberAddress, string calldata _memberType)
+  function getEarliestDeregistrationTime(IAventusStorage _storage, address _memberAddress, string calldata _memberType)
     external
     view
-    returns (uint lastInteractionTime_)
+    returns (uint earliestDeregistrationTime_)
   {
-    lastInteractionTime_ = _storage.getUInt(keccak256(abi.encodePacked(memberSchema, _memberAddress, "type", _memberType,
-        "lastInteractionTime")));
+    bytes32 key = keccak256(abi.encodePacked(memberSchema, _memberAddress, "type", _memberType, "earliestDeregistrationTime"));
+    earliestDeregistrationTime_ = _storage.getUInt(key);
   }
 
-  function getCoolingOffPeriod(IAventusStorage _storage, string calldata _memberType)
+  function setEarliestDeregistrationTime(IAventusStorage _storage, address _memberAddress, string calldata _memberType,
+      uint _earliestDeregistrationTime)
     external
-    view
-    returns (uint coolingOffPeriod_)
   {
-    coolingOffPeriod_ = _storage.getUInt(keccak256(abi.encodePacked(membersSchema, _memberType, "coolingOffPeriodDays")));
+    bytes32 key = keccak256(abi.encodePacked(memberSchema, _memberAddress, "type", _memberType, "earliestDeregistrationTime"));
+    _storage.setUInt(key, _earliestDeregistrationTime);
   }
 }

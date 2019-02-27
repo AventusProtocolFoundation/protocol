@@ -63,7 +63,9 @@ library LAventities {
     (votesFor_, votesAgainst_) = LProposals.endProposal(_storage, proposalId_);
   }
 
-  function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) external {
+  function claimVoterWinnings(IAventusStorage _storage, uint _proposalId)
+    external
+  {
     LAventitiesChallenges.claimVoterWinnings(_storage, _proposalId);
     emit LogVoterWinningsClaimed(_proposalId);
   }
@@ -76,7 +78,11 @@ library LAventities {
     aventityDepositor_ = LAventitiesStorage.getDepositor(_storage, _aventityId);
   }
 
-  function getExistingAventityDeposit(IAventusStorage _storage, uint _aventityId) public view returns (uint aventityDeposit_) {
+  function getExistingAventityDeposit(IAventusStorage _storage, uint _aventityId)
+    public
+    view
+    returns (uint aventityDeposit_)
+  {
     aventityDeposit_ = LAventitiesStorage.getDeposit(_storage, _aventityId);
   }
 
@@ -97,7 +103,9 @@ library LAventities {
         aventityIsNotUnderChallenge(_storage, _aventityId);
   }
 
-  function unlockAventityDeposit(IAventusStorage _storage, uint _aventityId) public {
+  function unlockAventityDeposit(IAventusStorage _storage, uint _aventityId)
+    public
+  {
     uint aventityDeposit = getExistingAventityDeposit(_storage, _aventityId);
     address aventityDepositor = LAventitiesStorage.getDepositor(_storage, _aventityId);
     LAVTManager.unlockDeposit(_storage, aventityDepositor, aventityDeposit);
@@ -113,7 +121,9 @@ library LAventities {
     aventityIsNotUnderChallenge_ = 0 == LAventitiesStorage.getChallengeProposalId(_storage, _aventityId);
   }
 
-  function setAventityStatusFraudulent(IAventusStorage _storage, uint _aventityId) private {
+  function setAventityStatusFraudulent(IAventusStorage _storage, uint _aventityId)
+    private
+  {
     setAventityAsClearFromChallenge(_storage, _aventityId);
 
     // Aventity is no longer valid; remove the expected deposit for the aventity.
@@ -160,12 +170,12 @@ library LAventities {
       totalWinningStake = totalDisagreedStake;
       setAventityAsClearFromChallenge(_storage, _aventityId);
     }
-    
+
     bool winningsForVoters = totalWinningStake > 0;
     LAventitiesChallenges.doWinningsDistribution(_storage, _proposalId, winningsForVoters, deposit, winner, loser);
 
     // Save the information we need to calculate voter winnings when they make their claim.
-    LAventitiesStorage.setWinningProposalOption(_storage, _proposalId, winningOption);
-    LAventitiesStorage.setTotalWinningStake(_storage, _proposalId, totalWinningStake);
+    LProposals.setWinningProposalOption(_storage, _proposalId, winningOption);
+    LProposals.setTotalWinningStake(_storage, _proposalId, totalWinningStake);
   }
 }

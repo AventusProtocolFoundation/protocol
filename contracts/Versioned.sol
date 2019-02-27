@@ -2,7 +2,7 @@ pragma solidity ^0.5.2;
 
 contract Versioned {
   string public constant versionMajor = "0";
-  string public constant versionMinor = "12";
+  string public constant versionMinor = "13";
   string public constant versionPoint = "0";
 
   function getVersion() public pure returns (string memory version_) {

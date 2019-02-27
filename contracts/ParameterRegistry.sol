@@ -11,6 +11,7 @@ contract ParameterRegistry is Owned, Versioned {
   string constant membersSchema = "Members";
   string constant parameterRegistrySchema = "ParameterRegistry";
   string constant proposalsSchema = "Proposals";
+  string constant merkleRootsSchema = "MerkleRoots";
 
   uint private constant oneAVTInNat = 10**18;
 
@@ -29,8 +30,18 @@ contract ParameterRegistry is Owned, Versioned {
   uint private constant TOKEN_BONDING_CURVE_DEPOSIT = 1000 * oneAVTInNat; // In AVT
   uint private constant VALIDATOR_DEPOSIT = 5000 * oneAVTInNat; // In AVT
 
-  // Member deregistration cooling off periods
-  uint private constant VALIDATOR_COOLING_OFF_PERIOD_DAYS = 90;
+  // Base value for merkle root deposits
+  uint private constant MERKLE_ROOT_BASE_DEPOSIT = 100 * oneAVTInNat;
+  // Merkle root cooling off period (length after last event time at which root can be deregistered)
+  uint private constant MERKLE_ROOT_COOLING_OFF_PERIOD = 2 weeks;
+
+  // NOTE: It is important that the product of these three values never overflows a uint256
+  // Multiplier for merkle root deposits (deposit = multipler * number of levels * time until last event)
+  uint private constant MERKLE_ROOT_DEPOSIT_MULTIPLIER = oneAVTInNat / 25000;
+  // Maximum allowed merkle tree depth
+  uint private constant MAX_MERKLE_TREE_DEPTH = 256;
+  // Maximum allowed difference between current and last event time of a merkle tree
+  uint private constant MAX_INTERVENING_EVENT_TIME = 3500 days;
 
   IAventusStorage public s;
 
@@ -67,7 +78,10 @@ contract ParameterRegistry is Owned, Versioned {
         TOKEN_BONDING_CURVE_DEPOSIT);
     s.setUInt(keccak256(abi.encodePacked(membersSchema, "Validator", "fixedDepositAmount")), VALIDATOR_DEPOSIT);
 
-    s.setUInt(keccak256(abi.encodePacked(membersSchema, "Validator", "coolingOffPeriodDays")),
-        VALIDATOR_COOLING_OFF_PERIOD_DAYS);
+    s.setUInt(keccak256(abi.encodePacked(merkleRootsSchema, "baseDeposit")), MERKLE_ROOT_BASE_DEPOSIT);
+    s.setUInt(keccak256(abi.encodePacked(merkleRootsSchema, "coolingOffPeriod")), MERKLE_ROOT_COOLING_OFF_PERIOD);
+    s.setUInt(keccak256(abi.encodePacked(merkleRootsSchema, "depositMultiplier")), MERKLE_ROOT_DEPOSIT_MULTIPLIER);
+    s.setUInt(keccak256(abi.encodePacked(merkleRootsSchema, "maxTreeDepth")), MAX_MERKLE_TREE_DEPTH);
+    s.setUInt(keccak256(abi.encodePacked(merkleRootsSchema, "maxInterveningEventTime")), MAX_INTERVENING_EVENT_TIME);
   }
 }

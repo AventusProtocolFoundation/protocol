@@ -6,35 +6,34 @@ const oneAVTTo18SigFig = (new BN(10)).pow(new BN(18));
 
 async function init(_testHelper) {
   testHelper = _testHelper;
-
   avtManager = testHelper.getAVTManager();
   aventusStorage = testHelper.getAventusStorage();
   avt = testHelper.getAVTIERC20();
-
-  accounts = testHelper.getAccounts('avtOwner');
+  // special case referencing accounts directly within a helper as account 0 is the only account initialised with any AVT
+  accounts = testHelper.getAccounts('avtAccount');
 }
 
 async function approve(_amount, _sender) {
   await avt.approve(aventusStorage.address, _amount, {from: _sender});
 }
 
-async function addAVTToFund(_amount, _sender, _fund) {
-  if (_sender != accounts.avtOwner) {
+async function addAVT(_amount, _sender) {
+  if (_sender != accounts.avtAccount) {
     // Any other account will not have any AVT: give them what they need.
     await avt.transfer(_sender, _amount);
   }
 
   await approve(_amount, _sender);
-  await avtManager.deposit(_fund, _amount, {from: _sender});
+  await avtManager.deposit(_amount, {from: _sender});
 }
 
-async function withdrawAVTFromFund(_depositAmount, _withdrawer, _fund) {
-  await avtManager.withdraw(_fund, _depositAmount, {from: _withdrawer});
+async function withdrawAVT(_depositAmount, _withdrawer) {
+  await avtManager.withdraw(_depositAmount, {from: _withdrawer});
 }
 
-async function clearAVTFund(_account, _fund) {
-  let deposit = await avtManager.getBalance(_fund, _account);
-  await withdrawAVTFromFund(deposit, _account, _fund);
+async function clearAVTAccount(_account) {
+  let deposit = await avtManager.getBalance(_account);
+  await withdrawAVT(deposit, _account);
 }
 
 async function balanceOf(_avtOwner) {
@@ -45,19 +44,18 @@ async function totalBalance() {
   return avt.balanceOf(aventusStorage.address);
 }
 
-async function checkFundsEmpty(_accounts, _alsoCheckStakes) {
+async function checkBalancesAreZero(_accounts) {
   for (let accountName in _accounts) {
     let account = _accounts[accountName];
-    checkFundIsEmpty('deposit', account, accountName);
-    if (_alsoCheckStakes) checkFundIsEmpty('stake', account, accountName);
+    checkBalanceIsZero(account, accountName);
   }
-  let totalAVTFunds = await totalBalance();
-  testHelper.assertBNZero(totalAVTFunds, 'Total balance not cleared');
+  let totalAVTBalance = await totalBalance();
+  testHelper.assertBNZero(totalAVTBalance, 'Total balance not cleared');
 }
 
-async function checkFundIsEmpty(_fund, _account, _accountName) {
-  const depositBalance = await avtManager.getBalance(_fund, _account);
-  testHelper.assertBNZero(depositBalance, (_fund + ' account ' + _accountName + ' has AVT: ' + depositBalance));
+async function checkBalanceIsZero(_account, _accountName) {
+  const depositBalance = await avtManager.getBalance(_account);
+  testHelper.assertBNZero(depositBalance, (_accountName + ' has AVT: ' + depositBalance));
 }
 
 function toNat(_amountInAVT) {
@@ -66,14 +64,14 @@ function toNat(_amountInAVT) {
 
 // Keep exports alphabetical.
 module.exports = {
-  addAVTToFund,
+  addAVT,
   approve,
   balanceOf,
-  checkFundsEmpty,
-  clearAVTFund,
+  checkBalancesAreZero,
+  clearAVTAccount,
   init,
   oneAVTTo18SigFig,
   toNat,
   totalBalance,
-  withdrawAVTFromFund,
+  withdrawAVT,
 };

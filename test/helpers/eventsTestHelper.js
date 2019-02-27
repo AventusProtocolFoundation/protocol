@@ -16,15 +16,16 @@ async function init(_testHelper, _timeTestHelper, _avtTestHelper, _signingTestHe
   aventusStorage = testHelper.getAventusStorage();
 }
 
-// TODO: Don't keep state in the helper, think of a better way of doing this.
-let uniqueEventId = 0;
-
-async function createEvent(_eventOwner) {
-  const eventDesc = 'My event' + uniqueEventId++;
+async function createEvent(_eventOwner, _sender) {
+  const sender = _sender || _eventOwner;
+  const eventDesc = 'My event';
   const sixWeeks = timeTestHelper.oneWeek.mul(new web3.utils.BN(6));
+  const sevenWeeks = timeTestHelper.oneWeek.mul(new web3.utils.BN(7));
   const offSaleTime = timeTestHelper.now().add(sixWeeks);
-  const eventOwnerProof = await signingTestHelper.getCreateEventEventOwnerProof(_eventOwner, eventDesc, offSaleTime);
-  await eventsManager.createEvent(eventDesc, offSaleTime, eventOwnerProof, {from: _eventOwner});
+  const eventTime = timeTestHelper.now().add(sevenWeeks);
+  const eventOwnerProof = await signingTestHelper.getCreateEventEventOwnerProof(_eventOwner, eventDesc, eventTime, offSaleTime,
+      sender);
+  await eventsManager.createEvent(eventDesc, eventTime, offSaleTime, eventOwnerProof, _eventOwner, {from: sender});
   const eventArgs = await testHelper.getLogArgs(eventsManager, 'LogEventCreated');
   return eventArgs.eventId;
 }

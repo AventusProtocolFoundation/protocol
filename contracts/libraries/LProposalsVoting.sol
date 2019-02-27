@@ -5,6 +5,7 @@ import "./LAVTManager.sol";
 import "./zeppelin/LECRecovery.sol";
 import "./LProposalsEnact.sol";
 import "./LProposalsStorage.sol";
+import "./LAventusDLL.sol";
 
 library LProposalsVoting {
 
@@ -35,14 +36,8 @@ library LProposalsVoting {
     _;
   }
 
-  function castVote(
-    IAventusStorage _storage,
-    uint _proposalId,
-    bytes32 _secret,
-    uint _prevTime
-  )
+  function castVote(IAventusStorage _storage, uint _proposalId, bytes32 _secret, uint _prevTime)
     external
-    // no modifier checked, because it should have been checked at the top-level
   {
     require(LProposalsStorage.getVoterSecret(_storage, msg.sender, _proposalId) == 0, "Already voted");
     LProposalsStorage.setVoterSecret(_storage, msg.sender, _proposalId, _secret);
@@ -52,11 +47,22 @@ library LProposalsVoting {
     addSendersVoteToDLL(_storage, _proposalId, _prevTime);
   }
 
-  function cancelVote(IAventusStorage _storage, uint _proposalId) external
+  function cancelVote(IAventusStorage _storage, uint _proposalId)
+    external
     onlyInVotingPeriodOrAfterRevealingFinished(_storage, _proposalId)
     onlyUnrevealedVote(_storage, _proposalId)
   {
     doRemoveVote(_storage, _proposalId);
+  }
+
+  function getPrevTimeParamForCastVote(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (uint prevTime_)
+  {
+    uint proposalRevealTime = LProposalsStorage.getRevealingStart(_storage, _proposalId);
+    require(proposalRevealTime != 0, "Proposal does not exist");
+    prevTime_ = LAventusDLL.getPreviousValue(_storage, msg.sender, proposalRevealTime);
   }
 
   function revealVote(IAventusStorage _storage, bytes memory _signedMessage, uint _proposalId, uint _optId)
@@ -77,83 +83,29 @@ library LProposalsVoting {
     doRemoveVote(_storage, _proposalId);
   }
 
-  function getPrevTimeParamForCastVote(IAventusStorage _storage, uint _proposalId) external view returns (uint prevTime_) {
-    address voter = msg.sender;
-    uint proposalRevealTime = LProposalsStorage.getRevealingStart(_storage, _proposalId);
-    require(proposalRevealTime != 0, "Proposal does not exist");
-    if (LProposalsStorage.getVoteCountForRevealTime(_storage, voter, proposalRevealTime) != 0) {
-      // We have an entry in the DLL for this time already.
-      prevTime_ = LProposalsStorage.getPreviousRevealTime(_storage, voter, proposalRevealTime);
-      return prevTime_;
-    }
-    // Find where we would insert a new node; start looking at the head.
-    prevTime_ = 0;
-    while (true) {
-      uint nextTime = LProposalsStorage.getNextRevealTime(_storage, voter, prevTime_);
-      if (nextTime == 0 || proposalRevealTime < nextTime) {
-        break;
-      }
-      prevTime_ = nextTime;
-    }
-  }
-
   // Add the vote to the doubly linked list of vote counts that this user is
   // currently voting in. The list is sorted in proposal revealTime order.
-  function addSendersVoteToDLL(IAventusStorage _storage, uint _proposalId, uint _prevTime) private {
-    address voter = msg.sender;
-
+  function addSendersVoteToDLL(IAventusStorage _storage, uint _proposalId, uint _prevTime)
+    private
+  {
     // The proposal's reveal period start time, used for position in the reveal time DLL.
     uint proposalRevealTime = LProposalsStorage.getRevealingStart(_storage, _proposalId);
-
-    // The number of proposals, that the voter has voted on, that are revealing at the same time as this one.
-    uint numVotes = LProposalsStorage.getVoteCountForRevealTime(_storage, voter, proposalRevealTime);
-
-    // If no other votes at this time, create new node in the DLL.
-    if (numVotes == 0) {
-      // Make sure that the prev and next entries are valid first.
-      uint nextTime = LProposalsStorage.getNextRevealTime(_storage, voter, _prevTime);
-      if (_prevTime != 0) {
-        bool validPrevTime = _prevTime < proposalRevealTime &&
-            LProposalsStorage.getVoteCountForRevealTime(_storage, voter, _prevTime) != 0;
-        require(validPrevTime, "Invalid previous time");
-      }
-      if (nextTime != 0) {
-        bool validNextTime = proposalRevealTime < nextTime &&
-            LProposalsStorage.getVoteCountForRevealTime(_storage, voter, nextTime) != 0;
-        require(validNextTime, "Invalid next time");
-      }
-
-      // Create new entry in the DLL betwwen _prevTime and nextTime.
-      LProposalsStorage.setPreviousRevealTime(_storage, voter, proposalRevealTime, _prevTime);
-      LProposalsStorage.setNextRevealTime(_storage, voter, proposalRevealTime, nextTime);
-      LProposalsStorage.setNextRevealTime(_storage, voter, _prevTime, proposalRevealTime);
-      LProposalsStorage.setPreviousRevealTime(_storage, voter, nextTime, proposalRevealTime);
-    }
-
-    LProposalsStorage.setVoteCountForRevealTime(_storage, voter, proposalRevealTime, numVotes + 1);
+    // update the existing count for this time or insert if no votes exist yet.
+    LAventusDLL.incrementCount(_storage, msg.sender, proposalRevealTime, _prevTime);
   }
 
   // Remove the vote from the doubly linked list of vote counts that this user is
   // currently voting in. The list is sorted in proposal revealTime order.
-  function removeSendersVoteFromDLL(IAventusStorage _storage, uint _proposalId) private {
-    address voter = msg.sender;
+  function removeSendersVoteFromDLL(IAventusStorage _storage, uint _proposalId)
+    private
+  {
     uint proposalRevealTime = LProposalsStorage.getRevealingStart(_storage, _proposalId);
-    uint numVotes = LProposalsStorage.getVoteCountForRevealTime(_storage, voter, proposalRevealTime);
-    assert(numVotes != 0);
-
-    // If this was the only vote, remove the entire entry from the DLL.
-    if (numVotes == 1) {
-      uint prevTime = LProposalsStorage.getPreviousRevealTime(_storage, voter, proposalRevealTime);
-      uint nextTime = LProposalsStorage.getNextRevealTime(_storage, voter, proposalRevealTime);
-
-      LProposalsStorage.setNextRevealTime(_storage, voter, prevTime, nextTime);
-      LProposalsStorage.setPreviousRevealTime(_storage, voter, nextTime, prevTime);
-    } else {
-      LProposalsStorage.setVoteCountForRevealTime(_storage, voter, proposalRevealTime, numVotes - 1);
-    }
+    LAventusDLL.decrementCount(_storage, msg.sender, proposalRevealTime);
   }
 
-  function doRemoveVote(IAventusStorage _storage, uint _proposalId) private {
+  function doRemoveVote(IAventusStorage _storage, uint _proposalId)
+    private
+  {
     uint unrevealedVotesCount = LProposalsStorage.getUnrevealedVotesCount(_storage, _proposalId);
     LProposalsStorage.setUnrevealedVotesCount(_storage, _proposalId, unrevealedVotesCount - 1);
     removeSendersVoteFromDLL(_storage, _proposalId);
@@ -174,14 +126,12 @@ library LProposalsVoting {
   function addVoterStakeToProposal(IAventusStorage _storage, uint _proposalId, uint _optId, address _voter)
     private
   {
-    uint stake = LAVTManager.getBalance(_storage, _voter, "stake");
+    uint stake = LAVTManager.getBalance(_storage, _voter);
 
     if (stake == 0) return;
 
     LProposalsStorage.increaseTotalRevealedStake(_storage, _proposalId, _optId, stake);
-
     LProposalsStorage.incrementNumVotersRevealedWithStake(_storage, _proposalId, _optId);
-
     LProposalsStorage.setRevealedVoterStake(_storage, _proposalId, _voter, _optId, stake);
   }
 }
