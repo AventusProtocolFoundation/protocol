@@ -42,7 +42,7 @@ contract EventsManager is IEventsManager, Owned, Versioned {
   function resellTicket(uint _eventId, uint _ticketId, bytes calldata _ticketOwnerPermission, address _newBuyer)
     external
   {
-      LEvents.resellTicket(s, _eventId, _ticketId, _ticketOwnerPermission, _newBuyer);
+    LEvents.resellTicket(s, _eventId, _ticketId, _ticketOwnerPermission, _newBuyer);
   }
 
   function registerRoleOnEvent(uint _eventId, address _roleAddress, string calldata _role,
