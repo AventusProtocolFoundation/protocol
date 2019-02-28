@@ -22,12 +22,12 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Statements</span>
-        <span class='fraction'>25/25</span>
+        <span class='fraction'>22/22</span>
       </div>
       <div class='fl pad1y space-right2'>
-        <span class="strong">75% </span>
+        <span class="strong">100% </span>
         <span class="quiet">Branches</span>
-        <span class='fraction'>9/12</span>
+        <span class='fraction'>6/6</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
@@ -37,7 +37,7 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Lines</span>
-        <span class='fraction'>32/32</span>
+        <span class='fraction'>29/29</span>
       </div>
     </div>
   </div>
@@ -130,15 +130,9 @@
 85
 86
 87
-88
-89
-90
-91
-92
-93
-94
-95
-96</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+88</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -161,13 +155,14 @@
 <span class="cline-any cline-yes">19×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">9×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">9×</span>
-<span class="cline-any cline-yes">9×</span>
-<span class="cline-any cline-yes">9×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">9×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">9×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">9×</span>
 <span class="cline-any cline-yes">5×</span>
@@ -178,17 +173,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">9×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">9×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">9×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -219,13 +209,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">10×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -249,43 +233,41 @@ import "./LAventitiesStorage.sol";
 &nbsp;
 library LAventitiesChallenges {
 &nbsp;
-    function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) external {
+    function claimVoterWinnings(IAventusStorage _storage, uint _proposalId)
+      external
+    {
       address voter = msg.sender;
-      uint winningOption = LAventitiesStorage.getWinningProposalOption(_storage, _proposalId);
+      uint winningOption = LProposals.getWinningProposalOption(_storage, _proposalId);
       uint voterStake = LProposals.getRevealedVoterStake(_storage, _proposalId, voter, winningOption);
       require(voterStake != 0, "Voter has no winnings for this proposal");
 &nbsp;
-      uint totalWinnings = LAventitiesStorage.getTotalWinningsToVoters(_storage, _proposalId);
-      <span class="missing-if-branch" title="else path not taken" >E</span>assert(totalWinnings != 0);
-      uint totalWinningStake = LAventitiesStorage.getTotalWinningStake(_storage, _proposalId);
-      <span class="missing-if-branch" title="else path not taken" >E</span>assert(totalWinningStake != 0);
+      uint totalWinnings = LProposals.getTotalWinningsToVoters(_storage, _proposalId);
+      // DEBUG_ONLY assert(totalWinnings != 0);
+      uint totalWinningStake = LProposals.getTotalWinningStake(_storage, _proposalId);
+      // DEBUG_ONLY assert(totalWinningStake != 0);
 &nbsp;
       uint voterReward;
 &nbsp;
       bool lastClaimant = LProposals.getNumVotersRevealedWithStake(_storage, _proposalId, winningOption) ==
-          LAventitiesStorage.incrementNumVotersClaimed(_storage, _proposalId);
+          LProposals.incrementNumVotersClaimed(_storage, _proposalId);
+&nbsp;
       if (lastClaimant) {
-        voterReward = LAventitiesStorage.getVotersWinningsPot(_storage, _proposalId);
+        voterReward = LProposals.getVotersWinningsPot(_storage, _proposalId);
       } else {
         voterReward = (totalWinnings * voterStake) / totalWinningStake;
       }
       giveWinnings(_storage, voterReward, voter);
 &nbsp;
-      LAventitiesStorage.reduceVotersWinningsPot(_storage, _proposalId, voterReward);
+      LProposals.reduceVotersWinningsPot(_storage, _proposalId, voterReward);
 &nbsp;
-      <span class="missing-if-branch" title="else path not taken" >E</span>assert(!lastClaimant || LAventitiesStorage.getVotersWinningsPot(_storage, _proposalId) == 0);
+      // DEBUG_ONLY assert(!lastClaimant || LProposals.getVotersWinningsPot(_storage, _proposalId) == 0);
 &nbsp;
       // Stop the voter from claiming again.
       LProposals.clearRevealedStake(_storage, _proposalId, voter, winningOption);
     }
 &nbsp;
-  function doWinningsDistribution(
-      IAventusStorage _storage,
-      uint _proposalId,
-      bool _distributeToVoters,
-      uint _winnings,
-      address _winner,
-      address _loser)
+  function doWinningsDistribution(IAventusStorage _storage, uint _proposalId, bool _distributeToVoters, uint _winnings,
+      address _winner, address _loser)
     external
   {
     takeAllWinningsFromProposalLoser(_storage, _winnings, _loser);
@@ -301,8 +283,8 @@ library LAventitiesChallenges {
 &nbsp;
     if (_distributeToVoters) {
       // The rest of the winnings is distributed to the voters as they claim it.
-      LAventitiesStorage.setTotalWinningsToVoters(_storage, _proposalId, winningsForVoters);
-      LAventitiesStorage.initialiseVotersWinningsPot(_storage, _proposalId, winningsForVoters);
+      LProposals.setTotalWinningsToVoters(_storage, _proposalId, winningsForVoters);
+      LProposals.initialiseVotersWinningsPot(_storage, _proposalId, winningsForVoters);
     } else {
       // If no one voted, the challenge ender gets the rest of the winnings.
       winningsToChallengeEnderAVT += winningsForVoters;
@@ -311,22 +293,16 @@ library LAventitiesChallenges {
     giveWinnings(_storage, winningsToChallengeEnderAVT, challengeEnder);
   }
 &nbsp;
-  function takeAllWinningsFromProposalLoser(
-      IAventusStorage _storage,
-      uint _winnings,
-      address _loser)
+  function takeAllWinningsFromProposalLoser(IAventusStorage _storage, uint _winnings, address _loser)
     private
   {
-    LAVTManager.decreaseFund(_storage, _loser, "deposit", _winnings);
+    LAVTManager.decreaseAVT(_storage, _loser, _winnings);
   }
 &nbsp;
-  function giveWinnings(
-      IAventusStorage _storage,
-      uint _winnings,
-      address _payee)
+  function giveWinnings(IAventusStorage _storage, uint _winnings, address _payee)
     private
   {
-    LAVTManager.increaseFund(_storage, _payee, "deposit", _winnings);
+    LAVTManager.increaseAVT(_storage, _payee, _winnings);
   }
 }</pre></td></tr>
 </table></pre>
@@ -334,7 +310,7 @@ library LAventitiesChallenges {
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Jan 21 2019 16:59:59 GMT+0000 (GMT)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Feb 28 2019 12:07:39 GMT+0000 (GMT)
 </div>
 </div>
 <script src="../../prettify.js"></script>
