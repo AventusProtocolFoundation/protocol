@@ -10,8 +10,8 @@ import "./Owned.sol";
 contract AventusStorage is Owned, PDelegate, IAventusStorage {
   bytes32 constant avtContractAddressKey = keccak256(abi.encodePacked("AVTERC20Instance"));
 
-  event LogAccessAllowed(string accessType, address indexed accessAddress);
-  event LogAccessDenied(string accessType, address indexed accessAddress);
+  event LogStorageAccessAllowed(string accessType, address indexed accessAddress);
+  event LogStorageAccessDenied(string accessType, address indexed accessAddress);
 
   modifier onlyWithWriteAccess() {
     isAllowedAccess("write");
@@ -35,12 +35,12 @@ contract AventusStorage is Owned, PDelegate, IAventusStorage {
 
   function allowAccess(string calldata _accessType, address _address) external onlyOwner {
     accessAllowed[getKey(_accessType, _address)] = true;
-    emit LogAccessAllowed(_accessType, _address);
+    emit LogStorageAccessAllowed(_accessType, _address);
   }
 
   function denyAccess(string calldata _accessType, address _address) external onlyOwner {
     accessAllowed[getKey(_accessType, _address)] = false;
-    emit LogAccessDenied(_accessType, _address);
+    emit LogStorageAccessDenied(_accessType, _address);
   }
 
   function transferAVTTo(address _to, uint _tokens) external onlyWithTransferAVTAccess {
@@ -58,7 +58,9 @@ contract AventusStorage is Owned, PDelegate, IAventusStorage {
   /**
    * @dev In case we need to extend functionality - avoids copying state
    */
-  function () external {
+  function ()
+    external
+  {
     address target = doGetAddress(keccak256(abi.encodePacked("StorageInstance")));
 
     require(target != address(0), "Extended functionality StorageContract not found");
@@ -190,5 +192,4 @@ contract AventusStorage is Owned, PDelegate, IAventusStorage {
   {
     key_ = keccak256(abi.encodePacked(_accessType, _address));
   }
-
 }

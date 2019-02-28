@@ -23,7 +23,7 @@ contract('MembersManager - activity', async () => {
 
   after(async () => {
     await membersTestHelper.deregisterMemberAndWithdrawDeposit(accounts.goodMember, goodMemberType);
-    await avtTestHelper.checkFundsEmpty(accounts);
+    await avtTestHelper.checkBalancesAreZero(accounts);
   });
 
   context('memberIsActive()', async () => {

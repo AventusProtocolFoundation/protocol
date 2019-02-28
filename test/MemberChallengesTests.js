@@ -14,7 +14,6 @@ contract('Member challenges', async () => {
   const badType = membersTestHelper.memberTypes.bad;
   const stake1 = avtTestHelper.oneAVTTo18SigFig;
   const stake2 = stake1.mul(new BN(2));
-  const checkStakes = true;
 
   let membersManager, proposalsManager;
 
@@ -33,12 +32,12 @@ contract('Member challenges', async () => {
   });
 
   after(async () => {
-    await avtTestHelper.checkFundsEmpty(accounts, checkStakes);
+    await avtTestHelper.checkBalancesAreZero(accounts);
   });
 
   async function makeChallengeDeposit(_memberAddress, _memberType, _challenger) {
     let deposit = await membersTestHelper.getExistingMemberDeposit(_memberAddress, _memberType);
-    await avtTestHelper.addAVTToFund(deposit, _challenger, 'deposit');
+    await avtTestHelper.addAVT(deposit, _challenger);
   }
 
   context('challengeMember()', async () => {
@@ -76,9 +75,9 @@ contract('Member challenges', async () => {
         // After the challenge has ended, winnings distribution means that the AVT deposits of the accounts
         // may be different from their value after setup.
         // At this level, we don't need to exactly calculate this distribution, as they'll be tested in a dedicated context.
-        // So, we just clear whatever AVT remains in the accounts funds
-        await avtTestHelper.clearAVTFund(goodMember, 'deposit');
-        await avtTestHelper.clearAVTFund(goodChallenger, 'deposit');
+        // So, we just clear whatever AVT remains in the accounts
+        await avtTestHelper.clearAVTAccount(goodMember);
+        await avtTestHelper.clearAVTAccount(goodChallenger);
       });
 
       context('succeeds with', async () => {
@@ -109,8 +108,8 @@ contract('Member challenges', async () => {
       after(async () => {
         await membersTestHelper.deregisterMemberAndWithdrawDeposit(goodMember, goodType);
         // Clear remaining AVT resulting from challenge winnings
-        await avtTestHelper.clearAVTFund(goodMember, 'deposit');
-        await avtTestHelper.clearAVTFund(goodChallenger, 'deposit');
+        await avtTestHelper.clearAVTAccount(goodMember);
+        await avtTestHelper.clearAVTAccount(goodChallenger);
       });
 
       it('member is under challenge', async () => {
@@ -157,8 +156,8 @@ contract('Member challenges', async () => {
         // After the challenge has ended, winnings distribution means that the AVT deposits of the accounts
         // may be different from their value after setup.
         // At this level, we don't need to exactly calculate this distribution, as they'll be tested in a dedicated context.
-        // So, we just clear whatever AVT remains in the accounts funds
-        await avtTestHelper.clearAVTFund(goodMember, 'deposit');
+        // So, we just clear whatever AVT remains in the accounts
+        await avtTestHelper.clearAVTAccount(goodMember);
       });
 
       beforeEach(async () => {
@@ -170,14 +169,14 @@ contract('Member challenges', async () => {
       context('succeeds with', async () => {
         it('good parameters', async () => {
           await endMemberChallengeSucceeds();
-          await avtTestHelper.clearAVTFund(challengeEnder, 'deposit');
+          await avtTestHelper.clearAVTAccount(challengeEnder);
         });
       });
 
       context('fails with bad parameters', async () => {
         afterEach(async () => {
           await membersManager.endMemberChallenge(goodMember, goodType, {from: challengeEnder});
-          await avtTestHelper.clearAVTFund(challengeEnder, 'deposit');
+          await avtTestHelper.clearAVTAccount(challengeEnder);
         });
 
         it('member address', async () => {
@@ -197,15 +196,15 @@ contract('Member challenges', async () => {
         // The next action effectively deregisters goodMember, so no tearDown will be done for this test
         await challengesTestHelper.challengeMemberAndMarkAsFraudulent(goodMember, goodType, challengeEnder);
         await endMemberChallengeFails(goodMember, goodType, 'Member is not registered');
-        await avtTestHelper.clearAVTFund(challengeEnder, 'deposit');
-        await avtTestHelper.clearAVTFund(goodMember, 'deposit');
+        await avtTestHelper.clearAVTAccount(challengeEnder);
+        await avtTestHelper.clearAVTAccount(goodMember);
       });
 
       it('member has no active challenge', async () => {
         await membersTestHelper.depositAndRegisterMember(goodMember, goodType);
         await endMemberChallengeFails(goodMember, goodType, 'Challenge does not exist');
         await membersTestHelper.deregisterMemberAndWithdrawDeposit(goodMember, goodType);
-        await avtTestHelper.clearAVTFund(goodMember, 'deposit');
+        await avtTestHelper.clearAVTAccount(goodMember);
       });
     });
   });
@@ -220,10 +219,10 @@ contract('Member challenges', async () => {
     }
 
     async function withdrawDepositsAfterWinningsDistribution() {
-      await avtTestHelper.withdrawAVTFromFund(winnerWinnings, challengedAddress, 'deposit');
-      await avtTestHelper.withdrawAVTFromFund(enderWinnings, challengeEnder, 'deposit');
-      await avtTestHelper.withdrawAVTFromFund(voter1Winnings, voter1, 'deposit');
-      await avtTestHelper.withdrawAVTFromFund(voter2Winnings, voter2, 'deposit');
+      await avtTestHelper.withdrawAVT(winnerWinnings, challengedAddress);
+      await avtTestHelper.withdrawAVT(enderWinnings, challengeEnder);
+      await avtTestHelper.withdrawAVT(voter1Winnings, voter1);
+      await avtTestHelper.withdrawAVT(voter2Winnings, voter2);
     }
 
     async function claimVoterWinningsSucceeds(_voter) {
@@ -256,15 +255,15 @@ contract('Member challenges', async () => {
       voter2 = accounts.voter2;
       await membersTestHelper.depositAndRegisterMember(challengedAddress, goodType);
 
-      await avtTestHelper.addAVTToFund(stake1, voter1, 'stake');
-      await avtTestHelper.addAVTToFund(stake2, voter2, 'stake');
+      await avtTestHelper.addAVT(stake1, voter1);
+      await avtTestHelper.addAVT(stake2, voter2);
     });
 
     after(async () => {
       await membersTestHelper.deregisterMemberAndWithdrawDeposit(challengedAddress, goodType);
 
-      await avtTestHelper.withdrawAVTFromFund(stake1, voter1, 'stake');
-      await avtTestHelper.withdrawAVTFromFund(stake2, voter2, 'stake');
+      await avtTestHelper.withdrawAVT(stake1, voter1);
+      await avtTestHelper.withdrawAVT(stake2, voter2);
     });
 
     beforeEach(async () => {
@@ -284,7 +283,7 @@ contract('Member challenges', async () => {
 
     afterEach(async() => {
       // Voter2 has been given the remainder; clear it out.
-      await avtTestHelper.withdrawAVTFromFund(1, voter2, 'deposit');
+      await avtTestHelper.withdrawAVT(1, voter2);
     });
 
     context('succeeds with', async () => {

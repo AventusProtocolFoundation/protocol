@@ -15,27 +15,39 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
     s = _s;
   }
 
-  function createGovernanceProposal(string calldata _desc) external {
+  function createGovernanceProposal(string calldata _desc)
+    external
+  {
     LProposals.createGovernanceProposal(s, _desc);
   }
 
-  function endGovernanceProposal(uint _proposalId) external {
+  function endGovernanceProposal(uint _proposalId)
+    external
+  {
     LProposals.endGovernanceProposal(s, _proposalId);
   }
 
-  function castVote(uint _proposalId, bytes32 _secret, uint _prevTime) external {
+  function castVote(uint _proposalId, bytes32 _secret, uint _prevTime)
+    external
+  {
     LProposals.castVote(s, _proposalId, _secret, _prevTime);
   }
 
-  function cancelVote(uint _proposalId) external {
+  function cancelVote(uint _proposalId)
+    external
+  {
     LProposals.cancelVote(s, _proposalId);
   }
 
-  function revealVote(bytes calldata _signedMessage, uint _proposalId, uint _optId) external {
+  function revealVote(bytes calldata _signedMessage, uint _proposalId, uint _optId)
+    external
+  {
     LProposals.revealVote(s, _signedMessage, _proposalId, _optId);
   }
 
-  function claimVoterWinnings(uint _proposalId) external {
+  function claimVoterWinnings(uint _proposalId)
+    external
+  {
     LAventities.claimVoterWinnings(s, _proposalId);
   }
 
@@ -50,5 +62,4 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
   function getAventusTime() external view returns (uint time_) {
     time_ = LProposals.getAventusTime(s);
   }
-
 }

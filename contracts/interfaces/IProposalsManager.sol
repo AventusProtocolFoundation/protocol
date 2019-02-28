@@ -1,6 +1,7 @@
 pragma solidity ^0.5.2;
 
 interface IProposalsManager {
+
   /**
    * @notice Event emitted for a createGovernanceProposal transaction.
    */
@@ -57,7 +58,7 @@ interface IProposalsManager {
    * NOTE: Vote must be revealed within the proposal revealing period to count.
    * @param _proposalId Proposal ID
    * @param _secret The secret vote: Sha3(signed Sha3(option ID))
-   * @param _prevTime The previous time that locked the user's funds - from getPrevTimeParamForCastVote()
+   * @param _prevTime The previous time that locked the user's AVT account - from getPrevTimeParamForCastVote()
    * @dev _prevTime corresponds to the previous entry in the sender's voting DLL.
    */
   function castVote(uint _proposalId, bytes32 _secret, uint _prevTime) external;
@@ -71,8 +72,7 @@ interface IProposalsManager {
 
   /**
    * @notice Reveal a vote on a proposal
-   * NOTE: Votes only count if the caller has AVT in their stake fund when they reveal their
-   * vote (see IAVTManager.sol)
+   * NOTE: Votes only count if the caller has AVT when they reveal their vote (see IAVTManager.sol)
    * @param _signedMessage a signed message
    * @param _proposalId Proposal ID
    * @param _optId ID of option that was voted on
@@ -81,7 +81,7 @@ interface IProposalsManager {
 
   /**
    * @notice Claim winnings from a proposal if caller voted on the winning side.
-   * Results in the caller's share of any proposal winnings being put into their deposit fund.
+   * Results in the caller's share of any proposal winnings being put into their AVT account.
    * (see IAVTManager.sol)
    * @param _proposalId Proposal ID
    */

@@ -4,11 +4,17 @@ contract AventusStorageForTesting {
 
   uint testValue;
 
-  function setTestValue(uint value) external {
+  function setTestValue(uint value)
+    external
+  {
     testValue = value;
   }
 
-  function getTestValue() external view returns (uint) {
+  function getTestValue()
+    external
+    view
+    returns (uint)
+  {
     return testValue;
   }
 

@@ -3,140 +3,121 @@ pragma solidity ^0.5.2;
 import "../interfaces/IAventusStorage.sol";
 import "./LAventusTime.sol";
 import "./LAVTStorage.sol";
+import "./LAventusDLL.sol";
 
-// Library for adding functionality for handling AVT funds.
+// Library for adding functionality for handling AVT.
 library LAVTManager  {
-  bytes32 constant stakeFundHash = keccak256(abi.encodePacked("stake"));
-  bytes32 constant depositFundHash = keccak256(abi.encodePacked("deposit"));
 
   // See IAVTManager interface for logs description
-  event LogAVTWithdrawn(address indexed sender, string fund, uint amount);
-  event LogAVTDeposited(address indexed sender, string fund, uint amount);
+  event LogAVTWithdrawn(address indexed sender, uint amount);
+  event LogAVTDeposited(address indexed sender, uint amount);
 
-  function withdraw(IAventusStorage _storage, string calldata _fund, uint _amount)
+  function withdraw(IAventusStorage _storage, uint _amount)
     external
   {
-    if (keccak256(abi.encodePacked(_fund)) == stakeFundHash) {
-      require(!stakeChangeIsBlocked(_storage, msg.sender), "A blocked stake cannot be withdrawn");
-    } else {
-      require(keccak256(abi.encodePacked(_fund)) == depositFundHash, "Withdraw must be called for stake or deposit fund only");
-      require(!depositWithdrawlIsBlocked(_storage, _amount, msg.sender), "A blocked deposit cannot be withdrawn");
-    }
+    require(!votingIsInTheRevealPeriod(_storage, msg.sender), "Cannot withdraw until all votes are revealed");
+    require(!avtIsLockedUpInDeposits(_storage, _amount, msg.sender), "Funds required by a deposit cannot be withdrawn");
 
-    decreaseFund(_storage, msg.sender, _fund, _amount);
+    decreaseAVT(_storage, msg.sender, _amount);
     _storage.transferAVTTo(msg.sender, _amount);
-    emit LogAVTWithdrawn(msg.sender, _fund, _amount);
+    emit LogAVTWithdrawn(msg.sender, _amount);
   }
 
-  function deposit(IAventusStorage _storage, string calldata _fund, uint _amount)
+  function deposit(IAventusStorage _storage, uint _amount)
     external
   {
-    if (keccak256(abi.encodePacked(_fund)) == stakeFundHash) {
-      require(!stakeChangeIsBlocked(_storage, msg.sender), "It is not possible to deposit into a blocked stake");
-    } else {
-      require(keccak256(abi.encodePacked(_fund)) == depositFundHash, "Deposit must be called for stake or deposit fund only");
-    }
+    require(!votingIsInTheRevealPeriod(_storage, msg.sender), "Cannot deposit until all votes are revealed");
 
-    increaseFund(_storage, msg.sender, _fund, _amount);
+    increaseAVT(_storage, msg.sender, _amount);
     _storage.transferAVTFrom(msg.sender, _amount);
-    emit LogAVTDeposited(msg.sender, _fund, _amount);
+    emit LogAVTDeposited(msg.sender, _amount);
   }
 
-  function transfer(IAventusStorage _storage, string calldata _fromFund, uint _amount, address _toAddress,
-      string calldata _toFund)
+  function transfer(IAventusStorage _storage, uint _amount, address _toAddress)
     external
   {
-    if (keccak256(abi.encodePacked(_fromFund)) == stakeFundHash) {
-      require(!stakeChangeIsBlocked(_storage, msg.sender), "A blocked stake cannot be transferred");
-    } else {
-      require(keccak256(abi.encodePacked(_fromFund)) == depositFundHash, "Transfer must be from stake or deposit fund only");
-      require(!depositWithdrawlIsBlocked(_storage, _amount, msg.sender), "A blocked deposit cannot be transferred");
-    }
+    require(!votingIsInTheRevealPeriod(_storage, msg.sender), "Cannot transfer until all votes are revealed");
+    require(!avtIsLockedUpInDeposits(_storage, _amount, msg.sender), "Funds required by a deposit cannot be transferred");
+    require(!votingIsInTheRevealPeriod(_storage, _toAddress), "Cannot recieve transfers until all votes are revealed");
 
-    if (keccak256(abi.encodePacked(_toFund)) == stakeFundHash) {
-      require(!stakeChangeIsBlocked(_storage, _toAddress), "A blocked stake cannot receive transfers");
-    } else {
-      require(keccak256(abi.encodePacked(_toFund)) == depositFundHash, "Transfer must be to stake or deposit fund only");
-    }
-
-    doTransfer(_storage, _amount, msg.sender, _fromFund, _toAddress, _toFund);
+    doTransfer(_storage, _amount, msg.sender, _toAddress);
   }
 
-  function lockDeposit(IAventusStorage _storage, address _depositHolder, uint _deposit) external {
-    uint expectedDeposits = LAVTStorage.getExpectedDeposits(_storage, _depositHolder) + _deposit;
-    uint actualDeposits = LAVTStorage.getFundBalance(_storage, _depositHolder, "deposit");
+  function lockDeposit(IAventusStorage _storage, address _account, uint _deposit)
+    external
+  {
+    uint expectedDeposits = LAVTStorage.getExpectedDeposits(_storage, _account) + _deposit;
+    uint currentBalance = getBalance(_storage, _account);
 
-    require(actualDeposits >= expectedDeposits, "Insufficient deposits");
+    require(currentBalance >= expectedDeposits, "Insufficient balance to cover deposits");
 
-    LAVTStorage.setExpectedDeposits(_storage, _depositHolder, expectedDeposits);
+    LAVTStorage.setExpectedDeposits(_storage, _account, expectedDeposits);
   }
 
-  function unlockDeposit(IAventusStorage _storage, address _depositHolder, uint _deposit) external {
+  function unlockDeposit(IAventusStorage _storage, address _account, uint _deposit)
+    external
+  {
     assert(_deposit != 0);
-    uint expectedDeposits = LAVTStorage.getExpectedDeposits(_storage, _depositHolder);
+    uint expectedDeposits = LAVTStorage.getExpectedDeposits(_storage, _account);
     assert(expectedDeposits >= _deposit);
-    LAVTStorage.setExpectedDeposits(_storage, _depositHolder, expectedDeposits - _deposit);
+    LAVTStorage.setExpectedDeposits(_storage, _account, expectedDeposits - _deposit);
   }
 
-  function getBalance(IAventusStorage _storage, address _avtHolder, string memory _fund)
+  function getBalance(IAventusStorage _storage, address _account)
     public
     view
     returns (uint balance_)
   {
-    bool validFund = keccak256(abi.encodePacked(_fund)) == depositFundHash ||
-        keccak256(abi.encodePacked(_fund)) == stakeFundHash;
-    require(validFund, "Can only get balance of stake or deposit fund");
-    balance_ = LAVTStorage.getFundBalance(_storage, _avtHolder, _fund);
+    balance_ = LAVTStorage.getAVTBalance(_storage, _account);
   }
 
-  function decreaseFund(IAventusStorage _storage, address _account, string memory _fund, uint _amount) public {
-    LAVTStorage.decreaseFund(_storage, _account, _fund, _amount);
+  function decreaseAVT(IAventusStorage _storage, address _account, uint _amount)
+    public
+  {
+    LAVTStorage.decreaseAVT(_storage, _account, _amount);
   }
 
-  function increaseFund(IAventusStorage _storage,  address _account, string memory _fund, uint _amount) public {
-    LAVTStorage.increaseFund(_storage, _account, _fund, _amount);
+  function increaseAVT(IAventusStorage _storage,  address _account, uint _amount)
+    public
+  {
+    LAVTStorage.increaseAVT(_storage, _account, _amount);
   }
 
   // NOTE: This version has NO CHECKS on whether the transfer should be blocked so should only be
   // used internally. Consider transfer() instead.
-  function doTransfer(IAventusStorage _storage, uint _amount, address _fromAddress, string memory _fromFund,
-      address _toAddress, string memory _toFund)
+  function doTransfer(IAventusStorage _storage, uint _amount, address _fromAddress, address _toAddress)
     private
   {
     require(_amount != 0, "The amount of a transfer must be positive");
 
-    // Take AVT from the "from" fund...
-    decreaseFund(_storage, _fromAddress, _fromFund, _amount);
-
-    // ...and give it to the "to" _fund.
-    increaseFund(_storage, _toAddress, _toFund, _amount);
+    decreaseAVT(_storage, _fromAddress, _amount);
+    increaseAVT(_storage, _toAddress, _amount);
   }
 
-  function stakeChangeIsBlocked(IAventusStorage _storage, address _stakeHolder)
+  function votingIsInTheRevealPeriod(IAventusStorage _storage, address _account)
     private
     view
-    returns (bool blocked_)
+    returns (bool inReveal_)
   {
-    uint blockedUntil = LAVTStorage.getStakeUnblockTime(_storage, _stakeHolder);
+    uint revealTime = LAventusDLL.getHeadValue(_storage, _account);
 
-    if (blockedUntil == 0)
-      blocked_ = false; // No unrevealed votes
-    else if (LAventusTime.getCurrentTime(_storage) < blockedUntil)
-      blocked_ = false; // Voting still ongoing
+    if (revealTime == 0)
+      inReveal_ = false; // No unrevealed votes
+    else if (LAventusTime.getCurrentTime(_storage) < revealTime)
+      inReveal_ = false; // Voting still ongoing
     else
-      blocked_ = true; // Reveal period active (even if reveal is over tokens are blocked until reveal)
+      inReveal_ = true; // Reveal period active (even if reveal is over tokens are blocked until reveal)
   }
 
-  function depositWithdrawlIsBlocked(IAventusStorage _storage, uint _amount, address _depositHolder)
+  function avtIsLockedUpInDeposits(IAventusStorage _storage, uint _amount, address _account)
     private
     view
-    returns (bool blocked_)
+    returns (bool lockedInDeposits_)
   {
-      uint expectedDeposits = LAVTStorage.getExpectedDeposits(_storage, _depositHolder);
-      uint actualDeposits = getBalance(_storage, _depositHolder, "deposit");
-      require(actualDeposits >= _amount, "Withdrawn amount must not exceed the deposit");
-      // If taking this amount of AVT out will mean we don't have enough deposits
-      // then block the withdrawl.
-      blocked_ = actualDeposits - _amount < expectedDeposits;
+    uint expectedDeposits = LAVTStorage.getExpectedDeposits(_storage, _account);
+    uint currentBalance = getBalance(_storage, _account);
+    require(_amount <= currentBalance, "Amount taken must be less than current balance");
+    // If taking this amount of AVT out will mean we don't have enough deposits then block the withdrawl.
+    lockedInDeposits_ = currentBalance - _amount < expectedDeposits;
   }
 }

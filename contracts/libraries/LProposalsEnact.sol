@@ -7,21 +7,18 @@ import "./LProposalsStorage.sol";
 
 // Library for extending voting protocol functionality
 library LProposalsEnact {
+  
   enum ProposalStatus {NonExistent, Lobbying, Voting, Revealing, RevealingFinishedProposalNotEnded, Ended}
 
-  function doUnlockProposalDeposit(IAventusStorage _storage, uint _proposalId) external {
+  function doUnlockProposalDeposit(IAventusStorage _storage, uint _proposalId)
+    external
+  {
     address proposalOwner = getProposalOwner(_storage, _proposalId);
     uint proposalDeposit = getProposalDeposit(_storage, _proposalId);
     LAVTManager.unlockDeposit(_storage, proposalOwner, proposalDeposit);
     LProposalsStorage.setDeposit(_storage, _proposalId, 0);
   }
 
-  /**
-  * @dev Create a proposal to be voted on
-  * @param _storage Storage contract
-  * @param _deposit Deposit that has to have been paid for this proposal
-  * @return uint proposalId_ of newly created proposal
-  */
   function doCreateProposal(IAventusStorage _storage, uint _deposit, uint numDaysInLobbyingPeriod, uint numDaysInVotingPeriod,
       uint numDaysInRevealingPeriod)
     external
@@ -51,7 +48,11 @@ library LProposalsEnact {
       (proposalStatus == ProposalStatus.Ended);
   }
 
-  function inRevealingPeriod(IAventusStorage _storage, uint _proposalId) external view returns (bool result_) {
+  function inRevealingPeriod(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (bool result_)
+  {
     result_ = doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.Revealing;
   }
 
@@ -67,7 +68,11 @@ library LProposalsEnact {
       (proposalStatus == LProposalsEnact.ProposalStatus.Ended);
   }
 
-  function inVotingPeriod(IAventusStorage _storage, uint _proposalId) external view returns (bool result_) {
+  function inVotingPeriod(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (bool result_)
+  {
     result_ = doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.Voting;
   }
 
@@ -79,12 +84,6 @@ library LProposalsEnact {
     result_ = doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.RevealingFinishedProposalNotEnded;
   }
 
-  /**
-  * @dev Gets a given proposal's current status
-  * @param _storage Storage contract
-  * @param _proposalId Proposal ID
-  * @return proposal Status
-  */
   function doGetProposalStatus(IAventusStorage _storage, uint _proposalId)
     public
     view
@@ -142,7 +141,11 @@ library LProposalsEnact {
     owner_ = LProposalsStorage.getOwner(_storage, _proposalId);
   }
 
-  function thereAreUnrevealedVotes(IAventusStorage _storage, uint _proposalId) private view returns (bool result_) {
+  function thereAreUnrevealedVotes(IAventusStorage _storage, uint _proposalId)
+    private
+    view
+    returns (bool result_)
+  {
     result_ = LProposalsStorage.getUnrevealedVotesCount(_storage, _proposalId) > 0;
   }
 }

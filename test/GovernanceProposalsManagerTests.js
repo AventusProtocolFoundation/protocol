@@ -17,16 +17,19 @@ contract('Governance proposals', async () => {
     await avtTestHelper.init(testHelper);
     await votingTestHelper.init(testHelper, timeTestHelper);
     await governanceProposalsTestHelper.init(testHelper, avtTestHelper, votingTestHelper);
-
     proposalsManager = testHelper.getProposalsManager();
-
     accounts = testHelper.getAccounts('governanceProposalOwner');
     governanceProposalDeposit = await proposalsManager.getGovernanceProposalDeposit();
   });
 
   after(async () => {
-    await avtTestHelper.checkFundsEmpty(accounts, false);
+    await avtTestHelper.checkBalancesAreZero(accounts);
   });
+
+  async function endGovernanceProposalAndWithdrawDeposit(_proposalId) {
+    await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(accounts.governanceProposalOwner,
+        _proposalId);
+  }
 
   context('createGovernanceProposal()', async () => {
 
@@ -47,19 +50,19 @@ contract('Governance proposals', async () => {
 
     context('succeeds with', async () => {
       beforeEach(async () => {
-        await avtTestHelper.addAVTToFund(governanceProposalDeposit, accounts.governanceProposalOwner, 'deposit');
+        await avtTestHelper.addAVT(governanceProposalDeposit, accounts.governanceProposalOwner);
       });
 
       it('good state', async () => {
         const governanceProposalId = await createGovernanceProposalSucceeds();
-        await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(governanceProposalId);
+        await endGovernanceProposalAndWithdrawDeposit(governanceProposalId);
       });
     });
 
     context('fails with', async () => {
       context('bad state', async () => {
         it('not enough deposit', async () => {
-          await createGovernanceProposalFails('Insufficient deposits');
+          await createGovernanceProposalFails('Insufficient balance to cover deposits');
         });
       });
     });
@@ -81,14 +84,15 @@ contract('Governance proposals', async () => {
     }
 
     beforeEach(async () => {
-      goodGovernanceProposalId = await governanceProposalsTestHelper.depositAndCreateGovernanceProposal();
+      goodGovernanceProposalId =
+          await governanceProposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
     });
 
     context('succeeds with', async () => {
       it('good parameters (in end proposal period)', async() => {
         await votingTestHelper.advanceTimeToEndOfProposal(goodGovernanceProposalId);
         await endGovernanceProposalSucceeds(goodGovernanceProposalId);
-        await avtTestHelper.withdrawAVTFromFund(governanceProposalDeposit, accounts.governanceProposalOwner, 'deposit');
+        await avtTestHelper.withdrawAVT(governanceProposalDeposit, accounts.governanceProposalOwner);
       });
     });
 
@@ -97,24 +101,24 @@ contract('Governance proposals', async () => {
         it('governanceProposalId', async() => {
           const badGovernanceProposalId = 9999;
           await endGovernanceProposalFails(badGovernanceProposalId, 'Proposal is not a governance proposal');
-          await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
+          await endGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
         });
       });
 
       context('bad state', async () => {
         it('in the lobbying period', async() => {
           await endGovernanceProposalFails(goodGovernanceProposalId, 'Proposal has the wrong status');
-          await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
+          await endGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
         });
 
         it('in the voting period', async() => {
           await votingTestHelper.advanceTimeToVotingStart(goodGovernanceProposalId);
           await endGovernanceProposalFails(goodGovernanceProposalId, 'Proposal has the wrong status');
-          await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
+          await endGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
         });
 
         it('has already ended', async() => {
-          await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
+          await endGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
           await endGovernanceProposalFails(goodGovernanceProposalId, 'Proposal has the wrong status');
         });
       });

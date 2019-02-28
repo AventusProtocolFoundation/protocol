@@ -29,11 +29,15 @@ contract MembersManager is IMembersManager, Owned, Versioned {
       LMembers.deregisterMember(s, _memberAddress, _memberType);
     }
 
-    function challengeMember(address _memberAddress, string calldata _memberType) external {
+    function challengeMember(address _memberAddress, string calldata _memberType)
+      external
+    {
       LMembers.challengeMember(s, _memberAddress, _memberType);
     }
 
-    function endMemberChallenge(address _memberAddress, string calldata _memberType) external {
+    function endMemberChallenge(address _memberAddress, string calldata _memberType)
+      external
+    {
       LMembers.endMemberChallenge(s, _memberAddress, _memberType);
     }
 

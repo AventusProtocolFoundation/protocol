@@ -1,15 +1,16 @@
 pragma solidity ^0.5.2;
 
 interface IAventusStorage {
+
   /**
    * @notice Event emitted for a allowAccess transaction.
    */
-  event LogAccessAllowed(string accessType, address indexed accessAddress);
+  event LogStorageAccessAllowed(string accessType, address indexed accessAddress);
 
   /**
    * @notice Event emitted for a denyAccess transaction.
    */
-  event LogAccessDenied(string accessType, address indexed accessAddress);
+  event LogStorageAccessDenied(string accessType, address indexed accessAddress);
 
   /**
    * @notice Allows access to storage.

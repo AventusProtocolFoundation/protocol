@@ -33,7 +33,9 @@ library LProposals {
     _;
   }
 
-  function createGovernanceProposal(IAventusStorage _storage, string calldata _desc) external {
+  function createGovernanceProposal(IAventusStorage _storage, string calldata _desc)
+    external
+  {
     uint deposit = getGovernanceProposalDeposit(_storage);
     uint proposalId = doCreateGovernanceProposal(_storage, deposit);
     (uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd) = getTimestamps(_storage, proposalId);
@@ -41,7 +43,8 @@ library LProposals {
     // set a flag to mark this proposal as a governance proposal
     LProposalsStorage.setGovernanceProposal(_storage, proposalId);
 
-    emit LogGovernanceProposalCreated(proposalId, msg.sender, _desc, lobbyingStart, votingStart, revealingStart, revealingEnd, deposit);
+    emit LogGovernanceProposalCreated(proposalId, msg.sender, _desc, lobbyingStart, votingStart, revealingStart, revealingEnd,
+        deposit);
   }
 
   function createProposal(IAventusStorage _storage, uint deposit, uint numDaysInLobbyingPeriod, uint numDaysInVotingPeriod,
@@ -53,12 +56,7 @@ library LProposals {
         numDaysInRevealingPeriod);
   }
 
-  function castVote(
-    IAventusStorage _storage,
-    uint _proposalId,
-    bytes32 _secret,
-    uint _prevTime
-  )
+  function castVote(IAventusStorage _storage, uint _proposalId, bytes32 _secret, uint _prevTime)
     external
     onlyInVotingPeriod(_storage, _proposalId) // Ensure voting period is currently active
   {
@@ -66,17 +64,16 @@ library LProposals {
     emit LogVoteCast(_proposalId, msg.sender, _secret, _prevTime);
   }
 
-  function cancelVote(
-    IAventusStorage _storage,
-    uint _proposalId
-  )
+  function cancelVote(IAventusStorage _storage, uint _proposalId)
     external
   {
     LProposalsVoting.cancelVote(_storage, _proposalId);
     emit LogVoteCancelled(_proposalId, msg.sender);
   }
 
-  function revealVote(IAventusStorage _storage, bytes calldata _signedMessage, uint _proposalId, uint _optId) external {
+  function revealVote(IAventusStorage _storage, bytes calldata _signedMessage, uint _proposalId, uint _optId)
+    external
+  {
     LProposalsVoting.revealVote(_storage, _signedMessage, _proposalId, _optId);
     uint revealingStart = LProposalsStorage.getRevealingStart(_storage, _proposalId);
     uint revealingEnd = LProposalsStorage.getRevealingEnd(_storage, _proposalId);
@@ -91,11 +88,19 @@ library LProposals {
     emit LogGovernanceProposalEnded(_proposalId, votesFor, votesAgainst);
   }
 
-  function getPrevTimeParamForCastVote(IAventusStorage _storage, uint _proposalId) external view returns (uint prevTime_) {
+  function getPrevTimeParamForCastVote(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (uint prevTime_)
+  {
     prevTime_ = LProposalsVoting.getPrevTimeParamForCastVote(_storage, _proposalId);
   }
 
-  function getAventusTime(IAventusStorage _storage) external view returns (uint time_) {
+  function getAventusTime(IAventusStorage _storage)
+    external
+    view
+    returns (uint time_)
+  {
     time_ = LAventusTime.getCurrentTime(_storage);
   }
 
@@ -123,7 +128,9 @@ library LProposals {
     stake_ = LProposalsStorage.getRevealedVoterStake(_storage, _proposalId, _voter, _optionId);
   }
 
-  function clearRevealedStake(IAventusStorage _storage, uint _proposalId, address _voter, uint _optionId) external {
+  function clearRevealedStake(IAventusStorage _storage, uint _proposalId, address _voter, uint _optionId)
+    external
+  {
     LProposalsStorage.setRevealedVoterStake(_storage, _proposalId, _voter, _optionId, 0);
   }
 
@@ -135,7 +142,80 @@ library LProposals {
     numRevealedVoters_ = LProposalsStorage.getNumVotersRevealedWithStake(_storage, _proposalId, _optionId);
   }
 
-  function getGovernanceProposalDeposit(IAventusStorage _storage) public view returns (uint depositInAVT_) {
+  function getWinningProposalOption(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (uint winningOption_)
+  {
+    winningOption_ = LProposalsStorage.getWinningProposalOption(_storage, _proposalId);
+  }
+
+  function setWinningProposalOption(IAventusStorage _storage, uint _proposalId, uint _winningOption)
+    external
+  {
+    LProposalsStorage.setWinningProposalOption(_storage, _proposalId, _winningOption);
+  }
+
+  function getTotalWinningsToVoters(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (uint winningsToVoters_)
+  {
+    winningsToVoters_ = LProposalsStorage.getTotalWinningsToVoters(_storage, _proposalId);
+  }
+
+  function setTotalWinningsToVoters(IAventusStorage _storage, uint _proposalId, uint _winningsToVoters)
+    external
+  {
+    LProposalsStorage.setTotalWinningsToVoters(_storage, _proposalId, _winningsToVoters);
+  }
+
+  function getTotalWinningStake(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (uint totalWinningStake_)
+  {
+    totalWinningStake_ = LProposalsStorage.getTotalWinningStake(_storage, _proposalId);
+  }
+
+  function setTotalWinningStake(IAventusStorage _storage, uint _proposalId, uint _totalWinningStake)
+    external
+  {
+    LProposalsStorage.setTotalWinningStake(_storage, _proposalId, _totalWinningStake);
+  }
+
+  function incrementNumVotersClaimed(IAventusStorage _storage, uint _proposalId)
+    external
+    returns (uint numVotersClaimed_)
+  {
+    numVotersClaimed_= LProposalsStorage.incrementNumVotersClaimed(_storage, _proposalId);
+  }
+
+  function initialiseVotersWinningsPot(IAventusStorage _storage, uint _proposalId, uint _winningsRemaining)
+    external
+  {
+    LProposalsStorage.initialiseVotersWinningsPot(_storage, _proposalId, _winningsRemaining);
+  }
+
+  function getVotersWinningsPot(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (uint winningsPot_)
+  {
+    winningsPot_ = LProposalsStorage.getVotersWinningsPot(_storage, _proposalId);
+  }
+
+  function reduceVotersWinningsPot(IAventusStorage _storage, uint _proposalId, uint _reduction)
+    external
+  {
+    LProposalsStorage.reduceVotersWinningsPot(_storage, _proposalId, _reduction);
+  }
+
+  function getGovernanceProposalDeposit(IAventusStorage _storage)
+    public
+    view
+    returns (uint depositInAVT_)
+  {
     depositInAVT_ = LProposalsStorage.getGovernanceProposalDeposit(_storage);
   }
 
@@ -161,7 +241,10 @@ library LProposals {
     revealingEnd_ = LProposalsStorage.getRevealingEnd(_storage, _proposalId);
   }
 
-  function doCreateGovernanceProposal(IAventusStorage _storage, uint _deposit) private returns (uint proposalId_) {
+  function doCreateGovernanceProposal(IAventusStorage _storage, uint _deposit)
+    private
+    returns (uint proposalId_)
+  {
     uint numDaysInLobbyingPeriod = LProposalsStorage.getGovernanceProposalLobbyingPeriodDays(_storage);
     uint numDaysInVotingPeriod = LProposalsStorage.getGovernanceProposalVotingPeriodDays(_storage);
     uint numDaysInRevealingPeriod = LProposalsStorage.getGovernanceProposalRevealingPeriodDays(_storage);

@@ -14,23 +14,29 @@ contract AVTManager is IAVTManager, Owned, Versioned {
     s = _s;
   }
 
-  function withdraw(string calldata _fund, uint _amount) external {
-    LAVTManager.withdraw(s, _fund, _amount);
+  function withdraw(uint _amount)
+    external
+  {
+    LAVTManager.withdraw(s, _amount);
   }
 
-  function deposit(string calldata _fund, uint _amount) external {
-    LAVTManager.deposit(s, _fund, _amount);
+  function deposit(uint _amount)
+    external
+  {
+    LAVTManager.deposit(s, _amount);
   }
 
-  function transfer(string calldata _fund, uint _amount, address _toAddress, string calldata _toFund) external {
-    LAVTManager.transfer(s, _fund, _amount, _toAddress, _toFund);
+  function transfer(uint _amount, address _toAddress)
+    external
+  {
+    LAVTManager.transfer(s, _amount, _toAddress);
   }
 
-  function getBalance(string calldata _fund, address _avtHolder)
+  function getBalance(address _account)
     external
     view
     returns (uint balance_)
   {
-    balance_ = LAVTManager.getBalance(s, _avtHolder, _fund);
+    balance_ = LAVTManager.getBalance(s, _account);
   }
 }

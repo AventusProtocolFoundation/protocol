@@ -9,12 +9,8 @@ const BN = testHelper.BN;
 
 contract('AVTManager', async () => {
   let avtManager, avt, aventusStorage, accounts;
-
   const optionId = 1;
-
   const goodAVTAmount = new BN(1000000);
-  const goodDepositFund = 'deposit';
-  const goodStakeFund = 'stake';
 
   before(async () => {
     await testHelper.init();
@@ -28,103 +24,98 @@ contract('AVTManager', async () => {
     avt = testHelper.getAVTIERC20();
     avtManager = testHelper.getAVTManager();
 
-    accounts = testHelper.getAccounts('goodAVTOwner', 'otherAccount');
+    accounts = testHelper.getAccounts('goodAVTDepositOwner', 'goodAVTStakeOwner', 'governanceProposalOwner', 'otherAccount');
+    await avt.transfer(accounts.goodAVTStakeOwner, goodAVTAmount);
     await avt.transfer(accounts.otherAccount, goodAVTAmount);
   });
 
-  async function checkBalance(_address, _fund, _expectedAmount) {
-    const balance = await avtManager.getBalance(_fund, _address);
+  async function checkBalance(_address, _expectedAmount) {
+    const balance = await avtManager.getBalance(_address);
     assert.equal(balance.toNumber(), _expectedAmount);
   }
 
   async function createProposalVoteAndAdvanceToReveal(_votingAddress) {
-    const proposalId = await governanceProposalsTestHelper.depositAndCreateGovernanceProposal();
+    const proposalId = await governanceProposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
     await votingTestHelper.advanceTimeAndCastVote(_votingAddress, proposalId, optionId);
     await votingTestHelper.advanceTimeToRevealingStart(proposalId);
     return proposalId;
   }
 
+  async function endProposalVoteAndWithdrawDeposit(_votingAddress, _proposalId) {
+    await governanceProposalsTestHelper.revealVoteEndProposalAndWithdrawDeposit(accounts.governanceProposalOwner,
+        _votingAddress, _proposalId, optionId);
+  }
+
   context('deposit()', async () => {
-    async function depositSucceeds(_fund) {
-      await avtManager.deposit(_fund, goodAVTAmount, {from: accounts.goodAVTOwner});
+    async function depositSucceeds(_account) {
+      await avtManager.deposit(goodAVTAmount, {from: _account});
       const logArgs = await testHelper.getLogArgs(avtManager, 'LogAVTDeposited');
-      assert.equal(logArgs.sender, accounts.goodAVTOwner);
-      assert.equal(logArgs.fund, _fund);
+      assert.equal(logArgs.sender, _account);
       assert.equal(logArgs.amount.toNumber(), goodAVTAmount);
 
-      await checkBalance(accounts.goodAVTOwner, _fund, goodAVTAmount);
+      await checkBalance(_account, goodAVTAmount);
     }
 
-    async function depositFails(_fund, _amount, _avtOwner, _expectedError) {
-      return testHelper.expectRevert(() => avtManager.deposit(_fund, _amount, {from: _avtOwner}), _expectedError);
+    async function depositFails(_amount, _avtOwner, _expectedError) {
+      return testHelper.expectRevert(() => avtManager.deposit(_amount, {from: _avtOwner}), _expectedError);
     }
 
-    async function depositFailsDueToERC20Error(_fund, _amount, _avtOwner) {
+    async function depositFailsDueToERC20Error(_amount, _avtOwner) {
       // Revert comes from inside the ERC20 contract - no error checking.
-      return depositFails(_fund, _amount, _avtOwner, '');
+      return depositFails(_amount, _avtOwner, '');
     }
 
     beforeEach(async () => {
-      await avt.approve(aventusStorage.address, goodAVTAmount, {from: accounts.goodAVTOwner});
+      await avt.approve(aventusStorage.address, goodAVTAmount, {from: accounts.goodAVTDepositOwner});
+      await avt.approve(aventusStorage.address, goodAVTAmount, {from: accounts.goodAVTStakeOwner});
     });
 
     afterEach(async () => {
-      await avtTestHelper.clearAVTFund(accounts.goodAVTOwner, goodDepositFund);
-      await avtTestHelper.clearAVTFund(accounts.goodAVTOwner, goodStakeFund);
+      await avtTestHelper.clearAVTAccount(accounts.goodAVTDepositOwner);
+      await avtTestHelper.clearAVTAccount(accounts.goodAVTStakeOwner);
     });
 
     context('succeeds with', async () => {
       context('good parameters', async () => {
-        it('deposit fund', async () => {
-          await depositSucceeds(goodDepositFund);
+        it('for a deposit', async () => {
+          await depositSucceeds(accounts.goodAVTDepositOwner);
         });
 
-        it('stake fund', async () => {
-          await depositSucceeds(goodStakeFund);
+        it('for a stake', async () => {
+          await depositSucceeds(accounts.goodAVTStakeOwner);
         });
       });
     });
 
     context('fails with', async () => {
       context('bad parameters', async () => {
-        it('fund', async () => {
-          const badFund = 'badFund';
-          await depositFails(badFund, goodAVTAmount, accounts.goodAVTOwner,
-              'Deposit must be called for stake or deposit fund only');
-        });
-
         it('amount (deposit higher than approved)', async () => {
           const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
-          await depositFailsDueToERC20Error(goodDepositFund, badAmount, accounts.goodAVTOwner);
+          await depositFailsDueToERC20Error(badAmount, accounts.goodAVTDepositOwner);
         });
 
         it('amount (stake higher than approved)', async () => {
           const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
-          await depositFailsDueToERC20Error(goodStakeFund, badAmount, accounts.goodAVTOwner);
+          await depositFailsDueToERC20Error(badAmount, accounts.goodAVTStakeOwner);
         });
 
         it('amount (zero)', async () => {
           const badAmount = 0;
-          await depositFails(goodDepositFund, badAmount, accounts.goodAVTOwner, 'Added amount must be greater than zero');
+          await depositFails(badAmount, accounts.goodAVTDepositOwner, 'Added amount must be greater than zero');
         });
       });
 
       context('bad state', async () => {
-        it('sender has not approved the deposit in their deposit fund', async () => {
+        it('sender has not approved the deposit', async () => {
           const badSender = accounts.otherAccount;
-          await depositFailsDueToERC20Error(goodDepositFund, goodAVTAmount, badSender);
+          await depositFailsDueToERC20Error(goodAVTAmount, badSender);
         });
 
-        it('sender has not approved the deposit in their stake fund', async () => {
-          const badSender = accounts.otherAccount;
-          await depositFailsDueToERC20Error(goodStakeFund, goodAVTAmount, badSender);
-        });
-
-        it('deposit into an account with a blocked stake', async () => {
-          const votingAddress = accounts.goodAVTOwner;
+        it('deposit into an account that is blocked', async () => {
+          const votingAddress = accounts.goodAVTDepositOwner;
           const proposalId = await createProposalVoteAndAdvanceToReveal(votingAddress);
-          await depositFails(goodStakeFund, goodAVTAmount, votingAddress, 'It is not possible to deposit into a blocked stake');
-          await governanceProposalsTestHelper.revealVoteEndProposalAndWithdrawDeposit(votingAddress, proposalId, optionId);
+          await depositFails(goodAVTAmount, votingAddress, 'Cannot deposit until all votes are revealed');
+          await endProposalVoteAndWithdrawDeposit(votingAddress, proposalId);
         });
       });
     });
@@ -132,252 +123,186 @@ contract('AVTManager', async () => {
 
   context('withdraw()', async () => {
     beforeEach(async () => {
-      await avtTestHelper.addAVTToFund(goodAVTAmount, accounts.goodAVTOwner, goodDepositFund);
-      await avtTestHelper.addAVTToFund(goodAVTAmount, accounts.goodAVTOwner, goodStakeFund);
+      await avtTestHelper.addAVT(goodAVTAmount, accounts.goodAVTDepositOwner);
+      await avtTestHelper.addAVT(goodAVTAmount, accounts.goodAVTStakeOwner);
     });
 
     afterEach(async () => {
-      await avtTestHelper.clearAVTFund(accounts.goodAVTOwner, goodDepositFund);
-      await avtTestHelper.clearAVTFund(accounts.goodAVTOwner, goodStakeFund);
+      await avtTestHelper.clearAVTAccount(accounts.goodAVTDepositOwner);
+      await avtTestHelper.clearAVTAccount(accounts.goodAVTStakeOwner);
     });
 
-    async function withdrawSucceeds(_fund) {
-      await avtManager.withdraw(_fund, goodAVTAmount, {from: accounts.goodAVTOwner});
+    async function withdrawSucceeds(_account) {
+      await avtManager.withdraw(goodAVTAmount, {from: _account});
       const logArgs = await testHelper.getLogArgs(avtManager, 'LogAVTWithdrawn');
-      assert.equal(logArgs.sender, accounts.goodAVTOwner);
-      assert.equal(logArgs.fund, _fund);
+      assert.equal(logArgs.sender, _account);
       assert.equal(logArgs.amount.toNumber(), goodAVTAmount);
 
-      await checkBalance(accounts.goodAVTOwner, _fund, 0);
+      await checkBalance(_account, 0);
     }
 
-    async function withdrawFails(_fund, _amount, _avtOwner, _expectedError) {
-      await testHelper.expectRevert(() => avtManager.withdraw(_fund, _amount, {from: _avtOwner}), _expectedError);
+    async function withdrawFails(_amount, _avtOwner, _expectedError) {
+      await testHelper.expectRevert(() => avtManager.withdraw(_amount, {from: _avtOwner}), _expectedError);
     }
 
     context('succeeds with', async () => {
       context('good parameters', async () => {
-        it('deposit fund', async () => {
-          await withdrawSucceeds(goodDepositFund);
+        it('for a deposit', async () => {
+          await withdrawSucceeds(accounts.goodAVTDepositOwner);
         });
 
-        it('stake fund', async () => {
-          await withdrawSucceeds(goodStakeFund);
+        it('for a stake', async () => {
+          await withdrawSucceeds(accounts.goodAVTStakeOwner);
         });
       });
 
       context('extra state for coverage', async () => {
-        it('stake fund having voted on a proposal that is still in voting period', async () => {
-          const proposalId = await governanceProposalsTestHelper.depositAndCreateGovernanceProposal();
-          await votingTestHelper.advanceTimeAndCastVote(accounts.goodAVTOwner, proposalId, optionId);
+        it('stake owner having voted on a proposal that is still in voting period', async () => {
+          const proposalId =
+              await governanceProposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
+          await votingTestHelper.advanceTimeAndCastVote(accounts.goodAVTStakeOwner, proposalId, optionId);
 
-          await withdrawSucceeds(goodStakeFund);
+          await withdrawSucceeds(accounts.goodAVTStakeOwner);
 
           await votingTestHelper.advanceTimeToRevealingStart(proposalId);
-          await votingTestHelper.revealVote(accounts.goodAVTOwner, proposalId, optionId);
-          await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(proposalId);
+          await votingTestHelper.revealVote(accounts.goodAVTStakeOwner, proposalId, optionId);
+          await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(accounts.governanceProposalOwner,
+              proposalId);
         });
       });
     });
 
     context('fails with', async () => {
       context('bad parameters', async () => {
-        it('fund', async () => {
-          const badFund = 'badFund';
-          await withdrawFails(badFund, goodAVTAmount, accounts.goodAVTOwner,
-              'Withdraw must be called for stake or deposit fund only');
-        });
-
         it('amount (withdraw more deposit than current balance)', async () => {
           const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
-          await withdrawFails(goodDepositFund, badAmount, accounts.goodAVTOwner,
-              'Withdrawn amount must not exceed the deposit');
-        });
-
-        it('amount (withdraw more stake than current balance)', async () => {
-          const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
-          await withdrawFails(goodStakeFund, badAmount, accounts.goodAVTOwner,
-              'Amount taken must be less than current deposit');
+          await withdrawFails(badAmount, accounts.goodAVTDepositOwner, 'Amount taken must be less than current balance');
         });
       });
 
       context('bad state', async () => {
         it('in revealing period of proposal with unrevealed vote', async () => {
-          const votingAddress = accounts.goodAVTOwner;
+          const votingAddress = accounts.goodAVTStakeOwner;
           const proposalId = await createProposalVoteAndAdvanceToReveal(votingAddress);
-          await withdrawFails(goodStakeFund, goodAVTAmount, votingAddress, 'A blocked stake cannot be withdrawn');
-          await governanceProposalsTestHelper.revealVoteEndProposalAndWithdrawDeposit(votingAddress, proposalId, optionId);
+          await withdrawFails(goodAVTAmount, votingAddress, 'Cannot withdraw until all votes are revealed');
+          await endProposalVoteAndWithdrawDeposit(votingAddress, proposalId);
         });
       });
     });
   });
 
   context('transfer()', async () => {
-    async function transferSucceeds(_fromFund, _toFund) {
-      await avtManager.transfer(_fromFund, goodAVTAmount, accounts.otherAccount, _toFund, {from: accounts.goodAVTOwner});
-      await checkBalance(accounts.goodAVTOwner, _fromFund, 0);
-      await checkBalance(accounts.otherAccount, _toFund, goodAVTAmount);
+    async function transferSucceeds(_fromAccount) {
+      await avtManager.transfer(goodAVTAmount, accounts.otherAccount, {from: _fromAccount});
+      await checkBalance(_fromAccount, 0);
+      await checkBalance(accounts.otherAccount, goodAVTAmount);
       // There are no logs to check
     }
 
-    async function transferFails(_fromAddress, _fromFund, _amount, _toFund, _expectedError) {
+    async function transferFails(_fromAddress, _amount, _expectedError) {
       // there is no bad _toAddress as anyone can receive AVT
-      await testHelper.expectRevert(() => avtManager.transfer(_fromFund, _amount, accounts.otherAccount, _toFund,
-          {from: _fromAddress}), _expectedError);
+      await testHelper.expectRevert(() => avtManager.transfer(_amount, accounts.otherAccount, {from: _fromAddress}),
+          _expectedError);
     }
 
     beforeEach(async () => {
-      await avtTestHelper.addAVTToFund(goodAVTAmount, accounts.goodAVTOwner, goodDepositFund);
-      await avtTestHelper.addAVTToFund(goodAVTAmount, accounts.goodAVTOwner, goodStakeFund);
+      await avtTestHelper.addAVT(goodAVTAmount, accounts.goodAVTDepositOwner);
+      await avtTestHelper.addAVT(goodAVTAmount, accounts.goodAVTStakeOwner);
     });
 
     afterEach(async () => {
-      await avtTestHelper.clearAVTFund(accounts.goodAVTOwner, goodDepositFund);
-      await avtTestHelper.clearAVTFund(accounts.goodAVTOwner, goodStakeFund);
-      await avtTestHelper.clearAVTFund(accounts.otherAccount, goodDepositFund);
-      await avtTestHelper.clearAVTFund(accounts.otherAccount, goodStakeFund);
+      await avtTestHelper.clearAVTAccount(accounts.goodAVTDepositOwner);
+      await avtTestHelper.clearAVTAccount(accounts.goodAVTStakeOwner);
+      await avtTestHelper.clearAVTAccount(accounts.otherAccount);
     });
 
     context('succeeds with', async () => {
       context('good parameters', async () => {
-        it('deposit -> deposit transfer', async () => {
-          await transferSucceeds(goodDepositFund, goodDepositFund);
+        it('deposit transfer', async () => {
+          await transferSucceeds(accounts.goodAVTDepositOwner);
         });
 
-        it('stake -> stake transfer', async () => {
-          await transferSucceeds(goodStakeFund, goodStakeFund);
+        it('stake transfer', async () => {
+          await transferSucceeds(accounts.goodAVTStakeOwner);
         });
       });
     });
 
     context('fails with', async () => {
       context('bad parameters', async () => {
-        it('from deposit fund', async () => {
-          const badFromFund = 'badFromFund';
-          await transferFails(accounts.goodAVTOwner, badFromFund, goodAVTAmount, goodDepositFund,
-              'Transfer must be from stake or deposit fund only');
-        });
-
-        it('to deposit fund', async () => {
-          const badToFund = 'badToFund';
-          await transferFails(accounts.goodAVTOwner, goodDepositFund, goodAVTAmount, badToFund,
-              'Transfer must be to stake or deposit fund only');
-        });
-
-        it('from stake fund', async () => {
-          const badFromFund = 'badFromFund';
-          await transferFails(accounts.goodAVTOwner, badFromFund, goodAVTAmount, goodStakeFund,
-              'Transfer must be from stake or deposit fund only');
-        });
-
-        it('to stake fund', async () => {
-          const badToFund = 'badToFund';
-          await transferFails(accounts.goodAVTOwner, goodStakeFund, goodAVTAmount, badToFund,
-              'Transfer must be to stake or deposit fund only');
-        });
-
         it('amount (transfer more deposit than current balance)', async () => {
           const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
-          await transferFails(accounts.goodAVTOwner, goodDepositFund, badAmount, goodDepositFund,
-              'Withdrawn amount must not exceed the deposit');
-        });
-
-        it('amount (transfer more stake than current balance)', async () => {
-          const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
-          await transferFails(accounts.goodAVTOwner, goodStakeFund, badAmount, goodStakeFund,
-              'Amount taken must be less than current deposit');
+          await transferFails(accounts.goodAVTDepositOwner, badAmount,
+              'Amount taken must be less than current balance');
         });
 
         it('amount (zero)', async () => {
           const badAmount = testHelper.BN_ZERO;
-          await transferFails(accounts.goodAVTOwner, goodDepositFund, badAmount, goodDepositFund,
-              'The amount of a transfer must be positive');
+          await transferFails(accounts.goodAVTDepositOwner, badAmount, 'The amount of a transfer must be positive');
         });
       });
 
       context('bad state', async () => {
-        it('transferrer does not have any AVT in their deposit fund', async () => {
+        it('transferrer does not have any AVT in their account', async () => {
           const badTransferrer = accounts.otherAccount;
-          await transferFails(badTransferrer, goodDepositFund, goodAVTAmount, goodDepositFund,
-              'Withdrawn amount must not exceed the deposit');
+          await transferFails(badTransferrer, goodAVTAmount, 'Amount taken must be less than current balance');
         });
 
-        it('transferrer does not have any AVT in their stake fund', async () => {
-          const badTransferrer = accounts.otherAccount;
-          await transferFails(badTransferrer, goodStakeFund, goodAVTAmount, goodStakeFund,
-              'Amount taken must be less than current deposit');
-        });
-
-        it('transfer from an account with a blocked stake', async () => {
-          const votingAddress = accounts.goodAVTOwner;
+        it('transfer from an account that is blocked', async () => {
+          const votingAddress = accounts.goodAVTStakeOwner;
           const proposalId = await createProposalVoteAndAdvanceToReveal(votingAddress);
-          await transferFails(votingAddress, goodStakeFund, goodAVTAmount, goodStakeFund,
-              'A blocked stake cannot be transferred');
-          await governanceProposalsTestHelper.revealVoteEndProposalAndWithdrawDeposit(votingAddress, proposalId, optionId);
+          await transferFails(votingAddress, goodAVTAmount, 'Cannot transfer until all votes are revealed');
+          await endProposalVoteAndWithdrawDeposit(votingAddress, proposalId);
         });
 
-        it('transfer to an account with a blocked stake', async () => {
+        it('transfer to an account that is blocked', async () => {
           const votingAddress = accounts.otherAccount;
           const proposalId = await createProposalVoteAndAdvanceToReveal(votingAddress);
-          await transferFails(accounts.goodAVTOwner, goodStakeFund, goodAVTAmount, goodStakeFund,
-              'A blocked stake cannot receive transfers');
-          await governanceProposalsTestHelper.revealVoteEndProposalAndWithdrawDeposit(votingAddress, proposalId, optionId);
+          await transferFails(accounts.goodAVTDepositOwner, goodAVTAmount,
+              'Cannot recieve transfers until all votes are revealed');
+          await endProposalVoteAndWithdrawDeposit(votingAddress, proposalId);
         });
       });
     });
   });
 
   context('getBalance()', async () => {
-    async function getBalanceSucceeds(_avtOwner, _fund) {
-      return await avtManager.getBalance(_fund, _avtOwner);
+    async function getBalanceSucceeds(_avtOwner) {
+      return await avtManager.getBalance(_avtOwner);
       // There are no logs to check
     }
 
-    async function getBalanceFails(_avtOwner, _fund, _expectedError) {
-      await testHelper.expectRevert(() => avtManager.getBalance(_fund, _avtOwner), _expectedError);
+    async function getBalanceFails(_avtOwner, _expectedError) {
+      await testHelper.expectRevert(() => avtManager.getBalance(_avtOwner), _expectedError);
     }
 
     beforeEach(async () => {
-      await avtTestHelper.addAVTToFund(goodAVTAmount, accounts.goodAVTOwner, goodDepositFund);
-      await avtTestHelper.addAVTToFund(goodAVTAmount, accounts.goodAVTOwner, goodStakeFund);
+      await avtTestHelper.addAVT(goodAVTAmount, accounts.goodAVTDepositOwner);
+      await avtTestHelper.addAVT(goodAVTAmount, accounts.goodAVTStakeOwner);
     });
 
     afterEach(async () => {
-      await avtTestHelper.clearAVTFund(accounts.goodAVTOwner, goodDepositFund);
-      await avtTestHelper.clearAVTFund(accounts.goodAVTOwner, goodStakeFund);
+      await avtTestHelper.clearAVTAccount(accounts.goodAVTDepositOwner);
+      await avtTestHelper.clearAVTAccount(accounts.goodAVTStakeOwner);
     });
 
     context('succeeds with', async () => {
       context('good parameters', async () => {
-        it('deposit fund', async () => {
-          const balance = await getBalanceSucceeds(accounts.goodAVTOwner, goodDepositFund);
+        it('for a deposit', async () => {
+          const balance = await getBalanceSucceeds(accounts.goodAVTDepositOwner);
           assert.equal(balance.toNumber(), goodAVTAmount);
         });
 
-        it('stake fund', async () => {
-          const balance = await getBalanceSucceeds(accounts.goodAVTOwner, goodStakeFund);
+        it('for a stake', async () => {
+          const balance = await getBalanceSucceeds(accounts.goodAVTStakeOwner);
           assert.equal(balance.toNumber(), goodAVTAmount);
         });
       });
 
       context('extra state for coverage', async () => {
-        it('account has got AVT in deposit fund', async () => {
-          const balance = await getBalanceSucceeds(accounts.otherAccount, goodDepositFund);
+        it('account has got AVT in it', async () => {
+          const balance = await getBalanceSucceeds(accounts.otherAccount);
           assert.equal(balance.toNumber(), 0);
-        });
-
-        it('account has got AVT in stake fund', async () => {
-          const balance = await getBalanceSucceeds(accounts.otherAccount, goodStakeFund);
-          assert.equal(balance.toNumber(), 0);
-        });
-      });
-    });
-
-    context('fails with', async () => {
-      context('bad parameters', async () => {
-        it('fund', async () => {
-          const badFund = 'badFund';
-          await getBalanceFails(accounts.goodAVTOwner, badFund, 'Can only get balance of stake or deposit fund');
         });
       });
     });

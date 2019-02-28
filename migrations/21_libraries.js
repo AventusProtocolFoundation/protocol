@@ -15,7 +15,7 @@ const LAventitiesChallenges = artifacts.require('LAventitiesChallenges');
 const LProposalsEnact = artifacts.require('LProposalsEnact');
 const LEventsTickets = artifacts.require('LEventsTickets');
 const LEventsEvents = artifacts.require('LEventsEvents');
-const LEvents = artifacts.require('LEvents');
+const LEventsRoles = artifacts.require('LEventsRoles');
 const LProposalsVoting = artifacts.require('LProposalsVoting');
 const LProposals = artifacts.require('LProposals');
 const LProposalForTesting = artifacts.require('LProposalForTesting');
@@ -93,7 +93,7 @@ function doDeployLMembers(_deployer, _storage) {
   const library = LMembers;
   const proxy = PMembers;
   const deployLibraryAndProxy = deployLMembers;
-  const dependents = [LEventsEvents, LEventsTickets, MembersManager, LMerkleRoots];
+  const dependents = [LEventsEvents, LEventsTickets, LEventsRoles, MembersManager, LMerkleRoots];
 
   return librariesCommon.doDeployLibraryAndProxy(web3, version, deploySubLibraries, _deployer, _storage, libraryName,
       proxyName, library, proxy, deployLibraryAndProxy, dependents);

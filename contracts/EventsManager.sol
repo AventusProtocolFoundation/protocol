@@ -14,37 +14,41 @@ contract EventsManager is IEventsManager, Owned, Versioned {
     s = _s;
   }
 
-  function createEvent(string calldata _eventDesc, uint _offSaleTime, bytes calldata _ownerProof)
+  function createEvent(string calldata _eventDesc, uint _eventTime, uint _offSaleTime, bytes calldata _ownerProof,
+      address _eventOwner)
     external
   {
-    // TODO: Add new eventTime parameter instead of hard-coded zero - would be breaking change we don't want right now.
-    LEvents.createEvent(s, _eventDesc, 0, _offSaleTime, _ownerProof);
+    LEvents.createEvent(s, _eventDesc, _eventTime, _offSaleTime, _ownerProof, _eventOwner);
   }
 
-  function sellTicket(uint _eventId, bytes32 _vendorTicketRefHash, string calldata _ticketMetadata, address _buyer) external {
+  function takeEventOffSale(uint _eventId, bytes calldata _eventOwnerProof)
+    external
+  {
+    LEvents.takeEventOffSale(s, _eventId, _eventOwnerProof);
+  }
+
+  function sellTicket(uint _eventId, bytes32 _vendorTicketRefHash, string calldata _ticketMetadata, address _buyer)
+    external
+  {
     LEvents.sellTicket(s, _eventId, _vendorTicketRefHash, _ticketMetadata, _buyer);
   }
 
-  function cancelTicket(uint _eventId, uint _ticketId, bytes calldata _vendorProof) external {
-    LEvents.cancelTicket(s, _eventId, _ticketId, _vendorProof);
-  }
-
-  function resellTicket(uint _eventId, uint _ticketId, bytes calldata _ticketOwnerPermission, address _newBuyer, bytes calldata _resellerProof,
-    bytes calldata _doorData)
-    external {
-      LEvents.resellTicket(s, _eventId, _ticketId, _ticketOwnerPermission, _newBuyer, _resellerProof, _doorData);
-  }
-
-  function listTicket(uint _eventId, bytes32 _vendorTicketRefHash, string calldata _ticketMetadata, bytes calldata _vendorProof,
-      bytes calldata _doorData, bytes calldata _ticketOwnerProof, bytes32[] calldata _merklePath)
+  function cancelTicket(uint _eventId, uint _ticketId)
     external
   {
-    LEvents.listTicketA(s, _eventId, _vendorTicketRefHash, _ticketMetadata, _vendorProof, _doorData, _ticketOwnerProof);
-    LEvents.listTicketB(s, _eventId, _vendorTicketRefHash, _merklePath);
-    LEvents.listTicketC(s, _eventId, _vendorTicketRefHash, _vendorProof);
+    LEvents.cancelTicket(s, _eventId, _ticketId);
   }
 
-  function registerRoleOnEvent(uint _eventId, address _roleAddress, string calldata _role) external {
-    LEvents.registerRoleOnEvent(s, _eventId, _roleAddress, _role);
+  function resellTicket(uint _eventId, uint _ticketId, bytes calldata _ticketOwnerPermission, address _newBuyer)
+    external
+  {
+    LEvents.resellTicket(s, _eventId, _ticketId, _ticketOwnerPermission, _newBuyer);
+  }
+
+  function registerRoleOnEvent(uint _eventId, address _roleAddress, string calldata _role,
+      bytes calldata _registerRoleEventOwnerProof)
+    external
+  {
+    LEvents.registerRoleOnEvent(s, _eventId, _roleAddress, _role, _registerRoleEventOwnerProof);
   }
 }

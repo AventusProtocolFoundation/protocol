@@ -1,5 +1,5 @@
 {
-    "address": "0x14EC604775478CB3ad24062F81570336042C119a",
+    "address": "0x7f51f471925c63355393D9e9593e7EE95c3bF3D7",
     "abi": [
         {
             "constant": false,
@@ -50,9 +50,9 @@
                     "type": "address"
                 }
             ],
-            "name": "LogAccessAllowed",
+            "name": "LogStorageAccessAllowed",
             "type": "event",
-            "signature": "0x3fdd4a00eee4669379d0688e659d704aea5e146252a331fb0a4b1b636eba0a4a"
+            "signature": "0xef2036b864850cfeb5587129946468734ade78e203ba300c9262bedfe4527d74"
         },
         {
             "anonymous": false,
@@ -68,9 +68,9 @@
                     "type": "address"
                 }
             ],
-            "name": "LogAccessDenied",
+            "name": "LogStorageAccessDenied",
             "type": "event",
-            "signature": "0xf0a0efcbc6cdd97ba122bdc1669b0cdf9a9f108ab032a9ee626ccbf71b77a448"
+            "signature": "0x706095f13bde3aa7dc3e1f73fac981c08ea4a832805150a675f39e1a14519443"
         },
         {
             "constant": false,

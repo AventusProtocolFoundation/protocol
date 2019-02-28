@@ -4,39 +4,25 @@ async function init(_testHelper) {
   testHelper = _testHelper;
 }
 
-async function getCreateEventEventOwnerProof(_eventOwner, _eventDesc, _offSaleTime)
+async function getCreateEventEventOwnerProof(_eventOwner, _eventDesc, _eventTime, _offSaleTime, _sender)
 {
   const eventDescHash = testHelper.hash(_eventDesc);
-  const msgHash = testHelper.hash(eventDescHash, _offSaleTime);
+  const msgHash = testHelper.hash(eventDescHash, _eventTime, _offSaleTime, _sender);
   return testHelper.sign(_eventOwner, msgHash);
 }
 
-async function getCancelTicketVendorProof(_vendor, _eventId, _ticketId, _ticketOwner) {
-  const msgHash = testHelper.hash(_eventId, _ticketId, _ticketOwner);
-  return testHelper.sign(_vendor, msgHash);
+async function getTakeEventOffSaleEventOwnerProof(_eventOwner, _eventId) {
+  return testHelper.sign(_eventOwner, testHelper.hash(_eventId));
+}
+
+async function getRegisterRoleEventOwnerProof(_eventOwner, _eventId, _roleAddress, _role) {
+  const msgHash = testHelper.hash(_eventId, _roleAddress, _role);
+  return testHelper.sign(_eventOwner, msgHash);
 }
 
 async function getResellTicketTicketOwnerProof(_currentOwner, _eventId, _ticketId) {
   const msgHash = testHelper.hash(_eventId, _ticketId, _currentOwner);
   return testHelper.sign(_currentOwner, msgHash);
-}
-
-async function getResellTicketResellerProof(_reseller, _eventId, _ticketId, _ticketOwnerProof, _newBuyer) {
-  const msgHash = (_newBuyer !== undefined)
-      ? testHelper.hash(_eventId, _ticketId, _ticketOwnerProof, _newBuyer)
-      : testHelper.hash(_eventId, _ticketId, _ticketOwnerProof);
-  return testHelper.sign(_reseller, msgHash);
-}
-
-async function getListTicketTicketOwnerProof(_ticketOwner, _vendorTicketRefHash) {
-  return testHelper.sign(_ticketOwner, _vendorTicketRefHash);
-}
-
-async function getListTicketVendorProof(_vendor, _eventId, _vendorTicketRefHash, _buyer) {
-  const msgHash = (_buyer !== undefined)
-      ? testHelper.hash(_eventId, _vendorTicketRefHash, _buyer)
-      : testHelper.hash(_eventId, _vendorTicketRefHash);
-  return testHelper.sign(_vendor, msgHash);
 }
 
 async function getRevealVoteSignedMessage(_address, _proposalId, _optionId) {
@@ -58,13 +44,11 @@ function convertToBytes32HexString(_num) {
 
 // Keep exports alphabetical.
 module.exports = {
-  getCancelTicketVendorProof,
   getCastVoteSecret,
   getCreateEventEventOwnerProof,
-  getListTicketTicketOwnerProof,
-  getListTicketVendorProof,
-  getResellTicketResellerProof,
+  getRegisterRoleEventOwnerProof,
   getResellTicketTicketOwnerProof,
   getRevealVoteSignedMessage,
+  getTakeEventOffSaleEventOwnerProof,
   init,
 };

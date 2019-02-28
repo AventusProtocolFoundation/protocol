@@ -7,5 +7,4 @@ contract PAventities is PLibraryDelegate {
   function () external {
     libraryDelegateFwd("LAventitiesInstance");
   }
-
 }

@@ -7,5 +7,4 @@ contract PMerkleRoots is PLibraryDelegate {
   function () external {
     libraryDelegateFwd("LMerkleRootsInstance");
   }
-
 }

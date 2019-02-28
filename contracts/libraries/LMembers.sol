@@ -6,6 +6,7 @@ import "./LProposals.sol";
 import "./LMembersStorage.sol";
 
 library LMembers {
+
   bytes32 constant tokenBondingCurveHash = keccak256(abi.encodePacked("TokenBondingCurve"));
   bytes32 constant validatorHash = keccak256(abi.encodePacked("Validator"));
 
@@ -55,7 +56,8 @@ library LMembers {
     emit LogMemberRegistered(_memberAddress, _memberType, _evidenceUrl, _desc, memberDeposit);
   }
 
-  function deregisterMember(IAventusStorage _storage, address _memberAddress, string calldata _memberType) external
+  function deregisterMember(IAventusStorage _storage, address _memberAddress, string calldata _memberType)
+    external
     onlyIfRegistered(_storage, _memberAddress, _memberType)
     onlyAfterCoolingOffPeriod(_storage, _memberAddress, _memberType)
   {
@@ -82,7 +84,8 @@ library LMembers {
     uint aventityId = getAventityIdForMember(_storage, _memberAddress, _memberType);
     require(aventityId != 0, "Member is not registered");
 
-    (uint proposalId, uint votesFor, uint votesAgainst, bool challengeWon) = LAventities.endAventityChallenge(_storage, aventityId);
+    (uint proposalId, uint votesFor, uint votesAgainst, bool challengeWon) =
+        LAventities.endAventityChallenge(_storage, aventityId);
 
     if (challengeWon) {
       LMembersStorage.clearAventityId(_storage, _memberAddress, _memberType);
@@ -101,11 +104,21 @@ library LMembers {
     memberDepositInAVT_ = LAventities.getExistingAventityDeposit(_storage, aventityId);
   }
 
-  function checkValidatorActiveAndRecordInteraction(IAventusStorage _storage)
+  function checkValidatorActive(IAventusStorage _storage)
     external
+    view
   {
     require(memberIsActive(_storage, msg.sender, "Validator"), "Sender must be an active validator");
-    recordInteraction(_storage, msg.sender, "Validator");
+  }
+
+  function updateValidatorDeregistrationTimeIfNecessary(IAventusStorage _storage, address _validator,
+      uint _newDeregistrationTime)
+    external
+  {
+    uint validatorDeregistrationTime = LMembersStorage.getEarliestDeregistrationTime(_storage, _validator, "Validator");
+    if (_newDeregistrationTime > validatorDeregistrationTime) {
+      LMembersStorage.setEarliestDeregistrationTime(_storage, _validator, "Validator", _newDeregistrationTime);
+    }
   }
 
   function memberIsActive(IAventusStorage _storage, address _memberAddress, string memory _memberType)
@@ -134,24 +147,21 @@ library LMembers {
     aventityId_ = LMembersStorage.getAventityId(_storage, _memberAddress, _memberType);
   }
 
-  function recordInteraction (IAventusStorage _storage, address _memberAddress, string memory _memberType) public {
-    LMembersStorage.setLastInteractionTime(_storage, _memberAddress, _memberType);
-  }
-
   function isAfterCoolingOffPeriod(IAventusStorage _storage, address _memberAddress, string memory _memberType)
     private
     view
-    returns (bool)
+    returns (bool afterCoolingOffPeriod_)
   {
-
-    uint lastInteractionTime = LMembersStorage.getLastInteractionTime(_storage, _memberAddress, _memberType);
-    if (lastInteractionTime == 0) return true;
-
-    uint coolingOffEndTime = lastInteractionTime + LMembersStorage.getCoolingOffPeriod(_storage, _memberType) * 1 days;
-    return LAventusTime.getCurrentTime(_storage) >= coolingOffEndTime;
+    uint earliestDeregistrationTime = LMembersStorage.getEarliestDeregistrationTime(_storage, _memberAddress, _memberType);
+    afterCoolingOffPeriod_ = earliestDeregistrationTime == 0 ||
+        LAventusTime.getCurrentTime(_storage) >= earliestDeregistrationTime;
   }
 
-  function isValidMemberType(string memory _memberType) private pure returns (bool isValid_) {
+  function isValidMemberType(string memory _memberType)
+    private
+    pure
+    returns (bool isValid_)
+  {
     bytes32 hashedType = keccak256(abi.encodePacked(_memberType));
     isValid_ = hashedType == tokenBondingCurveHash || hashedType == validatorHash;
   }

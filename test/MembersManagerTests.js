@@ -5,6 +5,7 @@ const timeTestHelper = require('./helpers/timeTestHelper');
 const signingTestHelper = require('./helpers/signingTestHelper');
 const votingTestHelper = require('./helpers/votingTestHelper');
 const challengesTestHelper = require('./helpers/challengesTestHelper');
+const merkleRootsTestHelper = require('./helpers/merkleRootsTestHelper');
 
 const BN = testHelper.BN;
 
@@ -27,6 +28,7 @@ contract('MembersManager', async () => {
     await signingTestHelper.init(testHelper);
     await votingTestHelper.init(testHelper, timeTestHelper, signingTestHelper);
     await challengesTestHelper.init(testHelper, avtTestHelper, votingTestHelper);
+    await merkleRootsTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
 
     membersManager = testHelper.getMembersManager();
     accounts = testHelper.getAccounts('member', 'challenger', 'otherMember');
@@ -34,18 +36,18 @@ contract('MembersManager', async () => {
   });
 
   after(async () => {
-    await avtTestHelper.checkFundsEmpty(accounts);
+    await avtTestHelper.checkBalancesAreZero(accounts);
   });
 
   async function makeDepositForNewMember(_account) {
     let deposit = memberDepositInAVTDecimals;
-    await avtTestHelper.addAVTToFund(deposit, _account, 'deposit');
+    await avtTestHelper.addAVT(deposit, _account);
     return deposit;
   }
 
   async function withdrawDepositForNewMember(_account) {
     let deposit = memberDepositInAVTDecimals;
-    await avtTestHelper.withdrawAVTFromFund(deposit, _account, 'deposit');
+    await avtTestHelper.withdrawAVT(deposit, _account);
   }
 
   context('registerMember()', async () => {
@@ -82,7 +84,7 @@ contract('MembersManager', async () => {
         });
 
         afterEach(async () => {
-          await avtTestHelper.withdrawAVTFromFund(goodMemberDeposit, goodMember, 'deposit');
+          await avtTestHelper.withdrawAVT(goodMemberDeposit, goodMember);
         });
 
         it('memberType', async () => {
@@ -110,9 +112,10 @@ contract('MembersManager', async () => {
 
         it('insufficient deposit', async () => {
           let badDeposit = memberDepositInAVTDecimals.div(new BN(2));
-          await avtTestHelper.addAVTToFund(badDeposit, goodMember, 'deposit');
-          await registerMemberFails(goodMember, goodMemberType, goodEvidenceURL, goodMemberDescription, 'Insufficient deposits');
-          await avtTestHelper.withdrawAVTFromFund(badDeposit, goodMember, 'deposit');
+          await avtTestHelper.addAVT(badDeposit, goodMember);
+          await registerMemberFails(goodMember, goodMemberType, goodEvidenceURL, goodMemberDescription,
+              'Insufficient balance to cover deposits');
+          await avtTestHelper.withdrawAVT(badDeposit, goodMember);
         });
       });
     });
@@ -164,12 +167,12 @@ contract('MembersManager', async () => {
         });
 
         it('member has interacted and tries to deregister before the end of the cooling off period', async () => {
-          const merkleRootsManager = testHelper.getMerkleRootsManager();
-          const merkleRootHash = testHelper.randomBytes32();
-          await merkleRootsManager.registerMerkleRoot(merkleRootHash, {from: goodMember});
+          const root = await merkleRootsTestHelper.depositAndRegisterMerkleRoot(goodMember);
           await deregisterMemberFails(goodMember, goodMemberType, 'Member is still in cooling off period');
 
           // Tear down
+          await merkleRootsTestHelper.advanceTimeAndDeregisterMerkleRoot(root.rootHash);
+          await avtTestHelper.withdrawAVT(root.deposit, goodMember);
           await membersTestHelper.deregisterMemberAndWithdrawDeposit(goodMember, goodMemberType);
         });
       });

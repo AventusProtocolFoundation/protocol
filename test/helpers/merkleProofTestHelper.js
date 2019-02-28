@@ -7,8 +7,8 @@ async function init(_testHelper) {
   testHelper = _testHelper;
 }
 
-function createTree(_numberOfLevels, _leafData) {
-  leaves = createLeaves(_numberOfLevels, _leafData);
+function createTree(_treeDepth, _leafData) {
+  leaves = createLeaves(_treeDepth, _leafData);
   layers = getLayers(leaves);
   const leafHash = testHelper.hash(..._leafData);
   const merklePath = getMerklePath(leafHash);
@@ -98,9 +98,21 @@ function getPairElement(_idx, _layer) {
   }
 }
 
+function getSubTreeMerkleProof(_leafHash, _merklePath, _subTreeSize) {
+  const numSlicedLayers = _merklePath.length - _subTreeSize + 1;
+  let leafHash = _leafHash;
+
+  for (let i = 0; i < numSlicedLayers; i++) {
+    leafHash = combinedHash(leafHash, _merklePath[i]);
+  }
+  return [leafHash, _merklePath.slice(numSlicedLayers)];
+}
+
 // Keep exports alphabetical.
 module.exports = {
+  combinedHash,
   createTree,
   getMerklePath,
   init,
+  getSubTreeMerkleProof,
 };
