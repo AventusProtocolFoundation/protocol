@@ -22,22 +22,22 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Statements</span>
-        <span class='fraction'>7/7</span>
+        <span class='fraction'>14/14</span>
       </div>
       <div class='fl pad1y space-right2'>
-        <span class="strong">83.33% </span>
+        <span class="strong">100% </span>
         <span class="quiet">Branches</span>
-        <span class='fraction'>5/6</span>
+        <span class='fraction'>12/12</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Functions</span>
-        <span class='fraction'>1/1</span>
+        <span class='fraction'>3/3</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Lines</span>
-        <span class='fraction'>11/11</span>
+        <span class='fraction'>24/24</span>
       </div>
     </div>
   </div>
@@ -73,7 +73,35 @@
 28
 29
 30
-31</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -84,23 +112,51 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">19×</span>
-<span class="cline-any cline-yes">19×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">17×</span>
-<span class="cline-any cline-yes">17×</span>
-<span class="cline-any cline-yes">17×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">17×</span>
-<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">4×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">13×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">13×</span>
-<span class="cline-any cline-yes">13×</span>
-<span class="cline-any cline-yes">13×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">47×</span>
+<span class="cline-any cline-yes">45×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">43×</span>
+<span class="cline-any cline-yes">43×</span>
+<span class="cline-any cline-yes">43×</span>
+<span class="cline-any cline-yes">43×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">41×</span>
+<span class="cline-any cline-yes">41×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">41×</span>
+<span class="cline-any cline-yes">28×</span>
+<span class="cline-any cline-yes">26×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">39×</span>
+<span class="cline-any cline-yes">39×</span>
+<span class="cline-any cline-yes">39×</span>
+<span class="cline-any cline-yes">37×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.5.2;
@@ -108,29 +164,57 @@
 import "./LMembers.sol";
 import "./LEventsStorage.sol";
 import "./zeppelin/LECRecovery.sol";
+import "./LAventusTime.sol";
+import "./LEventsRoles.sol";
 &nbsp;
 library LEventsEvents {
+&nbsp;
+  modifier onlyValidatorOnEventOrEventOwner(IAventusStorage _storage, uint _eventId) {
+    LEventsRoles.mustBeValidatorOnEventOrEventOwner(_storage, _eventId, msg.sender);
+    _;
+  }
+&nbsp;
   function createEvent(IAventusStorage _storage, string calldata _eventDesc, uint _eventTime, uint _offSaleTime,
-      bytes calldata _createEventEventOwnerProof)
+      bytes calldata _createEventEventOwnerProof, address _eventOwner)
     external
-    returns (address eventOwner_, uint eventId_)
+    returns (uint eventId_, bool registerValidatorOnEvent_)
   {
-    <span class="missing-if-branch" title="else path not taken" >E</span>require(_eventTime == 0 || _eventTime &gt; _offSaleTime, "Event time must be after off-sale time");
+    require(_eventTime &gt; _offSaleTime, "Event time must be after off-sale time");
     require(bytes(_eventDesc).length &gt; 0, "Event requires a non-empty description");
 &nbsp;
     bytes32 descHash = keccak256(abi.encodePacked(_eventDesc));
-    bytes32 eventHash = keccak256(abi.encodePacked(descHash, _offSaleTime));
-    eventOwner_ = LECRecovery.recover(eventHash, _createEventEventOwnerProof);
-&nbsp;
-    if (msg.sender != eventOwner_) {
-      LMembers.checkValidatorActiveAndRecordInteraction(_storage);
-    }
+    bytes32 eventHash = keccak256(abi.encodePacked(descHash, _eventTime, _offSaleTime, msg.sender));
+    address signer = LECRecovery.recover(eventHash, _createEventEventOwnerProof);
+    require(signer == _eventOwner, "Creation proof must be valid and signed by event owner");
 &nbsp;
     eventId_ = LEventsStorage.getEventCount(_storage) + 1;
+    registerValidatorOnEvent_ = msg.sender != _eventOwner;
+&nbsp;
+    if (registerValidatorOnEvent_) {
+      LMembers.checkValidatorActive(_storage);
+      LEventsStorage.setRoleOnEvent(_storage, eventId_, msg.sender, "Validator");
+    }
 &nbsp;
     LEventsStorage.setEventCount(_storage, eventId_);
-    LEventsStorage.setEventOwner(_storage, eventId_, eventOwner_);
+    LEventsStorage.setEventOwner(_storage, eventId_, _eventOwner);
     LEventsStorage.setOffSaleTime(_storage, eventId_, _offSaleTime);
+    LEventsStorage.setEventTime(_storage, eventId_, _eventTime);
+  }
+&nbsp;
+  function takeEventOffSale(IAventusStorage _storage, uint _eventId, bytes calldata _eventOwnerProof)
+    external
+    onlyValidatorOnEventOrEventOwner(_storage, _eventId)
+  {
+    address eventOwner = LEventsStorage.getEventOwner(_storage, _eventId);
+    address signer = LECRecovery.recover(keccak256(abi.encodePacked(_eventId)), _eventOwnerProof);
+    require(eventOwner == signer, "Offsale proof must be valid and signed by event owner");
+&nbsp;
+    if (msg.sender != eventOwner) {
+      LMembers.checkValidatorActive(_storage);
+    }
+&nbsp;
+    uint currentTime = LAventusTime.getCurrentTime(_storage);
+    LEventsStorage.setOffSaleTime(_storage, _eventId, currentTime);
   }
 }
 &nbsp;</pre></td></tr>
@@ -139,7 +223,7 @@ library LEventsEvents {
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Jan 21 2019 16:59:59 GMT+0000 (GMT)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Feb 28 2019 12:07:39 GMT+0000 (GMT)
 </div>
 </div>
 <script src="../../prettify.js"></script>

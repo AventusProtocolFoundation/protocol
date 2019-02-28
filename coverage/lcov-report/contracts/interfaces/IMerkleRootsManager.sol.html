@@ -56,7 +56,91 @@
 11
 12
 13
-14</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -76,19 +160,61 @@ interface IMerkleRootsManager {
   /**
    * @notice Event emitted for a registerMerkleRoot transaction.
    */
-  event LogMerkleRootRegistered(address indexed ownerAddress, bytes32 indexed rootHash);
+  event LogMerkleRootRegistered(address indexed ownerAddress, bytes32 indexed rootHash, uint treeDepth, uint lastEventTime);
+&nbsp;
+  /**
+   * @notice Event emitted upon a successful merkle root challenge
+   */
+  event LogMerkleRootAutoChallenged(address indexed challenger, bytes32 indexed rootHash);
+&nbsp;
+  /**
+   * @notice Event emitted for a deregisterMerkleRoot transaction.
+   */
+  event LogMerkleRootDeregistered(bytes32 indexed rootHash);
 &nbsp;
   /**
    * @notice Register the given merkleRoot on the Aventus Protocol.
+   * @param _rootHash Root hash of the merkle tree
+   * @param _treeDepth Number of layers of the merkle tree (including the root)
+   * @param _lastEventTime last even time of any ticket on the merkle tree
    */
-  function registerMerkleRoot(bytes32 _rootHash) external;
+  function registerMerkleRoot(bytes32 _rootHash, uint _treeDepth, uint _lastEventTime) external;
+&nbsp;
+  /**
+   * @notice Deregister the given merkle root from the Aventus Protocol.
+   * @param _rootHash Root hash of the tree to be deregistered
+   */
+  function deregisterMerkleRoot(bytes32 _rootHash) external;
+&nbsp;
+  /**
+   * @notice Get the required deposit for a new merkle root registration at the time of calling
+   * @param _treeDepth Number of layers of the merkle tree (including the root)
+   * @param _lastEventTime last even time of any ticket on the merkle tree
+   */
+  function getNewMerkleRootDeposit(uint _treeDepth, uint _lastEventTime) external view returns (uint deposit_);
+&nbsp;
+  /**
+   * @notice Challenge (with automatic resolution) and claim deposit of existing merkle root based on declared tree depth
+   * @param _leafHash hash of leaf at depth greater than declared
+   * @param _merklePath merkle path of the given leaf hash
+   */
+  function autoChallengeTreeDepth(bytes32 _leafHash, bytes32[] calldata _merklePath) external;
+&nbsp;
+  /**
+   * @notice Challenge (with automatic resolution) and claim deposit of existing merkle root based on declared last event time
+   * @param _eventId event with later event time than declared last event time
+   * @param _remainingLeafContent all remaining leaf content (ie. excluding event id) packed as bytes
+   * @param _merklePath merkle path of the fraudulent leaf
+   */
+  function autoChallengeLastEventTime(uint _eventId, bytes calldata _remainingLeafContent, bytes32 [] calldata _merklePath)
+    external;
 }</pre></td></tr>
 </table></pre>
 <div class='push'></div><!-- for sticky footer -->
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Jan 21 2019 16:59:59 GMT+0000 (GMT)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Feb 28 2019 12:07:39 GMT+0000 (GMT)
 </div>
 </div>
 <script src="../../prettify.js"></script>

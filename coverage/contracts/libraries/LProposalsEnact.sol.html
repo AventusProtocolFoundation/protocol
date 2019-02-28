@@ -190,7 +190,13 @@
 145
 146
 147
-148</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+148
+149
+150
+151</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -206,12 +212,6 @@
 <span class="cline-any cline-yes">47×</span>
 <span class="cline-any cline-yes">47×</span>
 <span class="cline-any cline-yes">47×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -238,6 +238,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">31×</span>
 <span class="cline-any cline-yes">31×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -260,6 +264,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">40×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -269,12 +277,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">53×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -335,6 +337,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">50×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.5.2;
@@ -346,21 +352,18 @@ import "./LProposalsStorage.sol";
 &nbsp;
 // Library for extending voting protocol functionality
 library LProposalsEnact {
+  
   enum ProposalStatus {NonExistent, Lobbying, Voting, Revealing, RevealingFinishedProposalNotEnded, Ended}
 &nbsp;
-  function doUnlockProposalDeposit(IAventusStorage _storage, uint _proposalId) external {
+  function doUnlockProposalDeposit(IAventusStorage _storage, uint _proposalId)
+    external
+  {
     address proposalOwner = getProposalOwner(_storage, _proposalId);
     uint proposalDeposit = getProposalDeposit(_storage, _proposalId);
     LAVTManager.unlockDeposit(_storage, proposalOwner, proposalDeposit);
     LProposalsStorage.setDeposit(_storage, _proposalId, 0);
   }
 &nbsp;
-  /**
-  * @dev Create a proposal to be voted on
-  * @param _storage Storage contract
-  * @param _deposit Deposit that has to have been paid for this proposal
-  * @return uint proposalId_ of newly created proposal
-  */
   function doCreateProposal(IAventusStorage _storage, uint _deposit, uint numDaysInLobbyingPeriod, uint numDaysInVotingPeriod,
       uint numDaysInRevealingPeriod)
     external
@@ -390,7 +393,11 @@ library LProposalsEnact {
       (proposalStatus == ProposalStatus.Ended);
   }
 &nbsp;
-  function inRevealingPeriod(IAventusStorage _storage, uint _proposalId) external view returns (bool result_) {
+  function inRevealingPeriod(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (bool result_)
+  {
     result_ = doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.Revealing;
   }
 &nbsp;
@@ -406,7 +413,11 @@ library LProposalsEnact {
       (proposalStatus == LProposalsEnact.ProposalStatus.Ended);
   }
 &nbsp;
-  function inVotingPeriod(IAventusStorage _storage, uint _proposalId) external view returns (bool result_) {
+  function inVotingPeriod(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (bool result_)
+  {
     result_ = doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.Voting;
   }
 &nbsp;
@@ -418,12 +429,6 @@ library LProposalsEnact {
     result_ = doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.RevealingFinishedProposalNotEnded;
   }
 &nbsp;
-  /**
-  * @dev Gets a given proposal's current status
-  * @param _storage Storage contract
-  * @param _proposalId Proposal ID
-  * @return proposal Status
-  */
   function doGetProposalStatus(IAventusStorage _storage, uint _proposalId)
     public
     view
@@ -481,7 +486,11 @@ library LProposalsEnact {
     owner_ = LProposalsStorage.getOwner(_storage, _proposalId);
   }
 &nbsp;
-  function thereAreUnrevealedVotes(IAventusStorage _storage, uint _proposalId) private view returns (bool result_) {
+  function thereAreUnrevealedVotes(IAventusStorage _storage, uint _proposalId)
+    private
+    view
+    returns (bool result_)
+  {
     result_ = LProposalsStorage.getUnrevealedVotesCount(_storage, _proposalId) &gt; 0;
   }
 }</pre></td></tr>
@@ -490,7 +499,7 @@ library LProposalsEnact {
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Jan 21 2019 16:59:59 GMT+0000 (GMT)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Feb 28 2019 12:07:39 GMT+0000 (GMT)
 </div>
 </div>
 <script src="../../prettify.js"></script>

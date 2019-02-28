@@ -213,7 +213,17 @@
 168
 169
 170
-171</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -279,6 +289,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">19×</span>
 <span class="cline-any cline-yes">9×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -292,6 +304,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">69×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -300,7 +316,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">58×</span>
+<span class="cline-any cline-yes">95×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -309,6 +325,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">35×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -326,6 +344,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">31×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -448,7 +468,9 @@ library LAventities {
     (votesFor_, votesAgainst_) = LProposals.endProposal(_storage, proposalId_);
   }
 &nbsp;
-  function claimVoterWinnings(IAventusStorage _storage, uint _proposalId) external {
+  function claimVoterWinnings(IAventusStorage _storage, uint _proposalId)
+    external
+  {
     LAventitiesChallenges.claimVoterWinnings(_storage, _proposalId);
     emit LogVoterWinningsClaimed(_proposalId);
   }
@@ -461,7 +483,11 @@ library LAventities {
     aventityDepositor_ = LAventitiesStorage.getDepositor(_storage, _aventityId);
   }
 &nbsp;
-  function getExistingAventityDeposit(IAventusStorage _storage, uint _aventityId) public view returns (uint aventityDeposit_) {
+  function getExistingAventityDeposit(IAventusStorage _storage, uint _aventityId)
+    public
+    view
+    returns (uint aventityDeposit_)
+  {
     aventityDeposit_ = LAventitiesStorage.getDeposit(_storage, _aventityId);
   }
 &nbsp;
@@ -482,7 +508,9 @@ library LAventities {
         aventityIsNotUnderChallenge(_storage, _aventityId);
   }
 &nbsp;
-  function unlockAventityDeposit(IAventusStorage _storage, uint _aventityId) public {
+  function unlockAventityDeposit(IAventusStorage _storage, uint _aventityId)
+    public
+  {
     uint aventityDeposit = getExistingAventityDeposit(_storage, _aventityId);
     address aventityDepositor = LAventitiesStorage.getDepositor(_storage, _aventityId);
     LAVTManager.unlockDeposit(_storage, aventityDepositor, aventityDeposit);
@@ -498,7 +526,9 @@ library LAventities {
     aventityIsNotUnderChallenge_ = 0 == LAventitiesStorage.getChallengeProposalId(_storage, _aventityId);
   }
 &nbsp;
-  function setAventityStatusFraudulent(IAventusStorage _storage, uint _aventityId) private {
+  function setAventityStatusFraudulent(IAventusStorage _storage, uint _aventityId)
+    private
+  {
     setAventityAsClearFromChallenge(_storage, _aventityId);
 &nbsp;
     // Aventity is no longer valid; remove the expected deposit for the aventity.
@@ -545,13 +575,13 @@ library LAventities {
       totalWinningStake = totalDisagreedStake;
       setAventityAsClearFromChallenge(_storage, _aventityId);
     }
-    
+&nbsp;
     bool winningsForVoters = totalWinningStake &gt; 0;
     LAventitiesChallenges.doWinningsDistribution(_storage, _proposalId, winningsForVoters, deposit, winner, loser);
 &nbsp;
     // Save the information we need to calculate voter winnings when they make their claim.
-    LAventitiesStorage.setWinningProposalOption(_storage, _proposalId, winningOption);
-    LAventitiesStorage.setTotalWinningStake(_storage, _proposalId, totalWinningStake);
+    LProposals.setWinningProposalOption(_storage, _proposalId, winningOption);
+    LProposals.setTotalWinningStake(_storage, _proposalId, totalWinningStake);
   }
 }</pre></td></tr>
 </table></pre>
@@ -559,7 +589,7 @@ library LAventities {
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Jan 21 2019 16:59:59 GMT+0000 (GMT)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Feb 28 2019 12:07:39 GMT+0000 (GMT)
 </div>
 </div>
 <script src="../../prettify.js"></script>

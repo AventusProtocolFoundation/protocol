@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts/libraries/LAventusDLL.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../index.html">all files</a> / <a href="index.html">contracts/libraries/</a> LAventusDLL.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>22/22</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>16/16</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>4/4</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>31/31</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line high'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">36×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">36×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">35×</span>
+<span class="cline-any cline-yes">35×</span>
+<span class="cline-any cline-yes">16×</span>
+<span class="cline-any cline-yes">16×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">33×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31×</span>
+<span class="cline-any cline-yes">31×</span>
+<span class="cline-any cline-yes">31×</span>
+<span class="cline-any cline-yes">31×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">32×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23×</span>
+<span class="cline-any cline-yes">22×</span>
+<span class="cline-any cline-yes">22×</span>
+<span class="cline-any cline-yes">22×</span>
+<span class="cline-any cline-yes">22×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">37×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">36×</span>
+<span class="cline-any cline-yes">36×</span>
+<span class="cline-any cline-yes">98×</span>
+<span class="cline-any cline-yes">98×</span>
+<span class="cline-any cline-yes">36×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">62×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">337×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.5.2;
+&nbsp;
+import "../interfaces/IAventusStorage.sol";
+import "./LAventusDLLStorage.sol";
+&nbsp;
+library LAventusDLL {
+&nbsp;
+  function incrementCount(IAventusStorage _storage, address _address, uint _value, uint _prevValue)
+    external
+  {
+    uint count = LAventusDLLStorage.getCount(_storage, _address, _value);
+&nbsp;
+    // If nothing exists for this value, create a new node in the DLL.
+    if (count == 0) {
+      // Make sure that the prev and next entries are valid first.
+      uint nextValue = LAventusDLLStorage.getNext(_storage, _address, _prevValue);
+      if (_prevValue != 0) {
+        bool validPrevValue = _prevValue &lt; _value &amp;&amp; LAventusDLLStorage.getCount(_storage, _address, _prevValue) != 0;
+        require(validPrevValue, "Invalid previous value");
+      }
+      if (nextValue != 0) {
+        bool validNextValue = _value &lt; nextValue &amp;&amp; LAventusDLLStorage.getCount(_storage, _address, nextValue) != 0;
+        require(validNextValue, "Invalid next value");
+      }
+      // Create new entry in the DLL between prevValue and nextValue.
+      LAventusDLLStorage.setPrevious(_storage, _address, _value, _prevValue);
+      LAventusDLLStorage.setNext(_storage, _address, _value, nextValue);
+      LAventusDLLStorage.setNext(_storage, _address, _prevValue, _value);
+      LAventusDLLStorage.setPrevious(_storage, _address, nextValue, _value);
+    }
+&nbsp;
+    LAventusDLLStorage.setCount(_storage, _address, _value, count + 1);
+  }
+&nbsp;
+  function decrementCount(IAventusStorage _storage, address _address, uint _value)
+    external
+  {
+    uint count = LAventusDLLStorage.getCount(_storage, _address, _value);
+    // DEBUG_ONLY assert(count != 0);
+&nbsp;
+    // If this was the only entry, remove the entire entry from the DLL.
+    if (count == 1) {
+      uint prevValue = LAventusDLLStorage.getPrevious(_storage, _address, _value);
+      uint nextValue = LAventusDLLStorage.getNext(_storage, _address, _value);
+      LAventusDLLStorage.setNext(_storage, _address, prevValue, nextValue);
+      LAventusDLLStorage.setPrevious(_storage, _address, nextValue, prevValue);
+    } else {
+      LAventusDLLStorage.setCount(_storage, _address, _value, count - 1);
+    }
+  }
+&nbsp;
+  function getPreviousValue(IAventusStorage _storage, address _address, uint _value)
+    external
+    view
+    returns (uint prevValue_)
+  {
+    if (LAventusDLLStorage.getCount(_storage, _address, _value) != 0) {
+      // We have an entry in the DLL for this value already.
+      prevValue_ = LAventusDLLStorage.getPrevious(_storage, _address, _value);
+      return prevValue_;
+    }
+    // Find where we would insert a new node; start looking at the head.
+    prevValue_ = 0;
+    while (true) {
+      uint nextValue = LAventusDLLStorage.getNext(_storage, _address, prevValue_);
+      if (nextValue == 0 || _value &lt; nextValue) {
+        break;
+      }
+      prevValue_ = nextValue;
+    }
+  }
+&nbsp;
+  function getHeadValue(IAventusStorage _storage, address _address)
+    external
+    view
+    returns (uint headValue_)
+  {
+    headValue_ = LAventusDLLStorage.getNext(_storage, _address, uint(0));
+  }
+}</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Feb 28 2019 12:07:39 GMT+0000 (GMT)
+</div>
+</div>
+<script src="../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../sorter.js"></script>
+</body>
+</html>
