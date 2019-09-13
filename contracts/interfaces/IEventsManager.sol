@@ -5,12 +5,7 @@ interface IEventsManager {
   /**
    * @notice Event emitted for a createEvent transaction.
    */
-  event LogEventCreated(uint indexed eventId, address indexed eventOwner, string eventDesc, uint eventTime, uint offSaleTime);
-
-  /**
-  * @notice Event emitted when an event is taken off sale.
-  */
-  event LogEventTakenOffSale(uint indexed eventId);
+  event LogEventCreated(uint indexed eventId, address indexed eventOwner, string eventDesc, uint eventTime, bytes rules);
 
   /**
    * @notice Event emitted for a registerRoleOnEvent transaction.
@@ -18,57 +13,19 @@ interface IEventsManager {
   event LogEventRoleRegistered(uint indexed eventId, address indexed roleAddress, string role);
 
   /**
-   * @notice Event emitted for a sellTicket transaction.
-   */
-  event LogTicketSold(uint indexed eventId, uint indexed ticketId, bytes32 vendorTicketRefHash, string ticketMetadata,
-      address indexed buyer);
-
-  /**
-   * @notice Event emitted for a resellTicket transaction.
-   */
-  event LogTicketResold(uint indexed eventId, uint indexed ticketId, address indexed newBuyer);
-
-  /**
-   * @notice Event emitted for a cancelTicket transaction.
-   */
-  event LogTicketCancelled(uint indexed eventId, uint indexed ticketId);
-
-  /**
    * @notice Create an event
    * @param _eventDesc Description of the event
+   * @param _eventRef unique identifier for the event - no two events for this eventOwner can have the same eventRef
    * @param _eventTime Timestamp indicating when tickets for an event expire
-   * @param _offSaleTime The end timestamp for ticket sales
    * @param _ownerProof The event details signed by the owner
    * @param _eventOwner The event owner
+   * @param _rules encoded ticket rules for this event
    */
-  function createEvent(string calldata _eventDesc, uint _eventTime, uint _offSaleTime, bytes calldata _ownerProof,
-      address _eventOwner) external;
+  function createEvent(string calldata _eventDesc, bytes32 _eventRef, uint _eventTime, bytes calldata _ownerProof,
+      address _eventOwner, bytes calldata _rules) external;
 
   /**
-   * @notice Take event off sale in order to disable ticket sales/resales
-   * @param _eventId ID of the event
-   * @param _eventOwnerProof signed proof from the event owner
-   */
-  function takeEventOffSale(uint _eventId, bytes calldata _eventOwnerProof) external;
-
-  /**
-   * @notice Sell ticket on behalf of a signer to a buyer specified by the signer
-   * @param _eventId event id for the event to end
-   * @param _vendorTicketRefHash hash of the vendor (event owner or primary) generated unique ticket reference for the event
-   * @param _ticketMetadata ticket details
-   * @param _buyer address of the ticket buyer (can be empty address)
-   */
-  function sellTicket(uint _eventId, bytes32 _vendorTicketRefHash, string calldata _ticketMetadata, address _buyer) external;
-
-  /**
-   * @notice Cancel ticket and transfer ownership to event owner
-   * @param _eventId event id for the event in context
-   * @param _ticketId ticket Id for the ticket to be cancelled
-   */
-  function cancelTicket(uint _eventId, uint _ticketId) external;
-
-  /**
-   * @notice Register a member for an event
+   * @notice Register a validator for an event
    * @param _eventId ID of the event
    * @param _roleAddress address associated with the role
    * @param _role must be either "Primary" or "Secondary"
@@ -78,11 +35,30 @@ interface IEventsManager {
       bytes calldata _registerRoleEventOwnerProof) external;
 
   /**
-   * @notice Sell a ticket on the secondary market.
-   * @param _eventId ID of the event
-   * @param _ticketId identifier for the ticket: unique to this event.
-   * @param _ticketOwnerPermission signed by the owner
-   * @param _newBuyer address of the new buyer of the ticket.
+   * @notice Check the validity of a single condition for a rule
+   * @notice Reverts if conditionData is encoded incorrectly
+   * @param _conditionData encoded condition
    */
-  function resellTicket(uint _eventId, uint _ticketId, bytes calldata _ticketOwnerPermission, address _newBuyer) external;
+  function checkRuleCondition(bytes calldata _conditionData) external;
+
+  /**
+   * @notice Check the validity of a single rule (set of conditions)
+   * @notice Reverts if ruleData is encoded incorrectly
+   * @param _ruleData encoded rule
+   */
+  function checkRule(bytes calldata _ruleData) external;
+
+  /**
+   * @notice Check the validity of the set of rules which apply to a single transaction type
+   * @notice Reverts if transactionRulesData is encoded incorrectly
+   * @param _transactionRulesData encoded rules for transaction type
+   */
+  function checkTransactionRules(bytes calldata _transactionRulesData) external;
+
+  /**
+   * @notice Check the validity of the set of transaction rules (all the rules applied at event level across transaction types)
+   * @notice Reverts if eventRulesData is encoded incorrectly
+   * @param _eventRulesData encoded sets of transaction rules
+   */
+  function checkEventRules(bytes calldata _eventRulesData) external;
 }

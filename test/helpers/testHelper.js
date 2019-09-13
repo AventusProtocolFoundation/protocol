@@ -2,19 +2,21 @@ const AventusStorage = artifacts.require('AventusStorage');
 const Versioned = artifacts.require('Versioned');
 const ProposalsManager = artifacts.require('ProposalsManager');
 const AVTManager = artifacts.require('AVTManager');
-const MembersManager = artifacts.require('MembersManager');
+const ValidatorsManager = artifacts.require('ValidatorsManager');
+const MerkleLeafChallenges = artifacts.require('MerkleLeafChallenges');
 const MerkleRootsManager = artifacts.require('MerkleRootsManager');
 const EventsManager = artifacts.require('EventsManager');
 const IERC20 = artifacts.require('IERC20');
 const profilingHelper = require('./profilingHelper');
 
 let accounts;
-const validEvidenceURL = 'http://www.example.com/members?memberid=1111';
+const validEvidenceURL = 'http://www.example.com/validators?validatorid=1111';
 const zeroAddress = '0x0000000000000000000000000000000000000000';
 const BN_ZERO = new web3.utils.BN(0);
 const BN_ONE = new web3.utils.BN(1);
 
-let aventusStorage, versioned, proposalsManager, membersManager, avtManager, merkleRootsManager, eventsManager, avtIERC20;
+let aventusStorage, versioned, proposalsManager, validatorsManager, avtManager, merkleRootsManager, eventsManager, avtIERC20;
+let merkleLeafChallenges;
 let profiledLogArgs = profilingHelper.profileFunction('TestHelper.getLogArgs', getLogArgs);
 let lastEventBlockNumber = -1;
 
@@ -26,8 +28,10 @@ async function init() {
   eventsManager = await EventsManager.deployed();
   eventsManager = profilingHelper.profileContract(eventsManager, 'eventsManager');
   avtIERC20 = await IERC20.at(await aventusStorage.getAddress(hash('AVTERC20Instance')));
-  membersManager = await MembersManager.deployed();
-  membersManager = profilingHelper.profileContract(membersManager, 'membersManager');
+  validatorsManager = await ValidatorsManager.deployed();
+  validatorsManager = profilingHelper.profileContract(validatorsManager, 'validatorsManager');
+  merkleLeafChallenges = await MerkleLeafChallenges.deployed();
+  merkleLeafChallenges = profilingHelper.profileContract(merkleLeafChallenges, 'merkleLeafChallenges');
   merkleRootsManager = await MerkleRootsManager.deployed();
   merkleRootsManager = profilingHelper.profileContract(merkleRootsManager, 'merkleRootsManager');
   proposalsManager = await ProposalsManager.deployed();
@@ -56,7 +60,7 @@ function hash() {
   return web3.utils.soliditySha3(...arguments);
 }
 
-function sign(_signer, _plainData) {
+async function sign(_signer, _plainData) {
   return web3.eth.sign( _plainData, _signer);
 }
 
@@ -93,6 +97,8 @@ async function getVersionMajorMinor() {
 }
 
 function assertBNEquals(_actual, _expected, _msg) {
+  assert(web3.utils.isBN(_actual), "_actual must be a BN");
+  assert(web3.utils.isBN(_expected), "_expected must be a BN");
   const msg = _msg || `Expected ${_expected} to equal ${_actual}`;
   assert(_actual.eq(_expected), msg);
 }
@@ -105,6 +111,10 @@ function toBN(_number) {
   return web3.utils.toBN(_number);
 }
 
+function encodeParams(typesArr, argsArr) {
+  return web3.eth.abi.encodeParameters(typesArr, argsArr);
+}
+
 // Keep exports alphabetical.
 module.exports = {
   assertBNEquals,
@@ -112,6 +122,7 @@ module.exports = {
   BN: web3.utils.BN,
   BN_ONE,
   BN_ZERO,
+  encodeParams,
   expectRevert,
   getAccounts,
   getAventusStorage: () => aventusStorage,
@@ -119,7 +130,8 @@ module.exports = {
   getAVTManager: () => avtManager,
   getEventsManager: () => eventsManager,
   getLogArgs: profiledLogArgs,
-  getMembersManager: () => membersManager,
+  getValidatorsManager: () => validatorsManager,
+  getMerkleLeafChallenges: () => merkleLeafChallenges,
   getMerkleRootsManager: () => merkleRootsManager,
   getProposalsManager: () => proposalsManager,
   getVersion,
@@ -131,5 +143,5 @@ module.exports = {
   sign,
   toBN,
   validEvidenceURL,
-  zeroAddress 
+  zeroAddress
 };

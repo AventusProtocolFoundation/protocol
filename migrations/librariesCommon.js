@@ -1,3 +1,5 @@
+const common = require('./common.js');
+
 function setProxiedLibraryAddress(_web3, _version, _storage, _libraryName, _libraryAddress) {
   const key = _libraryName + '-' + _version;
   console.log('Setting library hash of', key, 'to use address', _libraryAddress);
@@ -9,8 +11,9 @@ async function doDeployLibraryAndProxy(_web3, _version, _deploySubLibrariesFunc,
   let proxyAddress = await _storage.getAddress(_web3.utils.sha3(_proxyName));
   if (proxyAddress == 0 || _deployLibraryAndProxy) {
     await _deploySubLibrariesFunc(_deployer, _library);
-    await _deployer.deploy(_library);
-    await _deployer.deploy(_proxy);
+    await common.deploy(_deployer, _library);
+    await common.deploy(_deployer, _proxy);
+
     await setProxiedLibraryAddress(_web3, _version, _storage, _libraryName, _library.address);
     console.log('Using newly deployed', _proxyName, _proxy.address);
     await _storage.setAddress(_web3.utils.sha3(_proxyName), _proxy.address);

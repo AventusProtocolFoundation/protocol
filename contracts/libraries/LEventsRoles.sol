@@ -1,9 +1,10 @@
 pragma solidity ^0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
+import "./LEventsEvents.sol";
 import "./LEventsStorage.sol";
 import "./zeppelin/LECRecovery.sol";
-import "./LMembers.sol";
+import "./LValidators.sol";
 
 library LEventsRoles {
 
@@ -15,8 +16,15 @@ library LEventsRoles {
     _;
   }
 
-  modifier onlyRegistrableEventRole(IAventusStorage _storage, string memory _role) {
-    require(isRegistrableEventRole(_role), string(abi.encodePacked("Role is not registrable: ", _role)));
+  modifier onlyIfRegistrable(IAventusStorage _storage, string memory _role) {
+    bytes32 roleHash = keccak256(abi.encodePacked(_role));
+    bool validRole = roleHash == primaryHash || roleHash == secondaryHash;
+    require(validRole, string(abi.encodePacked("Role is not registrable: ", _role)));
+    _;
+  }
+
+  modifier onlyIfNotAlreadyRegistered(IAventusStorage _storage, uint _eventId, address _roleAddress, string memory _role) {
+    require(!LEventsStorage.isRoleOnEvent(_storage, _eventId, _roleAddress, _role), "Role is already registered on event");
     _;
   }
 
@@ -24,70 +32,40 @@ library LEventsRoles {
       bytes calldata _registerRoleEventOwnerProof)
     external
     onlyEventOwnerOrValidator(_storage, _eventId)
-    onlyRegistrableEventRole(_storage, _role)
   {
-    require(!LEventsStorage.isRoleOnEvent(_storage, _eventId, _roleAddress, _role), "Role is already registered on event");
+    doRegisterRoleOnEvent(_storage, _eventId, _roleAddress, _role);
     bytes32 registerRoleHash = keccak256(abi.encodePacked(_eventId, _roleAddress, _role));
     address signer = LECRecovery.recover(registerRoleHash, _registerRoleEventOwnerProof);
-    require(isEventOwner(_storage, _eventId, signer), "Registration proof must be valid and signed by event owner");
+    bool signerIsEventOwner = LEventsEvents.isEventOwner(_storage, _eventId, signer);
+    require(signerIsEventOwner, "Registration proof must be valid and signed by event owner");
 
-    if (msg.sender != signer) {
-      LMembers.checkValidatorActive(_storage);
-    }
-
-    LEventsStorage.setRoleOnEvent(_storage, _eventId, _roleAddress, _role);
+    if (msg.sender != signer)
+      LValidators.ensureValidatorIsRegistered(_storage);
   }
 
-  function isVendorOnEvent(IAventusStorage _storage, uint _eventId, address _address)
-    external
+  function isEventOwnerOrRole(IAventusStorage _storage, uint _eventId, address _address, string memory _role)
+    public
     view
-    returns (bool valid_)
+    returns (bool isOwnerOrRole_)
   {
-    valid_ = isTraderOnEvent(_storage, _eventId, _address, "Primary");
-  }
-
-  function isResellerOnEvent(IAventusStorage _storage, uint _eventId, address _address)
-    external
-    view
-    returns (bool valid_)
-  {
-    valid_ = isTraderOnEvent(_storage, _eventId, _address, "Secondary");
+    bool isRole = LEventsStorage.isRoleOnEvent(_storage, _eventId, _address, _role);
+    bool isEventOwner = LEventsEvents.isEventOwner(_storage, _eventId, _address);
+    isOwnerOrRole_ = isRole || isEventOwner;
   }
 
   function mustBeValidatorOnEventOrEventOwner(IAventusStorage _storage, uint _eventId, address _address)
     public
     view
   {
-    bool validatorOnEvent = LEventsStorage.isRoleOnEvent(_storage, _eventId, _address, "Validator");
-    bool eventOwner = isEventOwner(_storage, _eventId, _address);
-    require(validatorOnEvent || eventOwner, "Sender must be owner or validator on event");
+    require(isEventOwnerOrRole(_storage, _eventId, _address, "Validator"), "Sender must be owner or validator on event");
   }
 
-  function isTraderOnEvent(IAventusStorage _storage, uint _eventId, address _address, string memory _role)
-    public
-    view
-    returns (bool valid_)
-  {
-    bool eventOwner = isEventOwner(_storage, _eventId, _address);
-    bool traderOnEvent = LEventsStorage.isRoleOnEvent(_storage, _eventId, _address, _role);
-    valid_ = eventOwner || traderOnEvent;
-  }
-
-  // NOTE: Validator is NOT registrable as it must be set at event creation time.
-  function isRegistrableEventRole(string memory _role)
+  // Separate method due to stack too deep.
+  function doRegisterRoleOnEvent(IAventusStorage _storage, uint _eventId, address _roleAddress, string memory _role)
     private
-    pure
-    returns (bool valid_)
+    onlyIfRegistrable(_storage, _role)
+    onlyIfNotAlreadyRegistered(_storage, _eventId, _roleAddress, _role)
   {
-    bytes32 roleHash = keccak256(abi.encodePacked(_role));
-    valid_ = roleHash == primaryHash || roleHash == secondaryHash;
-  }
-
-  function isEventOwner(IAventusStorage _storage, uint _eventId, address _owner)
-    private
-    view
-    returns (bool valid_)
-  {
-    valid_ = _owner == LEventsStorage.getEventOwner(_storage, _eventId);
+    LEventsStorage.setRoleOnEvent(_storage, _eventId, _roleAddress, _role);
   }
 }

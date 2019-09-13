@@ -60,10 +60,10 @@ function profileContract(_contract, _contractName) {
   if (!addTimeInfoToTests) return _contract;
 
   let newContract = {};
-  let members = Object.keys(_contract);
-  let membersDictionary = members.map(m => ({name: m, obj: _contract[m]}));
+  let validators = Object.keys(_contract);
+  let validatorsDictionary = validators.map(m => ({name: m, obj: _contract[m]}));
 
-  membersDictionary.forEach((item) => {
+  validatorsDictionary.forEach((item) => {
     if (typeof item.obj === 'function' && !item.name.startsWith('Log')) {
       newContract[item.name] = profileFunction(`${_contractName}.${item.name}`, item.obj);
     } else {

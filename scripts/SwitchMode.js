@@ -25,31 +25,33 @@ function main() {
   console.log('** Switching code to', mode, 'mode');
   let contracts = [];
 
-  const debug = [
+  const release = [
     'assert(',
-    '/* RELEASE_ONLY:',
-    ':RELEASE_ONLY */',
-    '// RELEASE_ONLY ',
-    '// DEBUG_ONLY:',
-    '// :DEBUG_ONLY',
-    '/* DEBUG_ONLY */ '
+    '/* ONLY_IF_ASSERTS_OFF:',
+    ':ONLY_IF_ASSERTS_OFF */',
+    '// ONLY_IF_ASSERTS_OFF ',
+    '// ONLY_IF_ASSERTS_ON:',
+    '// :ONLY_IF_ASSERTS_ON',
+    '/* ONLY_IF_ASSERTS_ON */ '
   ];
 
-  const release = [
-    '// DEBUG_ONLY assert(',
-    '// RELEASE_ONLY:',
-    '// :RELEASE_ONLY',
-    '/* RELEASE_ONLY */ ',
-    '/* DEBUG_ONLY:',
-    ':DEBUG_ONLY */',
-    '// DEBUG_ONLY '
+  // NOTE: asserts cannot be hit by coverage so are commented out for code coverage.
+  const skip_asserts = [
+    '// ONLY_IF_ASSERTS_ON assert(',
+    '// ONLY_IF_ASSERTS_OFF:',
+    '// :ONLY_IF_ASSERTS_OFF',
+    '/* ONLY_IF_ASSERTS_OFF */ ',
+    '/* ONLY_IF_ASSERTS_ON:',
+    ':ONLY_IF_ASSERTS_ON */',
+    '// ONLY_IF_ASSERTS_ON '
   ];
 
   traverseDir(path.join(__dirname, '../contracts'), contracts);
 
   contracts.forEach(contract => {
-    if (mode === 'debug') swap(release, debug, contract);
-    else if (mode === 'release') swap(debug, release, contract);
+    if (contract.includes('zokrates')) console.log('Skipping', contract);
+    else if (mode === 'release') swap(skip_asserts, release, contract);
+    else if (mode === 'skip_asserts') swap(release, skip_asserts, contract);
   });
 }
 

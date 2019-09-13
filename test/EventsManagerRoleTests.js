@@ -1,22 +1,21 @@
 const avtTestHelper = require('./helpers/avtTestHelper');
 const eventsTestHelper = require('./helpers/eventsTestHelper');
-const membersTestHelper = require('./helpers/membersTestHelper');
-const signingTestHelper = require('./helpers/signingTestHelper');
+const validatorsTestHelper = require('./helpers/validatorsTestHelper');
+const signingHelper = require('../utils/signingHelper');
 const testHelper = require('./helpers/testHelper');
 const timeTestHelper = require('./helpers/timeTestHelper');
 
 contract('EventsManager - role management', async () => {
   let eventsManager, accounts,
-      goodEventOwner, goodEventId, goodRoleAddress, goodRole, goodMember, goodValidatorMemberType, goodSender,
+      goodEventOwner, goodEventId, goodRoleAddress, goodRole, goodValidator, goodSender,
       goodRegisterRoleEventOwnerProof, badEventOwner, badEventId, badRole, badSender;
 
   before(async () => {
     await testHelper.init();
     await avtTestHelper.init(testHelper);
     await timeTestHelper.init(testHelper);
-    await membersTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
-    await signingTestHelper.init(testHelper);
-    await eventsTestHelper.init(testHelper, timeTestHelper, avtTestHelper, signingTestHelper);
+    await validatorsTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
+    await eventsTestHelper.init(testHelper, timeTestHelper, avtTestHelper);
 
     eventsManager = testHelper.getEventsManager();
     accounts = testHelper.getAccounts('eventOwner', 'validator', 'primary', 'invalid');
@@ -25,7 +24,6 @@ contract('EventsManager - role management', async () => {
     goodRole = eventsTestHelper.roles.primary;
     goodValidatorAddress = accounts.validator;
     goodValidatorRole = eventsTestHelper.roles.validator;
-    goodValidatorMemberType = membersTestHelper.memberTypes.validator;
     goodSender = goodEventOwner;
     badEventOwner = accounts.invalid;
     badEventId = 999;
@@ -33,14 +31,18 @@ contract('EventsManager - role management', async () => {
     badSender = accounts.invalid;
   });
 
+  after(async () => {
+    await avtTestHelper.checkBalancesAreZero(accounts);
+  });
+
   context('registerRoleOnEvent()', async () => {
     async function registerRoleOnEventSucceeds(_sender) {
-      const registerRoleEventOwnerProof = await signingTestHelper.getRegisterRoleEventOwnerProof(goodEventOwner, goodEventId,
+      const registerRoleEventOwnerProof = await signingHelper.getRegisterRoleEventOwnerProof(goodEventOwner, goodEventId,
           goodRoleAddress, goodRole);
       await eventsManager.registerRoleOnEvent(goodEventId, goodRoleAddress, goodRole, registerRoleEventOwnerProof,
           {from: _sender});
       const logArgs = await testHelper.getLogArgs(eventsManager, 'LogEventRoleRegistered');
-      assert.equal(logArgs.eventId.toNumber(), goodEventId.toNumber());
+      testHelper.assertBNEquals(logArgs.eventId, goodEventId);
       assert.equal(logArgs.roleAddress, goodRoleAddress);
       assert.equal(logArgs.role, goodRole);
     }
@@ -57,17 +59,17 @@ contract('EventsManager - role management', async () => {
       });
 
       it('via validator', async () => {
-        await membersTestHelper.depositAndRegisterMember(goodValidatorAddress, goodValidatorMemberType);
+        await validatorsTestHelper.depositAndRegisterValidator(goodValidatorAddress);
         goodEventId = await eventsTestHelper.createEvent(goodEventOwner, goodValidatorAddress);
         await registerRoleOnEventSucceeds(goodValidatorAddress);
-        await membersTestHelper.deregisterMemberAndWithdrawDeposit(goodValidatorAddress, goodValidatorMemberType);
+        await validatorsTestHelper.deregisterValidatorAndWithdrawDeposit(goodValidatorAddress);
       });
     });
 
     context('fails with', async () => {
       beforeEach(async () => {
         goodEventId = await eventsTestHelper.createEvent(goodEventOwner);
-        goodRegisterRoleEventOwnerProof = await signingTestHelper.getRegisterRoleEventOwnerProof(goodEventOwner, goodEventId,
+        goodRegisterRoleEventOwnerProof = await signingHelper.getRegisterRoleEventOwnerProof(goodEventOwner, goodEventId,
             goodRoleAddress, goodRole);
       });
 
@@ -88,7 +90,7 @@ contract('EventsManager - role management', async () => {
         });
 
         it('proof', async () => {
-          const badRegisterRoleEventOwnerProof = await signingTestHelper.getRegisterRoleEventOwnerProof(badEventOwner,
+          const badRegisterRoleEventOwnerProof = await signingHelper.getRegisterRoleEventOwnerProof(badEventOwner,
               goodEventId, goodRoleAddress, goodRole);
           await registerRoleOnEventFails(goodEventId, goodRoleAddress, goodRole, badRegisterRoleEventOwnerProof, goodSender,
               'Registration proof must be valid and signed by event owner');

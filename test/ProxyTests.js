@@ -31,10 +31,10 @@ contract('Proxy testing', async () => {
   after(async () => await avtTestHelper.checkBalancesAreZero());
 
   async function createProposal(_desc) {
-    proposalDeposit = await proposalsManager.getGovernanceProposalDeposit();
+    proposalDeposit = await proposalsManager.getCommunityProposalDeposit();
     await avtTestHelper.addAVT(proposalDeposit, accounts.accountZero);
-    await proposalsManager.createGovernanceProposal(_desc);
-    const logArgs = await testHelper.getLogArgs(proposalsManager, 'LogGovernanceProposalCreated');
+    await proposalsManager.createCommunityProposal(_desc);
+    const logArgs = await testHelper.getLogArgs(proposalsManager, 'LogCommunityProposalCreated');
     return logArgs.proposalId.toNumber();
   }
 
@@ -52,7 +52,7 @@ contract('Proxy testing', async () => {
 
   async function endProposalAndWithdrawDeposit(_proposalId) {
     await votingTestHelper.advanceTimeToEndOfProposal(_proposalId);
-    await proposalsManager.endGovernanceProposal(_proposalId);
+    await proposalsManager.endCommunityProposal(_proposalId);
     await avtTestHelper.withdrawAVT(proposalDeposit, accounts.accountZero);
   }
 
@@ -89,12 +89,12 @@ contract('Proxy testing', async () => {
     // Using the updated library should fail.
     await useNewLibrary();
     // Expect revert with no expected error as this will revert in the VM, not in our code.
-    await testHelper.expectRevert(() => proposalsManager.endGovernanceProposal(proposalId), '');
+    await testHelper.expectRevert(() => proposalsManager.endCommunityProposal(proposalId), '');
 
     // Put the old library back...
     await useOldLibrary();
     // ...and the correct behaviour is restored.
-    await proposalsManager.endGovernanceProposal(proposalId);
+    await proposalsManager.endCommunityProposal(proposalId);
     await avtTestHelper.withdrawAVT(proposalDeposit, accounts.accountZero);
   });
 });

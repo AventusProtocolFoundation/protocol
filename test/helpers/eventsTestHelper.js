@@ -1,4 +1,6 @@
-let testHelper, timeTestHelper, avtTestHelper, signingTestHelper, eventsManager, aventusStorage;
+const signingHelper = require('../../utils/signingHelper');
+
+let testHelper, timeTestHelper, avtTestHelper, eventsManager, uniqueEventNum;
 
 const roles = {
   validator: 'Validator',
@@ -7,43 +9,34 @@ const roles = {
   invalid: 'invalid'
 };
 
-async function init(_testHelper, _timeTestHelper, _avtTestHelper, _signingTestHelper) {
+async function init(_testHelper, _timeTestHelper, _avtTestHelper) {
   testHelper = _testHelper;
   timeTestHelper = _timeTestHelper;
   avtTestHelper = _avtTestHelper;
-  signingTestHelper = _signingTestHelper;
   eventsManager = testHelper.getEventsManager();
-  aventusStorage = testHelper.getAventusStorage();
+  uniqueEventNum = 0;
 }
 
-async function createEvent(_eventOwner, _sender) {
+async function createEvent(_eventOwner, _sender, _rules) {
   const sender = _sender || _eventOwner;
   const eventDesc = 'My event';
+  const eventRef = testHelper.hash(uniqueEventNum++);
   const sixWeeks = timeTestHelper.oneWeek.mul(new web3.utils.BN(6));
-  const sevenWeeks = timeTestHelper.oneWeek.mul(new web3.utils.BN(7));
-  const offSaleTime = timeTestHelper.now().add(sixWeeks);
-  const eventTime = timeTestHelper.now().add(sevenWeeks);
-  const eventOwnerProof = await signingTestHelper.getCreateEventEventOwnerProof(_eventOwner, eventDesc, eventTime, offSaleTime,
-      sender);
-  await eventsManager.createEvent(eventDesc, eventTime, offSaleTime, eventOwnerProof, _eventOwner, {from: sender});
+  const eventTime = timeTestHelper.now().add(sixWeeks);
+  const rules = _rules || '0x';
+  const eventOwnerProof = await signingHelper.getCreateEventEventOwnerProof(_eventOwner, eventDesc, eventTime, rules, sender);
+  await eventsManager.createEvent(eventDesc, eventRef, eventTime, eventOwnerProof, _eventOwner, rules, {from: sender});
   const eventArgs = await testHelper.getLogArgs(eventsManager, 'LogEventCreated');
   return eventArgs.eventId;
 }
 
-async function advanceToEventPeriod(_eventId, _period) {
-  const periodKey = testHelper.hash('Event', _eventId, _period);
-  const period = await aventusStorage.getUInt(periodKey);
-  await timeTestHelper.advanceToTime(period);
+async function registerRoleOnEvent(_eventId, _roleAddress, _role, _sender) {
+  return eventsManager.registerRoleOnEvent(_eventId, _roleAddress, _role, {from: _sender});
 }
-
-async function advanceTimeToOffSaleTime(_eventId) {
-  await advanceToEventPeriod(_eventId, 'offSaleTime');
-}
-
 // Keep exports alphabetical.
 module.exports = {
-  advanceTimeToOffSaleTime,
   createEvent,
   init,
+  registerRoleOnEvent,
   roles
 };

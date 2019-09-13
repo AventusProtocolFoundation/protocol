@@ -8,16 +8,16 @@ const AventusStorage = artifacts.require('AventusStorage');
 const storageJsonFile = './api/storagemain.json';
 const mainNetAvtAddress = '0x0d88ed6e74bbfd96b831231638b66c05571e824f';
 
-async function getStorageContract(_deployer, _network) {
+async function getStorageContract(_deployer, _networkName) {
   console.log('Using existing storage contract');
-  const existingStorageContract = await common.getStorageContractFromJsonFile(AventusStorage, _network);
+  const existingStorageContract = await common.getStorageContractFromJsonFile(AventusStorage, _networkName);
   console.log('AventusStorage:', existingStorageContract.address);
   return existingStorageContract;
 }
 
 async function checkAVTContract(_storage) {
   console.log('Using existing AVT ERC20 contract.');
-  const avtAddress = await _storage.getAddress(web3.utils.sha3('AVTERC20Instance'));
+  const avtAddress = await _storage.getAddress(web3.utils.soliditySha3('AVTERC20Instance'));
   if (avtAddress == 0) {
     throw '***ERROR*** AVT ERC20 contract is not set in storage';
   }
@@ -27,17 +27,17 @@ async function checkAVTContract(_storage) {
   console.log('AVT ERC20 contract:', avtAddress);
 }
 
-module.exports = async function(_deployer, _network, _accounts) {
-  if (_network != 'live') {
-    console.log(`network ${_network} not supported by this migration script, skipping...`);
+module.exports = async function(_deployer, _networkName, _accounts) {
+  if (common.isTestNetwork(_networkName)) {
+    console.log(`mainnet setup: test mode network ${_networkName} not supported by this migration script, skipping...`);
     return;
   }
   console.log('MAIN NET DEPLOYMENT');
   console.log('*** Version of web3: ', web3.version);
   console.log('*** Starting setup of storage and AVT contracts...');
   console.log('Deploying Migrations');
-  await _deployer.deploy(Migrations);
-  const storage = await getStorageContract(_deployer, _network);
+  await common.deploy(_deployer, Migrations);
+  const storage = await getStorageContract(_deployer, _networkName);
   await checkAVTContract(storage);
   console.log('*** SETUP COMPLETE');
 };

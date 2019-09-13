@@ -2,13 +2,15 @@ const testHelper = require('./helpers/testHelper');
 const timeTestHelper = require('./helpers/timeTestHelper');
 const avtTestHelper = require('./helpers/avtTestHelper');
 const votingTestHelper = require('./helpers/votingTestHelper');
-const governanceProposalsTestHelper = require('./helpers/governanceProposalsTestHelper');
+const proposalsTestHelper = require('./helpers/proposalsTestHelper');
+
+const EMPTY_BYTES = '0x';
 
 contract('Governance proposals', async () => {
   let proposalsManager;
   let governanceProposalDeposit = testHelper.BN_ZERO;
   let goodGovernanceProposalDescription = 'I think we should change something';
-
+  let bytecode;
   let accounts;
 
   before(async () => {
@@ -16,10 +18,11 @@ contract('Governance proposals', async () => {
     await timeTestHelper.init(testHelper);
     await avtTestHelper.init(testHelper);
     await votingTestHelper.init(testHelper, timeTestHelper);
-    await governanceProposalsTestHelper.init(testHelper, avtTestHelper, votingTestHelper);
+    await proposalsTestHelper.init(testHelper, avtTestHelper, votingTestHelper);
     proposalsManager = testHelper.getProposalsManager();
     accounts = testHelper.getAccounts('governanceProposalOwner');
     governanceProposalDeposit = await proposalsManager.getGovernanceProposalDeposit();
+    bytecode = await proposalsTestHelper.getDoNothingBytecode();
   });
 
   after(async () => {
@@ -27,25 +30,25 @@ contract('Governance proposals', async () => {
   });
 
   async function endGovernanceProposalAndWithdrawDeposit(_proposalId) {
-    await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(accounts.governanceProposalOwner,
+    await proposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(accounts.governanceProposalOwner,
         _proposalId);
   }
 
   context('createGovernanceProposal()', async () => {
-
     async function createGovernanceProposalSucceeds() {
-      await proposalsManager.createGovernanceProposal(goodGovernanceProposalDescription,
+      await proposalsManager.createGovernanceProposal(goodGovernanceProposalDescription, bytecode,
           {from: accounts.governanceProposalOwner});
       const logArgs = await testHelper.getLogArgs(proposalsManager, 'LogGovernanceProposalCreated');
       assert.equal(logArgs.desc, goodGovernanceProposalDescription);
       assert.equal(logArgs.sender, accounts.governanceProposalOwner);
       testHelper.assertBNEquals(logArgs.deposit, governanceProposalDeposit);
+      assert.equal(logArgs.bytecode, bytecode);
       return logArgs.proposalId;
     }
 
     async function createGovernanceProposalFails(_expectedError) {
       await testHelper.expectRevert(() => proposalsManager.createGovernanceProposal(goodGovernanceProposalDescription,
-          {from: accounts.governanceProposalOwner}), _expectedError);
+          bytecode, {from: accounts.governanceProposalOwner}), _expectedError);
     }
 
     context('succeeds with', async () => {
@@ -65,6 +68,12 @@ contract('Governance proposals', async () => {
           await createGovernanceProposalFails('Insufficient balance to cover deposits');
         });
       });
+      context('bad parameters', async () => {
+        it('no bytecode', async () => {
+          bytecode = EMPTY_BYTES;
+          await createGovernanceProposalFails('A governance proposal requires bytecode');
+        });
+      });
     });
   });
 
@@ -77,6 +86,7 @@ contract('Governance proposals', async () => {
       assert.equal(logArgs.proposalId.toNumber(), _governanceProposalId.toNumber());
       assert.equal(logArgs.votesFor.toNumber(), 0);
       assert.equal(logArgs.votesAgainst.toNumber(), 0);
+      assert.equal(logArgs.implemented, false); // no votes so proposal will not have been implemented
     }
 
     async function endGovernanceProposalFails(_governanceProposalId, _expectedError) {
@@ -84,8 +94,7 @@ contract('Governance proposals', async () => {
     }
 
     beforeEach(async () => {
-      goodGovernanceProposalId =
-          await governanceProposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
+      goodGovernanceProposalId = await proposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
     });
 
     context('succeeds with', async () => {

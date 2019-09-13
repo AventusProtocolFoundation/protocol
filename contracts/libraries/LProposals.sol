@@ -8,14 +8,20 @@ import "./LProposalsStorage.sol";
 // Library for extending voting protocol functionality
 library LProposals {
 
+  bytes4 constant implementGovernanceProposalIdentifier =
+      bytes4(keccak256("implementGovernanceProposal(IAventusStorage,bytes)"));
+
   // See IProposalsManager interface for logs description.
-  event LogGovernanceProposalCreated(uint indexed proposalId, address indexed sender, string desc, uint lobbyingStart,
+  event LogCommunityProposalCreated(uint indexed proposalId, address indexed sender, string desc, uint lobbyingStart,
       uint votingStart, uint revealingStart, uint revealingEnd, uint deposit);
-  event LogVoteCast(uint indexed proposalId, address indexed sender, bytes32 secret, uint prevTime);
+  event LogGovernanceProposalCreated(uint indexed proposalId, address indexed sender, string desc, uint lobbyingStart,
+      uint votingStart, uint revealingStart, uint revealingEnd, uint deposit, bytes bytecode);
+  event LogVoteCast(uint indexed proposalId, address indexed sender, bytes32 secret);
   event LogVoteCancelled(uint indexed proposalId, address indexed sender);
   event LogVoteRevealed(uint indexed proposalId, address indexed sender, uint indexed optId, uint revealingStart,
       uint revealingEnd);
-  event LogGovernanceProposalEnded(uint indexed proposalId, uint votesFor, uint votesAgainst);
+  event LogCommunityProposalEnded(uint indexed proposalId, uint votesFor, uint votesAgainst);
+  event LogGovernanceProposalEnded(uint indexed proposalId, uint votesFor, uint votesAgainst, bool implemented);
 
   // Verify a proposal's status (see LProposalsEnact.doGetProposalStatus for values)
   modifier onlyInVotingPeriod(IAventusStorage _storage, uint _proposalId) {
@@ -28,40 +34,55 @@ library LProposals {
     _;
   }
 
+  modifier onlyCommunityProposals(IAventusStorage _storage, uint _proposalId) {
+    require(LProposalsStorage.isCommunityProposal(_storage, _proposalId), "Proposal is not a community proposal");
+    _;
+  }
+
   modifier onlyGovernanceProposals(IAventusStorage _storage, uint _proposalId) {
     require(LProposalsStorage.isGovernanceProposal(_storage, _proposalId), "Proposal is not a governance proposal");
     _;
   }
 
-  function createGovernanceProposal(IAventusStorage _storage, string calldata _desc)
+  function createCommunityProposal(IAventusStorage _storage, string calldata _desc)
     external
   {
-    uint deposit = getGovernanceProposalDeposit(_storage);
-    uint proposalId = doCreateGovernanceProposal(_storage, deposit);
+    uint deposit = getCommunityProposalDeposit(_storage);
+    uint proposalId = doCreateCommunityProposal(_storage, deposit);
     (uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd) = getTimestamps(_storage, proposalId);
 
-    // set a flag to mark this proposal as a governance proposal
-    LProposalsStorage.setGovernanceProposal(_storage, proposalId);
+    // set a flag to mark this proposal as a community proposal
+    LProposalsStorage.setCommunityProposal(_storage, proposalId);
 
-    emit LogGovernanceProposalCreated(proposalId, msg.sender, _desc, lobbyingStart, votingStart, revealingStart, revealingEnd,
+    emit LogCommunityProposalCreated(proposalId, msg.sender, _desc, lobbyingStart, votingStart, revealingStart, revealingEnd,
         deposit);
   }
 
-  function createProposal(IAventusStorage _storage, uint deposit, uint numDaysInLobbyingPeriod, uint numDaysInVotingPeriod,
-      uint numDaysInRevealingPeriod)
+  function createGovernanceProposal(IAventusStorage _storage, string calldata _desc, bytes calldata _bytecode)
+    external
+  {
+    require(_bytecode.length != 0, "A governance proposal requires bytecode");
+
+    uint deposit = getGovernanceProposalDeposit(_storage);
+    uint proposalId = doCreateGovernanceProposal(_storage, deposit, _bytecode);
+
+    // Separate function avoids stack depth issue
+    getTimestampsAndEmitGovernanceProposalLog(_storage, proposalId, _desc, deposit, _bytecode);
+  }
+
+  function createProposal(IAventusStorage _storage, uint deposit, uint lobbyingPeriod, uint votingPeriod, uint revealingPeriod)
     external
     returns (uint proposalId_)
   {
-    proposalId_ = LProposalsEnact.doCreateProposal(_storage, deposit, numDaysInLobbyingPeriod, numDaysInVotingPeriod,
-        numDaysInRevealingPeriod);
+    proposalId_ = LProposalsEnact.doCreateProposal(_storage, deposit, lobbyingPeriod, votingPeriod, revealingPeriod);
   }
 
-  function castVote(IAventusStorage _storage, uint _proposalId, bytes32 _secret, uint _prevTime)
+  function castVote(IAventusStorage _storage, uint _proposalId, bytes32 _secret)
     external
     onlyInVotingPeriod(_storage, _proposalId) // Ensure voting period is currently active
   {
-    LProposalsVoting.castVote(_storage, _proposalId, _secret, _prevTime);
-    emit LogVoteCast(_proposalId, msg.sender, _secret, _prevTime);
+    LProposalsVoting.castVote(_storage, _proposalId, _secret);
+    emit LogVoteCast(_proposalId, msg.sender, _secret);
   }
 
   function cancelVote(IAventusStorage _storage, uint _proposalId)
@@ -80,20 +101,30 @@ library LProposals {
     emit LogVoteRevealed(_proposalId, msg.sender, _optId, revealingStart, revealingEnd);
   }
 
+  function endCommunityProposal(IAventusStorage _storage, uint _proposalId)
+    external
+    onlyCommunityProposals(_storage, _proposalId)
+  {
+    (uint votesFor, uint votesAgainst) = endProposal(_storage, _proposalId);
+    emit LogCommunityProposalEnded(_proposalId, votesFor, votesAgainst);
+  }
+
   function endGovernanceProposal(IAventusStorage _storage, uint _proposalId)
     external
     onlyGovernanceProposals(_storage, _proposalId)
   {
     (uint votesFor, uint votesAgainst) = endProposal(_storage, _proposalId);
-    emit LogGovernanceProposalEnded(_proposalId, votesFor, votesAgainst);
-  }
 
-  function getPrevTimeParamForCastVote(IAventusStorage _storage, uint _proposalId)
-    external
-    view
-    returns (uint prevTime_)
-  {
-    prevTime_ = LProposalsVoting.getPrevTimeParamForCastVote(_storage, _proposalId);
+    bool implemented;
+
+    if (votesFor > votesAgainst) {
+      bytes memory bytecode = LProposalsStorage.getGovernanceProposalBytecode(_storage, _proposalId);
+      address lProposalsEnactAddress = _storage.getAddress(keccak256(abi.encodePacked("LProposalsEnactAddress")));
+      bytes memory encodedFunctionCall = abi.encodeWithSelector(implementGovernanceProposalIdentifier, _storage, bytecode);
+      (implemented,) = lProposalsEnactAddress.delegatecall(encodedFunctionCall);
+    }
+
+    emit LogGovernanceProposalEnded(_proposalId, votesFor, votesAgainst, implemented);
   }
 
   function getAventusTime(IAventusStorage _storage)
@@ -211,6 +242,38 @@ library LProposals {
     LProposalsStorage.reduceVotersWinningsPot(_storage, _proposalId, _reduction);
   }
 
+  function getVotingStartTime(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (uint votingStartTime_)
+  {
+    votingStartTime_ = LProposalsStorage.getVotingStart(_storage, _proposalId);
+  }
+
+  function getVotingRevealStartTime(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (uint votingRevealStartTime_)
+  {
+    votingRevealStartTime_ = LProposalsStorage.getRevealingStart(_storage, _proposalId);
+  }
+
+  function getVotingRevealEndTime(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (uint votingRevealEndTime_)
+  {
+    votingRevealEndTime_ = LProposalsStorage.getRevealingEnd(_storage, _proposalId);
+  }
+
+  function getCommunityProposalDeposit(IAventusStorage _storage)
+    public
+    view
+    returns (uint depositInAVT_)
+  {
+    depositInAVT_ = LProposalsStorage.getCommunityProposalDeposit(_storage);
+  }
+
   function getGovernanceProposalDeposit(IAventusStorage _storage)
     public
     view
@@ -225,7 +288,6 @@ library LProposals {
     returns (uint votesFor_, uint votesAgainst_)
   {
     LProposalsEnact.doUnlockProposalDeposit(_storage, _proposalId);
-
     votesFor_ = LProposalsStorage.getTotalRevealedStake(_storage, _proposalId, 1);
     votesAgainst_ = LProposalsStorage.getTotalRevealedStake(_storage, _proposalId, 2);
   }
@@ -241,14 +303,33 @@ library LProposals {
     revealingEnd_ = LProposalsStorage.getRevealingEnd(_storage, _proposalId);
   }
 
-  function doCreateGovernanceProposal(IAventusStorage _storage, uint _deposit)
+  function doCreateCommunityProposal(IAventusStorage _storage, uint _deposit)
     private
     returns (uint proposalId_)
   {
-    uint numDaysInLobbyingPeriod = LProposalsStorage.getGovernanceProposalLobbyingPeriodDays(_storage);
-    uint numDaysInVotingPeriod = LProposalsStorage.getGovernanceProposalVotingPeriodDays(_storage);
-    uint numDaysInRevealingPeriod = LProposalsStorage.getGovernanceProposalRevealingPeriodDays(_storage);
-    proposalId_ = LProposalsEnact.doCreateProposal(_storage, _deposit, numDaysInLobbyingPeriod, numDaysInVotingPeriod,
-        numDaysInRevealingPeriod);
+    uint lobbyingPeriod = LProposalsStorage.getCommunityProposalLobbyingPeriod(_storage);
+    uint votingPeriod = LProposalsStorage.getCommunityProposalVotingPeriod(_storage);
+    uint revealingPeriod = LProposalsStorage.getCommunityProposalRevealingPeriod(_storage);
+    proposalId_ = LProposalsEnact.doCreateProposal(_storage, _deposit, lobbyingPeriod, votingPeriod, revealingPeriod);
+  }
+
+  function doCreateGovernanceProposal(IAventusStorage _storage, uint _deposit, bytes memory _bytecode)
+    private
+    returns (uint proposalId_)
+  {
+    uint lobbyingPeriod = LProposalsStorage.getGovernanceProposalLobbyingPeriod(_storage);
+    uint votingPeriod = LProposalsStorage.getGovernanceProposalVotingPeriod(_storage);
+    uint revealingPeriod = LProposalsStorage.getGovernanceProposalRevealingPeriod(_storage);
+    proposalId_ = LProposalsEnact.doCreateProposal(_storage, _deposit, lobbyingPeriod, votingPeriod, revealingPeriod);
+    LProposalsStorage.setGovernanceProposalBytecode(_storage, proposalId_, _bytecode);
+  }
+
+  function getTimestampsAndEmitGovernanceProposalLog(IAventusStorage _storage, uint _proposalId, string memory _desc,
+      uint _deposit, bytes memory _bytecode)
+    private
+  {
+    (uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd) = getTimestamps(_storage, _proposalId);
+    emit LogGovernanceProposalCreated(_proposalId, msg.sender, _desc, lobbyingStart, votingStart, revealingStart, revealingEnd,
+        _deposit, _bytecode);
   }
 }

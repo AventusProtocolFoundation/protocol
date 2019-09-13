@@ -2,8 +2,8 @@ const testHelper = require('./helpers/testHelper');
 const timeTestHelper = require('./helpers/timeTestHelper');
 const avtTestHelper = require('./helpers/avtTestHelper');
 const votingTestHelper = require('./helpers/votingTestHelper');
-const signingTestHelper = require('./helpers/signingTestHelper');
-const governanceProposalsTestHelper = require('./helpers/governanceProposalsTestHelper');
+const signingHelper = require('../utils/signingHelper');
+const proposalsTestHelper = require('./helpers/proposalsTestHelper');
 
 const BN = testHelper.BN;
 
@@ -17,9 +17,8 @@ contract('Governance proposals voting', async () => {
     await testHelper.init();
     await timeTestHelper.init(testHelper);
     await avtTestHelper.init(testHelper);
-    await signingTestHelper.init(testHelper);
-    await votingTestHelper.init(testHelper, timeTestHelper, signingTestHelper);
-    await governanceProposalsTestHelper.init(testHelper, avtTestHelper, votingTestHelper);
+    await votingTestHelper.init(testHelper, timeTestHelper);
+    await proposalsTestHelper.init(testHelper, avtTestHelper, votingTestHelper);
     proposalsManager = testHelper.getProposalsManager();
     accounts = testHelper.getAccounts('governanceProposalOwner', 'goodVoterAddress', 'badVoterAddress');
   });
@@ -30,39 +29,34 @@ contract('Governance proposals voting', async () => {
 
   beforeEach(async () => {
     goodGovernanceProposalId =
-        await governanceProposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
+        await proposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
   });
 
   afterEach(async () => {
-    await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(accounts.governanceProposalOwner,
+    await proposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(accounts.governanceProposalOwner,
         goodGovernanceProposalId);
   });
 
   context('castVote()', async () => {
     const goodCastVoteSecret = testHelper.randomBytes32();
-    let goodPrevTime;
 
     async function castVoteSucceeds() {
-      await proposalsManager.castVote(goodGovernanceProposalId, goodCastVoteSecret, goodPrevTime,
-          {from: accounts.goodVoterAddress});
+      await proposalsManager.castVote(goodGovernanceProposalId, goodCastVoteSecret, {from: accounts.goodVoterAddress});
       const logArgs = await testHelper.getLogArgs(proposalsManager, 'LogVoteCast');
       assert.equal(logArgs.proposalId.toNumber(), goodGovernanceProposalId.toNumber());
       assert.equal(logArgs.sender, accounts.goodVoterAddress);
       assert.equal(logArgs.secret, goodCastVoteSecret);
-      assert.equal(logArgs.prevTime.toNumber(), goodPrevTime.toNumber());
     }
 
-    async function castVoteFails(_governanceProposalId, _prevTime, _expectedError) {
+    async function castVoteFails(_governanceProposalId, _expectedError) {
       // Parameter 'goodCastVoteSecret' is not validated by the protocol when casting a vote.
       // Anyone can cast a vote so there is no bad voter.
-      await testHelper.expectRevert(() => proposalsManager.castVote(_governanceProposalId, goodCastVoteSecret, _prevTime,
+      await testHelper.expectRevert(() => proposalsManager.castVote(_governanceProposalId, goodCastVoteSecret,
           {from: accounts.goodVoterAddress}), _expectedError);
     }
 
     beforeEach(async () => {
       await votingTestHelper.advanceTimeToVotingStart(goodGovernanceProposalId);
-      goodPrevTime = await proposalsManager.getPrevTimeParamForCastVote(goodGovernanceProposalId,
-          {from: accounts.goodVoterAddress});
     });
 
     context('succeeds with', async () => {
@@ -75,12 +69,7 @@ contract('Governance proposals voting', async () => {
       context('bad parameters', async () => {
         it('governanceProposalId', async() => {
           const badGovernanceProposalId = 9999;
-          await castVoteFails(badGovernanceProposalId, goodPrevTime, 'Proposal has the wrong status');
-        });
-
-        it('prevTime', async() => {
-          const badPrevTime = goodPrevTime.add(new BN(10));
-          await castVoteFails(goodGovernanceProposalId, badPrevTime, 'Invalid previous value');
+          await castVoteFails(badGovernanceProposalId, 'Proposal has the wrong status');
         });
       });
     });
@@ -88,7 +77,7 @@ contract('Governance proposals voting', async () => {
     context('bad state', async () => {
       it('vote has already been cast', async() => {
         await votingTestHelper.castVote(accounts.goodVoterAddress, goodGovernanceProposalId, goodVoteOption);
-        await castVoteFails(goodGovernanceProposalId, goodPrevTime, 'Already voted');
+        await castVoteFails(goodGovernanceProposalId, 'Already voted');
       });
     });
   });
@@ -99,7 +88,7 @@ contract('Governance proposals voting', async () => {
     beforeEach(async () => {
       await votingTestHelper.advanceTimeAndCastVote(accounts.goodVoterAddress, goodGovernanceProposalId, goodVoteOption);
       await votingTestHelper.advanceTimeToRevealingStart(goodGovernanceProposalId);
-      goodRevealVoteSignedMessage = await signingTestHelper.getRevealVoteSignedMessage(accounts.goodVoterAddress,
+      goodRevealVoteSignedMessage = await signingHelper.getRevealVoteSignedMessage(accounts.goodVoterAddress,
           goodGovernanceProposalId, goodVoteOption);
     });
 
@@ -126,7 +115,7 @@ contract('Governance proposals voting', async () => {
       context('bad parameters', async() => {
         it('revealVoteSignedMessage', async() => {
           const badGovernanceProposalId = 8888;
-          const badSignedMessage = await signingTestHelper.getRevealVoteSignedMessage(accounts.goodVoterAddress,
+          const badSignedMessage = await signingHelper.getRevealVoteSignedMessage(accounts.goodVoterAddress,
               badGovernanceProposalId, goodVoteOption);
           await revealVoteFails(badSignedMessage, goodGovernanceProposalId, goodVoteOption, 'Voter must be the sender');
         });
@@ -201,32 +190,6 @@ contract('Governance proposals voting', async () => {
               'Sender must have a non revealed vote');
         });
       });
-    });
-  });
-
-  context('getPrevTimeParamForCastVote()', async () => {
-    async function getPrevTimeParamForCastVoteSucceeds() {
-      await proposalsManager.getPrevTimeParamForCastVote(goodGovernanceProposalId, {from: accounts.goodVoterAddress});
-    }
-
-    async function getPrevTimeParamForCastVoteFails(_governanceProposalId, _expectedError) {
-      await testHelper.expectRevert(() => proposalsManager.getPrevTimeParamForCastVote(_governanceProposalId,
-          {from: accounts.goodVoterAddress}), _expectedError);
-    }
-
-    context('succeeds with', async () => {
-      it('good parameters', async() => {
-        await getPrevTimeParamForCastVoteSucceeds();
-      });
-    });
-    context('fails with', async () => {
-      context('bad parameters', async () => {
-        it('governanceProposalId', async() => {
-          const badGovernanceProposalId = 7777;
-          await getPrevTimeParamForCastVoteFails(badGovernanceProposalId, 'Proposal does not exist');
-        });
-      });
-      // Note: there are no bad state tests
     });
   });
 

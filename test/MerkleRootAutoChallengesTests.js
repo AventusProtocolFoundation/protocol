@@ -1,33 +1,32 @@
 const testHelper = require('./helpers/testHelper');
-const merkleProofTestHelper = require('./helpers/merkleProofTestHelper');
 const avtTestHelper = require('./helpers/avtTestHelper');
 const timeTestHelper = require('./helpers/timeTestHelper');
-const membersTestHelper = require('./helpers/membersTestHelper');
+const validatorsTestHelper = require('./helpers/validatorsTestHelper');
 const merkleRootsTestHelper = require('./helpers/merkleRootsTestHelper');
 const eventsTestHelper = require('./helpers/eventsTestHelper');
-const signingTestHelper = require('./helpers/signingTestHelper');
+const merkleTreeHelper = require('../utils/merkleTreeHelper');
+
+const TransactionType = merkleTreeHelper.TransactionType;
 
 contract('MerkleRootsManager - auto challenges', async () => {
-  const validatorType = membersTestHelper.memberTypes.validator;
   let accounts, merkleRootsManager
 
   before(async () => {
     await testHelper.init();
-    await merkleProofTestHelper.init(testHelper);
     await avtTestHelper.init(testHelper);
     await timeTestHelper.init(testHelper);
-    await signingTestHelper.init(testHelper);
-    await membersTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
+    await validatorsTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
     await merkleRootsTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
-    await eventsTestHelper.init(testHelper, timeTestHelper, avtTestHelper, signingTestHelper);
+    await eventsTestHelper.init(testHelper, timeTestHelper, avtTestHelper);
 
     merkleRootsManager = testHelper.getMerkleRootsManager();
     accounts = testHelper.getAccounts('validator', 'challenger');
-    await membersTestHelper.depositAndRegisterMember(accounts.validator, validatorType);
+    await validatorsTestHelper.depositAndRegisterValidator(accounts.validator);
   });
 
   after(async () => {
-    await membersTestHelper.deregisterMemberAndWithdrawDeposit(accounts.validator, validatorType);
+    await validatorsTestHelper.advanceToDeregistrationTime(accounts.validator);
+    await validatorsTestHelper.deregisterValidatorAndWithdrawDeposit(accounts.validator);
     await avtTestHelper.checkBalancesAreZero(accounts);
   });
 
@@ -37,8 +36,8 @@ contract('MerkleRootsManager - auto challenges', async () => {
 
     async function autoChallengeTreeDepthSucceeds(_leafHash, _illegalMerklePath) {
       await merkleRootsManager.autoChallengeTreeDepth(_leafHash, _illegalMerklePath, {from: accounts.challenger});
-
       const logArgs = await testHelper.getLogArgs(merkleRootsManager, 'LogMerkleRootAutoChallenged');
+      assert.equal(logArgs.rootOwner, accounts.validator);
       assert.equal(logArgs.rootHash, rootHash);
       assert.equal(logArgs.challenger, accounts.challenger);
     }
@@ -49,7 +48,7 @@ contract('MerkleRootsManager - auto challenges', async () => {
     }
 
     beforeEach(async () => {
-      const goodTree = merkleProofTestHelper.createTree(treeDepth, testHelper.randomBytes32());
+      const goodTree = merkleTreeHelper.createRandomTree(treeDepth);
       goodLeafHash = goodTree.leafHash;
       // A path that proves the leaf exists at a lower depth than the validator declares
       // 'good' as will not revert a call to autoChallengeTreeDepth()
@@ -71,7 +70,7 @@ contract('MerkleRootsManager - auto challenges', async () => {
 
       it('good parameters after already challenged', async () => {
         // Move proof up one layer (still greater than declared)
-        await autoChallengeTreeDepthSucceeds(...merkleProofTestHelper.getSubTreeMerkleProof(goodLeafHash, goodIllegalMerklePath,
+        await autoChallengeTreeDepthSucceeds(...merkleTreeHelper.getSubTreeMerkleProof(goodLeafHash, goodIllegalMerklePath,
             treeDepth - 1));
 
         // Supply original proof (greater depth than previous disproval)
@@ -100,7 +99,7 @@ contract('MerkleRootsManager - auto challenges', async () => {
 
         it('merklePath (valid but too short)', async () => {
           // Move the proof up two layers
-          await autoChallengeTreeDepthFails(...merkleProofTestHelper.getSubTreeMerkleProof(goodLeafHash, goodIllegalMerklePath,
+          await autoChallengeTreeDepthFails(...merkleTreeHelper.getSubTreeMerkleProof(goodLeafHash, goodIllegalMerklePath,
               treeDepth - 2), 'Challenged leaf must exist at a greater depth than declared by validator');
         });
       });
@@ -111,39 +110,53 @@ contract('MerkleRootsManager - auto challenges', async () => {
 
           await autoChallengeTreeDepthFails(goodLeafHash, goodIllegalMerklePath, 'Merkle root must be active');
         });
+
+        it('the challenge window has passed', async () => {
+          await timeTestHelper.advancePastChallengeWindow();
+          await autoChallengeTreeDepthFails(goodLeafHash, goodIllegalMerklePath, 'Challenge window expired');
+          await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(rootHash, accounts.validator, deposit);
+        });
       });
     });
   });
 
-  context('autoChallengeLastEventTime()', async () => {
-    let goodEventId, goodMerklePath, goodRemainingLeafData, rootHash, deposit;
+  context('autoChallengeRootExpiryTime()', async () => {
+    let goodEncodedLeaf, goodMerklePath, rootHash, deposit;
     const treeDepth = 5;
 
-    async function autoChallengeLastEventTimeSucceeds() {
-      await merkleRootsManager.autoChallengeLastEventTime(goodEventId, goodRemainingLeafData, goodMerklePath,
+    async function autoChallengeRootExpiryTimeSucceeds() {
+      await merkleRootsManager.autoChallengeRootExpiryTime(goodEncodedLeaf, goodMerklePath,
           {from: accounts.challenger});
       const logArgs = await testHelper.getLogArgs(merkleRootsManager, 'LogMerkleRootAutoChallenged');
+      assert.equal(logArgs.rootOwner, accounts.validator);
       assert.equal(logArgs.rootHash, rootHash);
       assert.equal(logArgs.challenger, accounts.challenger);
     }
 
-    async function autoChallengeLastEventTimeFails(_eventId, _remainingLeafData, _merklePath, _expectedError) {
+    async function autoChallengeRootExpiryTimeFails(_encodedLeaf, _merklePath, _expectedError) {
       await testHelper.expectRevert(
-          () => merkleRootsManager.autoChallengeLastEventTime(_eventId, _remainingLeafData, _merklePath), _expectedError);
+          () => merkleRootsManager.autoChallengeRootExpiryTime(_encodedLeaf, _merklePath), _expectedError);
+    }
+
+    function createEncodedLeaf(_eventId) {
+      const leaf = merkleTreeHelper.getBaseLeaf(merkleTreeHelper.TransactionType.Sell);
+      leaf.immutableData.eventId = _eventId;
+
+      return merkleTreeHelper.encodeLeaf(leaf);
     }
 
     beforeEach(async () => {
       // Creates event with event time 49 days from now
-      goodEventId = await eventsTestHelper.createEvent(accounts.validator);
+      const eventId = (await eventsTestHelper.createEvent(accounts.validator)).toString();
 
-      goodRemainingLeafData = testHelper.randomBytes32();
-      const tree = merkleProofTestHelper.createTree(treeDepth, [goodEventId, goodRemainingLeafData]);
+      goodEncodedLeaf = createEncodedLeaf(eventId);
+      const tree = merkleTreeHelper.createTree(goodEncodedLeaf);
       goodMerklePath = tree.merklePath;
       rootHash = tree.rootHash;
 
-      const fraudulentLastEventTime = timeTestHelper.now().add(timeTestHelper.oneDay);
+      const fraudulentRootExpiryTime = timeTestHelper.now().add(timeTestHelper.oneDay);
       const root = await merkleRootsTestHelper.depositAndRegisterMerkleRoot(accounts.validator, rootHash, treeDepth,
-          fraudulentLastEventTime);
+          fraudulentRootExpiryTime);
       deposit = root.deposit;
     });
 
@@ -153,7 +166,7 @@ contract('MerkleRootsManager - auto challenges', async () => {
       });
 
       it('good parameters', async () => {
-        await autoChallengeLastEventTimeSucceeds();
+        await autoChallengeRootExpiryTimeSucceeds();
       });
     });
 
@@ -163,41 +176,26 @@ contract('MerkleRootsManager - auto challenges', async () => {
           await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(rootHash, accounts.validator, deposit);
         });
 
-        it('eventId (invalid)', async () => {
-          const badEventId = 9999;
-
-          await autoChallengeLastEventTimeFails(badEventId, goodRemainingLeafData, goodMerklePath,
-              'Merkle root must be active');
-        });
-
-        it('eventId (valid but before lastEventTime)', async () => {
-          // Deregister the existing root and re-register with a valid lastEventTime
+        it('encodedLeaf (eventId valid but before rootExpiryTime)', async () => {
+          // Deregister the existing root and re-register with a valid rootExpiryTime
           await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(rootHash, accounts.validator, deposit);
 
-          const legitimateLastEventTime = timeTestHelper.now().add(timeTestHelper.oneDay.mul(new testHelper.BN(99)));
+          const legitimateRootExpiryTime = timeTestHelper.now().add(timeTestHelper.oneDay.mul(new testHelper.BN(99)));
           const root = await merkleRootsTestHelper.depositAndRegisterMerkleRoot(accounts.validator, rootHash, treeDepth,
-              legitimateLastEventTime);
+              legitimateRootExpiryTime);
           deposit = root.deposit;
-          // What was previously a valid event id to challenge on will now revert
-          const badEventId = goodEventId;
+          // What was previously a valid leaf to challenge on will now revert
+          const badEncodedLeaf = goodEncodedLeaf;
 
-          await autoChallengeLastEventTimeFails(badEventId, goodRemainingLeafData, goodMerklePath,
+          await autoChallengeRootExpiryTimeFails(badEncodedLeaf, goodMerklePath,
               'Challenged leaf must have a later event time than declared by validator');
-        });
-
-        it('remainingLeafData', async () => {
-          const badRemainingLeafData = testHelper.randomBytes32();
-
-          await autoChallengeLastEventTimeFails(goodEventId, badRemainingLeafData, goodMerklePath,
-              'Merkle root must be active');
         });
 
         it('merklePath', async () => {
           const badMerklePath = goodMerklePath;
           badMerklePath.push(testHelper.randomBytes32());
 
-          await autoChallengeLastEventTimeFails(goodEventId, goodRemainingLeafData, badMerklePath,
-              'Merkle root must be active');
+          await autoChallengeRootExpiryTimeFails(goodEncodedLeaf, badMerklePath, 'Merkle root must be active');
         });
       });
 
@@ -205,10 +203,30 @@ contract('MerkleRootsManager - auto challenges', async () => {
         it('root has already been deregistered', async () => {
           await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(rootHash, accounts.validator, deposit);
 
-          await autoChallengeLastEventTimeFails(goodEventId, goodRemainingLeafData, goodMerklePath,
-              'Merkle root must be active');
+          await autoChallengeRootExpiryTimeFails(goodEncodedLeaf, goodMerklePath, 'Merkle root must be active');
+        });
+
+        it('the challenge window has passed', async () => {
+          await timeTestHelper.advancePastChallengeWindow();
+          await autoChallengeRootExpiryTimeFails(goodEncodedLeaf, goodMerklePath, 'Challenge window expired');
+          await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(rootHash, accounts.validator, deposit);
         });
       });
     });
+  });
+
+  context('extra tests for line coverage', async () => {
+    async function createAndAutoChallengeBadLeaf() {
+      const tree = merkleTreeHelper.createRandomTree(2);
+      const registerRetVal = await merkleRootsTestHelper.depositAndRegisterMerkleRoot(
+          accounts.validator, tree.rootHash, 1);
+      await merkleRootsManager.autoChallengeTreeDepth(tree.leafHash, tree.merklePath, {from: accounts.challenger});
+      await avtTestHelper.withdrawAVT(registerRetVal.deposit, accounts.challenger);
+    }
+
+    it('create and challenge more bad trees to check max penalties', async () => {
+      await createAndAutoChallengeBadLeaf();
+      await createAndAutoChallengeBadLeaf();
+    })
   });
 });

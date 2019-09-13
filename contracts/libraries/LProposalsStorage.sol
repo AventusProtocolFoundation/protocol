@@ -4,19 +4,60 @@ import "../interfaces/IAventusStorage.sol";
 
 library LProposalsStorage {
 
-  string constant proposalsSchema = "Proposals";
-  string constant proposalSchema = "Proposal";
-  string constant votingSchema = "Voting";
+  string constant proposalsTable = "Proposals";
+  string constant proposalTable = "Proposal";
+  string constant votingTable = "Voting";
 
-  bytes32 constant governanceProposalFixedDepositKey =
-      keccak256(abi.encodePacked(proposalsSchema, "governanceProposalFixedDeposit"));
-  bytes32 constant governanceProposalLobbyingPeriodDaysKey =
-      keccak256(abi.encodePacked(proposalsSchema, "governanceProposalLobbyingPeriodDays"));
-  bytes32 constant governanceProposalVotingPeriodDaysKey =
-      keccak256(abi.encodePacked(proposalsSchema, "governanceProposalVotingPeriodDays"));
-  bytes32 constant governanceProposalRevealingPeriodDaysKey =
-      keccak256(abi.encodePacked(proposalsSchema, "governanceProposalRevealingPeriodDays"));
-  bytes32 constant proposalCountKey = keccak256(abi.encodePacked(proposalsSchema, "ProposalCount"));
+  bytes32 constant communityProposalFixedDepositKey = keccak256(abi.encodePacked(proposalsTable,
+      "CommunityProposalFixedDeposit"));
+  bytes32 constant communityProposalLobbyingPeriodKey = keccak256(abi.encodePacked(proposalsTable,
+      "CommunityProposalLobbyingPeriod"));
+  bytes32 constant communityProposalVotingPeriodKey = keccak256(abi.encodePacked(proposalsTable,
+      "CommunityProposalVotingPeriod"));
+  bytes32 constant communityProposalRevealingPeriodKey = keccak256(abi.encodePacked(proposalsTable,
+      "CommunityProposalRevealingPeriod"));
+
+  bytes32 constant governanceProposalFixedDepositKey = keccak256(abi.encodePacked(proposalsTable,
+      "GovernanceProposalFixedDeposit"));
+  bytes32 constant governanceProposalLobbyingPeriodKey = keccak256(abi.encodePacked(proposalsTable,
+      "GovernanceProposalLobbyingPeriod"));
+  bytes32 constant governanceProposalVotingPeriodKey = keccak256(abi.encodePacked(proposalsTable,
+      "GovernanceProposalVotingPeriod"));
+  bytes32 constant governanceProposalRevealingPeriodKey = keccak256(abi.encodePacked(proposalsTable,
+      "GovernanceProposalRevealingPeriod"));
+  bytes32 constant proposalCountKey = keccak256(abi.encodePacked(proposalsTable, "ProposalCount"));
+
+  function getCommunityProposalDeposit(IAventusStorage _storage)
+    external
+    view
+    returns (uint deposit_)
+  {
+    deposit_ = _storage.getUInt(communityProposalFixedDepositKey);
+  }
+
+  function getCommunityProposalLobbyingPeriod(IAventusStorage _storage)
+    external
+    view
+    returns (uint lobbyingPeriod_)
+  {
+    lobbyingPeriod_ = _storage.getUInt(communityProposalLobbyingPeriodKey);
+  }
+
+  function getCommunityProposalVotingPeriod(IAventusStorage _storage)
+    external
+    view
+    returns (uint votingPeriod_)
+  {
+    votingPeriod_ = _storage.getUInt(communityProposalVotingPeriodKey);
+  }
+
+  function getCommunityProposalRevealingPeriod(IAventusStorage _storage)
+    external
+    view
+    returns (uint revealingPeriod_)
+  {
+    revealingPeriod_ = _storage.getUInt(communityProposalRevealingPeriodKey);
+  }
 
   function getGovernanceProposalDeposit(IAventusStorage _storage)
     external
@@ -26,42 +67,36 @@ library LProposalsStorage {
     deposit_ = _storage.getUInt(governanceProposalFixedDepositKey);
   }
 
-  function getGovernanceProposalLobbyingPeriodDays(IAventusStorage _storage)
+  function getGovernanceProposalLobbyingPeriod(IAventusStorage _storage)
     external
     view
-    returns (uint lobbyingDays_)
+    returns (uint lobbyingPeriod_)
   {
-    lobbyingDays_ = _storage.getUInt(governanceProposalLobbyingPeriodDaysKey);
+    lobbyingPeriod_ = _storage.getUInt(governanceProposalLobbyingPeriodKey);
   }
 
-  function getGovernanceProposalVotingPeriodDays(IAventusStorage _storage)
+  function getGovernanceProposalVotingPeriod(IAventusStorage _storage)
     external
     view
-    returns (uint votingDays_)
+    returns (uint votingPeriod_)
   {
-    votingDays_ = _storage.getUInt(governanceProposalVotingPeriodDaysKey);
+    votingPeriod_ = _storage.getUInt(governanceProposalVotingPeriodKey);
   }
 
-  function getGovernanceProposalRevealingPeriodDays(IAventusStorage _storage)
+  function getGovernanceProposalRevealingPeriod(IAventusStorage _storage)
     external
     view
-    returns (uint revealingDays_)
+    returns (uint revealingPeriod_)
   {
-    revealingDays_ = _storage.getUInt(governanceProposalRevealingPeriodDaysKey);
+    revealingPeriod_ = _storage.getUInt(governanceProposalRevealingPeriodKey);
   }
 
-  function getProposalCount(IAventusStorage _storage)
+  function nextProposalId(IAventusStorage _storage)
     external
-    view
-    returns (uint proposalCount_)
+    returns (uint proposalId_)
   {
-    proposalCount_ = _storage.getUInt(proposalCountKey);
-  }
-
-  function setProposalCount(IAventusStorage _storage, uint _proposalCount)
-    external
-  {
-    _storage.setUInt(proposalCountKey, _proposalCount);
+    proposalId_ = _storage.getUInt(proposalCountKey) + 1;
+    _storage.setUInt(proposalCountKey, proposalId_);
   }
 
   function getRevealedVoterStake(IAventusStorage _storage, uint _proposalId, address _voter, uint _optionId)
@@ -69,15 +104,15 @@ library LProposalsStorage {
     view
     returns (uint stake_)
   {
-    stake_ = _storage.getUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "revealedVoter", _optionId, _voter,
-        "stake")));
+    stake_ = _storage.getUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "RevealedVoter", _optionId, _voter,
+        "Stake")));
   }
 
   function setRevealedVoterStake(IAventusStorage _storage, uint _proposalId, address _voter, uint _optionId, uint _stake)
     external
   {
-    bytes32 stakeKey = keccak256(abi.encodePacked(proposalSchema, _proposalId, "revealedVoter", _optionId, _voter, "stake"));
-    _storage.setUInt(stakeKey, _stake);
+    _storage.setUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "RevealedVoter", _optionId, _voter, "Stake")),
+        _stake);
   }
 
   function getDeposit(IAventusStorage _storage, uint _proposalId)
@@ -85,13 +120,27 @@ library LProposalsStorage {
     view
     returns (uint deposit_)
   {
-    deposit_ = _storage.getUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "deposit")));
+    deposit_ = _storage.getUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "Deposit")));
   }
 
   function setDeposit(IAventusStorage _storage, uint _proposalId, uint _deposit)
     external
   {
-    _storage.setUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "deposit")), _deposit);
+    _storage.setUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "Deposit")), _deposit);
+  }
+
+  function isCommunityProposal(IAventusStorage _storage, uint _proposalId)
+    external
+    view
+    returns (bool isCommunity_)
+  {
+    isCommunity_ = _storage.getBoolean(keccak256(abi.encodePacked(proposalTable, _proposalId, "CommunityProposal")));
+  }
+
+  function setCommunityProposal(IAventusStorage _storage, uint _proposalId)
+    external
+  {
+    _storage.setBoolean(keccak256(abi.encodePacked(proposalTable, _proposalId, "CommunityProposal")), true);
   }
 
   function isGovernanceProposal(IAventusStorage _storage, uint _proposalId)
@@ -99,13 +148,21 @@ library LProposalsStorage {
     view
     returns (bool isGovernance_)
   {
-    isGovernance_ = _storage.getBoolean(keccak256(abi.encodePacked(proposalSchema, _proposalId, "governanceProposal")));
+    isGovernance_ = (getGovernanceProposalBytecode(_storage, _proposalId)).length != 0;
   }
 
-  function setGovernanceProposal(IAventusStorage _storage, uint _proposalId)
+  function setGovernanceProposalBytecode(IAventusStorage _storage, uint _proposalId, bytes calldata _bytecode)
     external
   {
-    _storage.setBoolean(keccak256(abi.encodePacked(proposalSchema, _proposalId, "governanceProposal")), true);
+    _storage.setBytes(keccak256(abi.encodePacked(proposalTable, _proposalId, "GovernanceProposalBytecode")), _bytecode);
+  }
+
+  function getGovernanceProposalBytecode(IAventusStorage _storage, uint _proposalId)
+    public
+    view
+    returns (bytes memory bytecode_)
+  {
+    bytecode_ = _storage.getBytes(keccak256(abi.encodePacked(proposalTable, _proposalId, "GovernanceProposalBytecode")));
   }
 
   function getLobbyingStart(IAventusStorage _storage, uint _proposalId)
@@ -113,13 +170,13 @@ library LProposalsStorage {
     view
     returns (uint lobbyingStart_)
   {
-    lobbyingStart_ = _storage.getUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "lobbyingStart")));
+    lobbyingStart_ = _storage.getUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "LobbyingStart")));
   }
 
   function setLobbyingStart(IAventusStorage _storage, uint _proposalId, uint _lobbyingStart)
     external
   {
-    _storage.setUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "lobbyingStart")), _lobbyingStart);
+    _storage.setUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "LobbyingStart")), _lobbyingStart);
   }
 
   function getOwner(IAventusStorage _storage, uint _proposalId)
@@ -127,13 +184,13 @@ library LProposalsStorage {
     view
     returns (address owner_)
   {
-    owner_ = _storage.getAddress(keccak256(abi.encodePacked(proposalSchema, _proposalId, "owner")));
+    owner_ = _storage.getAddress(keccak256(abi.encodePacked(proposalTable, _proposalId, "Owner")));
   }
 
   function setOwner(IAventusStorage _storage, uint _proposalId, address _owner)
     external
   {
-    _storage.setAddress(keccak256(abi.encodePacked(proposalSchema, _proposalId, "owner")), _owner);
+    _storage.setAddress(keccak256(abi.encodePacked(proposalTable, _proposalId, "Owner")), _owner);
   }
 
   function getTotalRevealedStake(IAventusStorage _storage, uint _proposalId, uint _optionId)
@@ -170,13 +227,13 @@ library LProposalsStorage {
     view
     returns (uint revealingEnd_)
   {
-    revealingEnd_ = _storage.getUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "revealingEnd")));
+    revealingEnd_ = _storage.getUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "RevealingEnd")));
   }
 
   function setRevealingEnd(IAventusStorage _storage, uint _proposalId, uint _revealingEnd)
     external
   {
-    _storage.setUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "revealingEnd")), _revealingEnd);
+    _storage.setUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "RevealingEnd")), _revealingEnd);
   }
 
   function getRevealingStart(IAventusStorage _storage, uint _proposalId)
@@ -184,13 +241,13 @@ library LProposalsStorage {
     view
     returns (uint revealingStart_)
   {
-    revealingStart_ = _storage.getUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "revealingStart")));
+    revealingStart_ = _storage.getUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "RevealingStart")));
   }
 
   function setRevealingStart(IAventusStorage _storage, uint _proposalId, uint _revealingStart)
     external
   {
-    _storage.setUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "revealingStart")), _revealingStart);
+    _storage.setUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "RevealingStart")), _revealingStart);
   }
 
   function getUnrevealedVotesCount(IAventusStorage _storage, uint _proposalId)
@@ -198,13 +255,13 @@ library LProposalsStorage {
     view
     returns (uint unrevealedVotes_)
   {
-    unrevealedVotes_ = _storage.getUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "unrevealedVotesCount")));
+    unrevealedVotes_ = _storage.getUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "UnrevealedVotesCount")));
   }
 
   function setUnrevealedVotesCount(IAventusStorage _storage, uint _proposalId, uint _unrevealedVotes)
     external
   {
-    _storage.setUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "unrevealedVotesCount")), _unrevealedVotes);
+    _storage.setUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "UnrevealedVotesCount")), _unrevealedVotes);
   }
 
   function getVotingStart(IAventusStorage _storage, uint _proposalId)
@@ -212,13 +269,13 @@ library LProposalsStorage {
     view
     returns (uint votingStart_)
   {
-    votingStart_ = _storage.getUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "votingStart")));
+    votingStart_ = _storage.getUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "VotingStart")));
   }
 
   function setVotingStart(IAventusStorage _storage, uint _proposalId, uint _votingStart)
     external
   {
-    _storage.setUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "votingStart")), _votingStart);
+    _storage.setUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "VotingStart")), _votingStart);
   }
 
   function getVoterSecret(IAventusStorage _storage, address _voter, uint _proposalId)
@@ -226,13 +283,13 @@ library LProposalsStorage {
     view
     returns (bytes32 secrets_)
   {
-    secrets_ = _storage.getBytes32(keccak256(abi.encodePacked(votingSchema, _voter, "secrets", _proposalId)));
+    secrets_ = _storage.getBytes32(keccak256(abi.encodePacked(votingTable, _voter, "Secret", _proposalId)));
   }
 
   function setVoterSecret(IAventusStorage _storage, address _voter, uint _proposalId, bytes32 _secrets)
     external
   {
-    _storage.setBytes32(keccak256(abi.encodePacked(votingSchema, _voter, "secrets", _proposalId)), _secrets);
+    _storage.setBytes32(keccak256(abi.encodePacked(votingTable, _voter, "Secret", _proposalId)), _secrets);
   }
 
   function getWinningProposalOption(IAventusStorage _storage, uint _proposalId)
@@ -240,13 +297,13 @@ library LProposalsStorage {
     view
     returns (uint winningOption_)
   {
-    winningOption_ = _storage.getUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "winningOption")));
+    winningOption_ = _storage.getUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "WinningOption")));
   }
 
   function setWinningProposalOption(IAventusStorage _storage, uint _proposalId, uint _winningOption)
     external
   {
-    _storage.setUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "winningOption")), _winningOption);
+    _storage.setUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "WinningOption")), _winningOption);
   }
 
   function getTotalWinningStake(IAventusStorage _storage, uint _proposalId)
@@ -254,13 +311,13 @@ library LProposalsStorage {
     view
     returns (uint totalWinningStake_)
   {
-    totalWinningStake_ = _storage.getUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "totalWinningStake")));
+    totalWinningStake_ = _storage.getUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "TotalWinningStake")));
   }
 
   function setTotalWinningStake(IAventusStorage _storage, uint _proposalId, uint _totalWinningStake)
     external
   {
-    _storage.setUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "totalWinningStake")), _totalWinningStake);
+    _storage.setUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "TotalWinningStake")), _totalWinningStake);
   }
 
   function getTotalWinningsToVoters(IAventusStorage _storage, uint _proposalId)
@@ -268,13 +325,13 @@ library LProposalsStorage {
     view
     returns (uint winningsToVoters_)
   {
-    winningsToVoters_ = _storage.getUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "totalWinningsToVoters")));
+    winningsToVoters_ = _storage.getUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "TotalWinningsToVoters")));
   }
 
   function setTotalWinningsToVoters(IAventusStorage _storage, uint _proposalId, uint _winningsToVoters)
     external
   {
-    _storage.setUInt(keccak256(abi.encodePacked(proposalSchema, _proposalId, "totalWinningsToVoters")), _winningsToVoters);
+    _storage.setUInt(keccak256(abi.encodePacked(proposalTable, _proposalId, "TotalWinningsToVoters")), _winningsToVoters);
   }
 
   function initialiseVotersWinningsPot(IAventusStorage _storage, uint _proposalId, uint _winningsRemaining)
@@ -300,7 +357,6 @@ library LProposalsStorage {
     bytes32 key = getVotersWinningsPotKey(_proposalId);
     uint winningsRemaining = _storage.getUInt(key);
     assert(winningsRemaining >= _reduction);
-
     _storage.setUInt(key, winningsRemaining - _reduction);
   }
 
@@ -308,7 +364,7 @@ library LProposalsStorage {
     external
     returns (uint numVotersClaimed_)
   {
-    bytes32 key = keccak256(abi.encodePacked(proposalSchema, _proposalId, "numVotersClaimed"));
+    bytes32 key = keccak256(abi.encodePacked(proposalTable, _proposalId, "NumVotersClaimed"));
     numVotersClaimed_ = _storage.getUInt(key);
     _storage.setUInt(key, ++numVotersClaimed_);
   }
@@ -318,7 +374,7 @@ library LProposalsStorage {
     pure
     returns (bytes32 key_)
   {
-   key_ = keccak256(abi.encodePacked(proposalSchema, _proposalId, "winningsToVotersRemaining"));
+   key_ = keccak256(abi.encodePacked(proposalTable, _proposalId, "WinningsToVotersRemaining"));
   }
 
   function getTotalRevealedStakeKey(uint _proposalId, uint _optionId)
@@ -326,15 +382,14 @@ library LProposalsStorage {
     pure
     returns (bytes32 key_)
   {
-    key_ = keccak256(abi.encodePacked(proposalSchema, _proposalId, "totalRevealedStake", _optionId));
+    key_ = keccak256(abi.encodePacked(proposalTable, _proposalId, "TotalRevealedStake", _optionId));
   }
 
   function getNumVotersRevealedWithStakeKey(uint _proposalId, uint _optionId)
     private
     pure
-    returns (bytes32 numVotersRevealedWithStake)
+    returns (bytes32 votersRevealedWithStake_)
   {
-    numVotersRevealedWithStake =
-        keccak256(abi.encodePacked(proposalSchema, _proposalId, "numVotersRevealedWithStake", _optionId));
+    votersRevealedWithStake_ = keccak256(abi.encodePacked(proposalTable, _proposalId, "NumVotersRevealedWithStake", _optionId));
   }
 }

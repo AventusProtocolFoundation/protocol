@@ -10,14 +10,24 @@ contract MerkleRootsManager is IMerkleRootsManager, Owned, Versioned {
 
     IAventusStorage public s;
 
-    constructor(IAventusStorage _s) public {
+    constructor(IAventusStorage _s)
+      public
+    {
       s = _s;
     }
 
-    function registerMerkleRoot(bytes32 _rootHash, uint _treeDepth, uint _eventTime)
+    function registerMerkleRoot(bytes32 _rootHash, uint _treeDepth, uint _rootExpiryTime, string calldata _treeContentURL)
       external
     {
-      LMerkleRoots.registerMerkleRoot(s, _rootHash, _treeDepth, _eventTime);
+      LMerkleRoots.registerMerkleRoot(s, _rootHash, _treeDepth, _rootExpiryTime, _treeContentURL);
+    }
+
+    function getMerkleRootDeregistrationTime(bytes32 _rootHash)
+      external
+      view
+      returns (uint deregistrationTime_)
+    {
+      return LMerkleRoots.getRootDeregistrationTime(s, _rootHash);
     }
 
     function deregisterMerkleRoot(bytes32 _rootHash)
@@ -26,12 +36,12 @@ contract MerkleRootsManager is IMerkleRootsManager, Owned, Versioned {
       LMerkleRoots.deregisterMerkleRoot(s, _rootHash);
     }
 
-    function getNewMerkleRootDeposit(uint _treeDepth, uint _lastEventTime)
+    function getNewMerkleRootDeposit(uint _treeDepth, uint _rootExpiryTime)
       external
       view
       returns (uint deposit_)
     {
-      deposit_ = LMerkleRoots.getNewMerkleRootDeposit(s, _treeDepth, _lastEventTime);
+      deposit_ = LMerkleRoots.getNewMerkleRootDeposit(s, _treeDepth, _rootExpiryTime);
     }
 
     function autoChallengeTreeDepth(bytes32 _leafHash, bytes32[] calldata _merklePath)
@@ -40,9 +50,9 @@ contract MerkleRootsManager is IMerkleRootsManager, Owned, Versioned {
       LMerkleRoots.autoChallengeTreeDepth(s, _leafHash, _merklePath);
     }
 
-    function autoChallengeLastEventTime(uint _eventId, bytes calldata _remainingLeafContent, bytes32[] calldata _merklePath)
+    function autoChallengeRootExpiryTime(bytes calldata _encodedLeaf, bytes32[] calldata _merklePath)
       external
     {
-      LMerkleRoots.autoChallengeLastEventTime(s, _eventId, _remainingLeafContent, _merklePath);
+      LMerkleRoots.autoChallengeRootExpiryTime(s, _encodedLeaf, _merklePath);
     }
 }
