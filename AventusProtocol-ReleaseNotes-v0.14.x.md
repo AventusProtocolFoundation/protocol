@@ -1,6 +1,6 @@
 # Aventus Protocol 0.14.x Release Notes
 
-This set of releases (see v0.13.x for the previous) adds a lot of stuff TBC
+This set of releases (see v0.13.x for the previous) catches up on improvements since the split with Aventus Classic.
 
 The release notes for this version follow, listed by sub-release and category.
 
