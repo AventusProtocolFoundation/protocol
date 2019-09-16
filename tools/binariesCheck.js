@@ -1,35 +1,42 @@
 const fs = require('fs');
-const c_path = __dirname+'/../build/contracts';
-const MAXBYTES = 24576;
+const contractsPath = __dirname+'/../build/contracts';
 
-function sizeCheck(_verbose) {
-  let oversize = '';
-  let data = [];
-  let latest = {};
+function getBinariesSizes() {
+  let binariesSizes = [];
   // create array of built contracts and their bytecode sizes
-  fs.readdirSync(c_path).forEach(contract => {
-    let contents = JSON.parse(fs.readFileSync(c_path+'/'+contract, 'utf8'));
-    data.push({contract: contract.substring(0, contract.indexOf('.')), bsize: Math.round(contents.bytecode.length/2)});
+  fs.readdirSync(contractsPath).forEach(contract => {
+    let contents = JSON.parse(fs.readFileSync(contractsPath + '/' + contract, 'utf8'));
+    binariesSizes.push({
+      contractName: contract.substring(0, contract.indexOf('.')),
+      binarySize: Math.round(contents.bytecode.length/2)
+    });
   });
-  // sort the array by descending bytecode size
-  data.sort((x,y) => (y.bsize - x.bsize));
-  // add column headers to table when printing to console
-  if (_verbose) console.log("\nLIBRARY\t\t\t\tBYTECODE\n");
-  // loop through data, format and print to console if required
-  // also search for first contract that is larger than largest deployable bytecode size
-  data.forEach(d => {
-    let pad = new Array(33 - d.contract.length).join(' ');
-    let line = d.contract+pad+[d.bsize];
-    latest[d.contract] = d.bsize;
-    if (!oversize && latest[d.contract] > MAXBYTES) oversize = d.contract + ' ' + latest[d.contract];
-    if (_verbose) console.log(line);
-  });
-  // return first oversized contract to migrations if any were found
-  return oversize;
-}
-// for running from and printing to console
-if (require.main === module) sizeCheck(true);
 
-module.exports = function () {
-  return sizeCheck(false);
+  // sort the array by descending bytecode size
+  return binariesSizes.sort((x,y) => (y.binarySize - x.binarySize));
 }
+
+function checkBinariesSizes(_logToConsole) {
+  const MAX_BYTES = 24576;
+  let result = true;
+  let latest = {};
+  let binariesSizes = getBinariesSizes();
+
+  if (_logToConsole) console.log("\nLIBRARY\t\t\t\tBYTECODE\n");
+
+  binariesSizes.forEach(binary => {
+    let pad = new Array(33 - binary.contractName.length).join(' ');
+    let line = binary.contractName + pad + [binary.binarySize];
+    if (_logToConsole) console.log(line);
+    if (binary.binarySize > MAX_BYTES) {
+      console.log(binary.contractName, 'over max binary size ('+MAX_BYTES+') by', binary.binarySize - MAX_BYTES, 'bytes');
+      result = false;
+    }
+  });
+  return result;
+}
+
+// for running from and printing to console
+if (require.main === module) checkBinariesSizes(true);
+
+module.exports = () => checkBinariesSizes();

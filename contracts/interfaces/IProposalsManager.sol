@@ -2,16 +2,23 @@ pragma solidity ^0.5.2;
 
 interface IProposalsManager {
 
+
+  /**
+   * @notice Event emitted for a createCommunityProposal transaction.
+   */
+  event LogCommunityProposalCreated(uint indexed proposalId, address indexed sender, string desc, uint lobbyingStart,
+      uint votingStart, uint revealingStart, uint revealingEnd, uint deposit);
+
   /**
    * @notice Event emitted for a createGovernanceProposal transaction.
    */
   event LogGovernanceProposalCreated(uint indexed proposalId, address indexed sender, string desc, uint lobbyingStart,
-      uint votingStart, uint revealingStart, uint revealingEnd, uint deposit);
+      uint votingStart, uint revealingStart, uint revealingEnd, uint deposit, bytes bytecode);
 
   /**
    * @notice Event emitted for a castVote transaction.
    */
-  event LogVoteCast(uint indexed proposalId, address indexed sender, bytes32 secret, uint prevTime);
+  event LogVoteCast(uint indexed proposalId, address indexed sender, bytes32 secret);
 
   /**
    * @notice Event emitted for a cancelVote transaction.
@@ -30,9 +37,32 @@ interface IProposalsManager {
   event LogVoterWinningsClaimed(uint indexed proposalId);
 
   /**
+   * @notice Event emitted for an endCommunityProposal transaction.
+   */
+  event LogCommunityProposalEnded(uint indexed proposalId, uint votesFor, uint votesAgainst);
+
+  /**
    * @notice Event emitted for an endGovernanceProposal transaction.
    */
-  event LogGovernanceProposalEnded(uint indexed proposalId, uint votesFor, uint votesAgainst);
+  event LogGovernanceProposalEnded(uint indexed proposalId, uint votesFor, uint votesAgainst, bool implemented);
+
+  /**
+   * @return the deposit value in AVT - with 18 digits precision - for a community proposal.
+   */
+  function getCommunityProposalDeposit() external view returns (uint proposalDeposit_);
+
+  /**
+   * @notice Create a community proposal to be voted on
+   * @param _desc Description of the proposal, preferably with a URL for further details
+   */
+  function createCommunityProposal(string calldata _desc) external;
+
+  /**
+   * @notice End the community proposal: will unlock the deposit.
+   * NOTE: Can only be called once vote revealing has finished.
+   * @param _proposalId of the proposal to be ended.
+   */
+  function endCommunityProposal(uint _proposalId) external;
 
   /**
    * @return the deposit value in AVT - with 18 digits precision - for a corporate
@@ -43,8 +73,9 @@ interface IProposalsManager {
   /**
    * @notice Create a governance proposal to be voted on
    * @param _desc Either just a title or a pointer to IPFS details
+   * @param _bytecode The bytecode to be run if the proposal succeeds
    */
-  function createGovernanceProposal(string calldata _desc) external;
+  function createGovernanceProposal(string calldata _desc, bytes calldata _bytecode) external;
 
   /**
    * @notice End the governance proposal: will unlock the deposit.
@@ -58,10 +89,8 @@ interface IProposalsManager {
    * NOTE: Vote must be revealed within the proposal revealing period to count.
    * @param _proposalId Proposal ID
    * @param _secret The secret vote: Sha3(signed Sha3(option ID))
-   * @param _prevTime The previous time that locked the user's AVT account - from getPrevTimeParamForCastVote()
-   * @dev _prevTime corresponds to the previous entry in the sender's voting DLL.
    */
-  function castVote(uint _proposalId, bytes32 _secret, uint _prevTime) external;
+  function castVote(uint _proposalId, bytes32 _secret) external;
 
   /**
    * @notice Cancel a vote on one of a given proposal's options
@@ -88,15 +117,28 @@ interface IProposalsManager {
   function claimVoterWinnings(uint _proposalId) external;
 
   /**
-   * @notice Use a (free gas) getter to find the prevTime parameter for castVote.
-   * @param _proposalId Proposal ID
-   * @return prevTime_ The prevTime param.
-   * @dev The return value is the previous entry in the sender's voting DLL.
-   */
-  function getPrevTimeParamForCastVote(uint _proposalId) external view returns (uint prevTime_);
-
-  /**
    * @notice Gets the current time.
    */
   function getAventusTime() external view returns (uint time_);
+
+  /**
+  * @notice Get the starting time of a vote
+  * @param _proposalId Proposal ID
+  * @return Timestamp of when the voting period starts; zero if no matching proposalId.
+  */
+  function getVotingStartTime(uint _proposalId) external view returns (uint votingStartTime_);
+
+  /**
+  * @notice Get the ending time of a vote / start of the vote's reveal period
+  * @param _proposalId Proposal ID
+  * @return Timestamp of when the voting period ends/revealing period starts; zero if no matching proposalId.
+  */
+  function getVotingRevealStartTime(uint _proposalId) external view returns (uint votingRevealStartTime_);
+
+  /**
+  * @notice Get the ending time of a vote's revealing period
+  * @param _proposalId Proposal ID
+  * @return Timestamp of when the revealing period ends; zero if no matching proposalId.
+  */
+  function getVotingRevealEndTime(uint _proposalId) external view returns (uint votingRevealEndTime_);
 }

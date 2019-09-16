@@ -10,7 +10,9 @@ contract AVTManager is IAVTManager, Owned, Versioned {
 
   IAventusStorage public s;
 
-  constructor(IAventusStorage _s) public {
+  constructor(IAventusStorage _s)
+    public
+  {
     s = _s;
   }
 
@@ -38,5 +40,13 @@ contract AVTManager is IAVTManager, Owned, Versioned {
     returns (uint balance_)
   {
     balance_ = LAVTManager.getBalance(s, _account);
+  }
+
+  function getHistoricBalance(address _account, uint _timestamp)
+    external
+    view
+    returns (uint balance_)
+  {
+    balance_ = LAVTManager.getHistoricBalance(s, _account, _timestamp);
   }
 }

@@ -1,15 +1,16 @@
-let testHelper, avtTestHelper, timeTestHelper, merkleRootsManager, aventusStorage;
+const merkleTreeHelper = require('../../utils/merkleTreeHelper');
 
-// Mirrors value in parameter registry
-const coolingOffPeriodDays = 14;
+let testHelper, avtTestHelper, timeTestHelper, merkleRootsManager;
+
 let deposits;
+
+const treeContentURL = 'ipfs.io/ipfs/Qmc2ZFNuVemgyRZrMSfzSYZWnZQMsznnW8drMz3UhaiBVv';
 
 async function init(_testHelper, _avtTestHelper, _timeTestHelper) {
   testHelper = _testHelper;
   avtTestHelper = _avtTestHelper;
   timeTestHelper = _timeTestHelper;
   merkleRootsManager = testHelper.getMerkleRootsManager();
-  aventusStorage = testHelper.getAventusStorage();
 
   // Mirrors values in parameter registry
   deposits = {
@@ -18,39 +19,49 @@ async function init(_testHelper, _avtTestHelper, _timeTestHelper) {
   }
 }
 
-async function depositAndRegisterMerkleRoot(_validator, _rootHash, _treeDepth, _lastEventTime) {
+async function createAndRegisterMerkleTree(_encodedLeaves, _validator) {
+  const tree = merkleTreeHelper.createTree(_encodedLeaves);
+  const root = await depositAndRegisterMerkleRoot(_validator, tree.rootHash, 2);
+  return { ...tree, ...root };
+}
+
+async function depositAndRegisterMerkleRoot(_validator, _rootHash, _treeDepth, _rootExpiryTime) {
   const rootHash = _rootHash || testHelper.randomBytes32();
   const treeDepth = _treeDepth || 10;
-  const lastEventTime = _lastEventTime || timeTestHelper.now().add(timeTestHelper.oneWeek);
-  const deposit = await merkleRootsManager.getNewMerkleRootDeposit(treeDepth, lastEventTime);
+  const rootExpiryTime = _rootExpiryTime || timeTestHelper.now().add(timeTestHelper.oneWeek);
+  const deposit = await merkleRootsManager.getNewMerkleRootDeposit(treeDepth, rootExpiryTime);
   await avtTestHelper.addAVT(deposit, _validator);
-  await merkleRootsManager.registerMerkleRoot(rootHash, treeDepth, lastEventTime, {from: _validator});
+  await merkleRootsManager.registerMerkleRoot(rootHash, treeDepth, rootExpiryTime, treeContentURL, {from: _validator});
 
   return { rootHash, deposit };
 }
 
 async function advanceTimeAndDeregisterMerkleRoot(_rootHash) {
-  await advanceTimeToCoolingOffPeriodEnd(_rootHash);
-  await merkleRootsManager.deregisterMerkleRoot(_rootHash);
+  await advanceToDeregistrationTime(_rootHash);
+  return merkleRootsManager.deregisterMerkleRoot(_rootHash);
 }
 
 async function advanceTimeDeregisterRootAndWithdrawDeposit(_rootHash, _validator, _deposit) {
   await advanceTimeAndDeregisterMerkleRoot(_rootHash);
-  await avtTestHelper.withdrawAVT(_deposit, _validator);
+  return avtTestHelper.withdrawAVT(_deposit, _validator);
 }
 
-async function advanceTimeToCoolingOffPeriodEnd(_rootHash) {
-  const lastEventTimeKey = testHelper.hash('MerkleRoot', _rootHash, 'lastEventTime');
-  const lastEventTime = await aventusStorage.getUInt(lastEventTimeKey);
-  const coolingOffPeriodSeconds = timeTestHelper.oneDay.mul(new testHelper.BN(coolingOffPeriodDays));
-  await timeTestHelper.advanceToTime(lastEventTime.add(coolingOffPeriodSeconds));
+async function advanceToDeregistrationTime(_rootHash) {
+  const rootDeregistrationtime = await merkleRootsManager.getMerkleRootDeregistrationTime(_rootHash);
+  return timeTestHelper.advanceToTime(rootDeregistrationtime);
+}
+
+async function autoChallengeTreeDepth(_leafHash, _merklePath, _challenger) {
+  return merkleRootsManager.autoChallengeTreeDepth(_leafHash, _merklePath, {from: _challenger});
 }
 
 // Keep exports alphabetical
 module.exports = {
   advanceTimeAndDeregisterMerkleRoot,
   advanceTimeDeregisterRootAndWithdrawDeposit,
-  advanceTimeToCoolingOffPeriodEnd,
+  advanceToDeregistrationTime,
+  autoChallengeTreeDepth,
+  createAndRegisterMerkleTree,
   depositAndRegisterMerkleRoot,
   getBaseDeposit: () => deposits.base,
   getDepositMultiplier: () => deposits.multiplier,

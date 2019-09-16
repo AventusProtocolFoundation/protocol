@@ -1,59 +1,62 @@
 const testHelper = require('./helpers/testHelper');
-const merkleProofTestHelper = require('./helpers/merkleProofTestHelper');
 const avtTestHelper = require('./helpers/avtTestHelper');
 const timeTestHelper = require('./helpers/timeTestHelper');
-const membersTestHelper = require('./helpers/membersTestHelper');
+const validatorsTestHelper = require('./helpers/validatorsTestHelper');
 const merkleRootsTestHelper = require('./helpers/merkleRootsTestHelper');
 
 contract('MerkleRootsManager - registration', async () => {
   let merkleRootsManager, accounts, goodValidator, badSender;
-  const validatorType = membersTestHelper.memberTypes.validator;
   const goodTreeDepth = new testHelper.BN(3);
   const goodLargeTreeDepth = new testHelper.BN(100);
   const badTreeDepth = new testHelper.BN(300);
+  const goodTreeContentURL = 'ipfs.io/ipfs/Qmc2ZFNuVemgyRZrMSfzSYZWnZQMsznnW8drMz3UhaiBVv';
+  const badTreeContentURL = '';
 
   before(async () => {
     await testHelper.init();
-    await merkleProofTestHelper.init(testHelper);
     await avtTestHelper.init(testHelper);
     await timeTestHelper.init(testHelper);
-    await membersTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
+    await validatorsTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
     await merkleRootsTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
 
     merkleRootsManager = testHelper.getMerkleRootsManager();
     accounts = testHelper.getAccounts('validator', 'alternateValidator');
     goodValidator = accounts.validator;
     badSender = accounts.alternateValidator;
-    await membersTestHelper.depositAndRegisterMember(goodValidator, validatorType);
+    await validatorsTestHelper.depositAndRegisterValidator(goodValidator);
   });
 
   after(async () => {
-    await membersTestHelper.deregisterMemberAndWithdrawDeposit(goodValidator, validatorType);
+    await validatorsTestHelper.advanceToDeregistrationTime(goodValidator);
+    await validatorsTestHelper.deregisterValidatorAndWithdrawDeposit(goodValidator);
     await avtTestHelper.checkBalancesAreZero(accounts);
   });
 
   context('registerMerkleRoot()', async () => {
-    let deposit, goodLastEventTime;
+    let deposit, goodRootExpiryTime;
     const rootHash = testHelper.randomBytes32();
 
     async function registerMerkleRootSucceeds() {
-      await merkleRootsManager.registerMerkleRoot(rootHash, goodTreeDepth, goodLastEventTime, {from: goodValidator});
+      await merkleRootsManager.registerMerkleRoot(rootHash, goodTreeDepth, goodRootExpiryTime, goodTreeContentURL,
+          {from: goodValidator});
       const logArgs = await testHelper.getLogArgs(merkleRootsManager, 'LogMerkleRootRegistered');
-      assert.equal(logArgs.ownerAddress, goodValidator);
+      assert.equal(logArgs.rootOwner, goodValidator);
       assert.equal(logArgs.rootHash, rootHash);
+      assert.equal(logArgs.treeContentURL, goodTreeContentURL);
       testHelper.assertBNEquals(logArgs.treeDepth, goodTreeDepth);
-      testHelper.assertBNEquals(logArgs.lastEventTime, goodLastEventTime);
+      testHelper.assertBNEquals(logArgs.rootExpiryTime, goodRootExpiryTime);
+      testHelper.assertBNEquals(logArgs.rootDeposit, deposit);
     }
 
     // No such thing as a bad rootHash as we do not know anything about the data in the root nor what can give a zero hash
-    async function registerMerkleRootFails(_treeDepth, _lastEventTime, _sender, _expectedError) {
-      await testHelper.expectRevert(() => merkleRootsManager.registerMerkleRoot(rootHash, _treeDepth, _lastEventTime,
-          {from: _sender}), _expectedError);
+    async function registerMerkleRootFails(_treeDepth, _rootExpiryTime, _treeContentURL, _sender, _expectedError) {
+      await testHelper.expectRevert(() => merkleRootsManager.registerMerkleRoot(rootHash, _treeDepth, _rootExpiryTime,
+          _treeContentURL, {from: _sender}), _expectedError);
     }
 
     beforeEach(async () => {
-      goodLastEventTime = timeTestHelper.now().add(timeTestHelper.oneWeek);
-      deposit = await merkleRootsManager.getNewMerkleRootDeposit(goodTreeDepth, goodLastEventTime);
+      goodRootExpiryTime = timeTestHelper.now().add(timeTestHelper.oneWeek);
+      deposit = await merkleRootsManager.getNewMerkleRootDeposit(goodTreeDepth, goodRootExpiryTime);
       await avtTestHelper.addAVT(deposit, goodValidator);
     });
 
@@ -74,25 +77,33 @@ contract('MerkleRootsManager - registration', async () => {
     context('fails with', async () => {
       context('bad parameters', async () => {
         it('treeDepth', async () => {
-          await registerMerkleRootFails(badTreeDepth, goodLastEventTime, goodValidator,
+          await registerMerkleRootFails(badTreeDepth, goodRootExpiryTime, goodTreeContentURL, goodValidator,
               'Tree depth must not exceed the maximum allowed value');
         });
 
-        it('lastEventTime', async () => {
-          const badLastEventTime = timeTestHelper.now().sub(testHelper.BN_ONE);
-          await registerMerkleRootFails(goodTreeDepth, badLastEventTime, goodValidator,
-              'Last event time must be in the future');
+        it('rootExpiryTime', async () => {
+          const badRootExpiryTime = timeTestHelper.now().sub(testHelper.BN_ONE);
+          await registerMerkleRootFails(goodTreeDepth, badRootExpiryTime, goodTreeContentURL, goodValidator,
+              'Root expiry time must be in the future');
         });
 
         it('sender', async () => {
-          await registerMerkleRootFails(goodTreeDepth, goodLastEventTime, badSender, 'Sender must be an active validator');
+          await registerMerkleRootFails(goodTreeDepth, goodRootExpiryTime, goodTreeContentURL, badSender,
+              'Sender must be a registered validator');
+        });
+
+        it('treeContentURL', async () => {
+          await registerMerkleRootFails(goodTreeDepth, goodRootExpiryTime, badTreeContentURL, goodValidator,
+              'Tree content URL must not be empty');
         });
       });
 
       context('bad state', async () => {
         it('the same rootHash has already been registered', async () => {
-          await merkleRootsManager.registerMerkleRoot(rootHash, goodTreeDepth, goodLastEventTime, {from: goodValidator});
-          await registerMerkleRootFails(goodTreeDepth, goodLastEventTime, goodValidator, 'Merkle root is already active');
+          await merkleRootsManager.registerMerkleRoot(rootHash, goodTreeDepth, goodRootExpiryTime, goodTreeContentURL,
+              {from: goodValidator});
+          await registerMerkleRootFails(goodTreeDepth, goodRootExpiryTime, goodTreeContentURL, goodValidator,
+              'Merkle root is already active');
 
           await merkleRootsTestHelper.advanceTimeAndDeregisterMerkleRoot(rootHash);
         });
@@ -106,6 +117,7 @@ contract('MerkleRootsManager - registration', async () => {
     async function deregisterMerkleRootSucceeds() {
       await merkleRootsManager.deregisterMerkleRoot(goodRootHash);
       const logArgs = await testHelper.getLogArgs(merkleRootsManager, 'LogMerkleRootDeregistered');
+      assert.equal(logArgs.rootOwner, goodValidator);
       assert.equal(logArgs.rootHash, goodRootHash);
     }
 
@@ -126,7 +138,7 @@ contract('MerkleRootsManager - registration', async () => {
     context('succeeds with', async () => {
       context('good parameters', async () => {
         beforeEach(async () => {
-          await merkleRootsTestHelper.advanceTimeToCoolingOffPeriodEnd(goodRootHash);
+          await merkleRootsTestHelper.advanceToDeregistrationTime(goodRootHash);
         });
 
         it('good parameters', async () => {
@@ -138,7 +150,7 @@ contract('MerkleRootsManager - registration', async () => {
     context('fails with', async () => {
       context('bad parameters', async () => {
         beforeEach(async () => {
-          await merkleRootsTestHelper.advanceTimeToCoolingOffPeriodEnd(goodRootHash);
+          await merkleRootsTestHelper.advanceToDeregistrationTime(goodRootHash);
         });
 
         afterEach(async () => {
@@ -156,7 +168,7 @@ contract('MerkleRootsManager - registration', async () => {
           await merkleRootsTestHelper.advanceTimeAndDeregisterMerkleRoot(goodRootHash);
         });
 
-        it('before last event time', async () => {
+        it('before root expiry time', async () => {
           await deregisterMerkleRootFails(goodRootHash, 'Must be after cooling off period');
         });
       });
@@ -164,7 +176,7 @@ contract('MerkleRootsManager - registration', async () => {
   });
 
   context('getNewMerkleRootDeposit()', async () => {
-    let goodLastEventTime;
+    let goodRootExpiryTime;
 
     async function getNewMerkleRootDepositSucceeds(_treeDepth) {
       const baseDeposit = merkleRootsTestHelper.getBaseDeposit();
@@ -172,17 +184,17 @@ contract('MerkleRootsManager - registration', async () => {
 
       const expectedDeposit = baseDeposit.gte(treeDeposit) ? baseDeposit : treeDeposit;
 
-      const actualDeposit = await merkleRootsManager.getNewMerkleRootDeposit(_treeDepth, goodLastEventTime);
+      const actualDeposit = await merkleRootsManager.getNewMerkleRootDeposit(_treeDepth, goodRootExpiryTime);
       testHelper.assertBNEquals(actualDeposit, expectedDeposit);
     }
 
-    async function getNewMerkleRootDepositFails(_treeDepth, _lastEventTime, _expectedError) {
-      await testHelper.expectRevert(() => merkleRootsManager.getNewMerkleRootDeposit(_treeDepth, _lastEventTime),
+    async function getNewMerkleRootDepositFails(_treeDepth, _rootExpiryTime, _expectedError) {
+      await testHelper.expectRevert(() => merkleRootsManager.getNewMerkleRootDeposit(_treeDepth, _rootExpiryTime),
           _expectedError);
     }
 
     beforeEach(async () => {
-      goodLastEventTime = timeTestHelper.now().add(timeTestHelper.oneWeek);
+      goodRootExpiryTime = timeTestHelper.now().add(timeTestHelper.oneWeek);
     });
 
     context('succeeds with', async () => {
@@ -200,23 +212,23 @@ contract('MerkleRootsManager - registration', async () => {
     context('fails with', async () => {
       context('bad parameters', async () => {
         it('treeDepth (greater than max permitted value)', async () => {
-          await getNewMerkleRootDepositFails(badTreeDepth, goodLastEventTime,
+          await getNewMerkleRootDepositFails(badTreeDepth, goodRootExpiryTime,
               'Tree depth must not exceed the maximum allowed value');
         });
 
         it('treeDepth (zero)', async () => {
           const badZeroTreeDepth = testHelper.BN_ZERO;
-          await getNewMerkleRootDepositFails(badZeroTreeDepth, goodLastEventTime, 'Tree depth cannot be zero');
+          await getNewMerkleRootDepositFails(badZeroTreeDepth, goodRootExpiryTime, 'Tree depth cannot be zero');
         });
 
-        it('lastEventTime (in the past)', async () => {
-          const badLastEventTime = timeTestHelper.now().sub(testHelper.BN_ONE);
-          await getNewMerkleRootDepositFails(goodTreeDepth, badLastEventTime, 'Last event time must be in the future');
+        it('rootExpiryTime (in the past)', async () => {
+          const badRootExpiryTime = timeTestHelper.now().sub(testHelper.BN_ONE);
+          await getNewMerkleRootDepositFails(goodTreeDepth, badRootExpiryTime, 'Root expiry time must be in the future');
         });
 
-        it('lastEventTime (too far in future)', async () => {
-          const badLastEventTime = goodLastEventTime.mul(goodTreeDepth);
-          await getNewMerkleRootDepositFails(goodTreeDepth, badLastEventTime,
+        it('rootExpiryTime (too far in future)', async () => {
+          const badRootExpiryTime = goodRootExpiryTime.mul(goodTreeDepth);
+          await getNewMerkleRootDepositFails(goodTreeDepth, badRootExpiryTime,
               'Last event time must not exceed the maximum allowed value');
         });
       });

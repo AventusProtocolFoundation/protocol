@@ -7,7 +7,7 @@ import "./LProposalsStorage.sol";
 
 // Library for extending voting protocol functionality
 library LProposalsEnact {
-  
+
   enum ProposalStatus {NonExistent, Lobbying, Voting, Revealing, RevealingFinishedProposalNotEnded, Ended}
 
   function doUnlockProposalDeposit(IAventusStorage _storage, uint _proposalId)
@@ -19,21 +19,18 @@ library LProposalsEnact {
     LProposalsStorage.setDeposit(_storage, _proposalId, 0);
   }
 
-  function doCreateProposal(IAventusStorage _storage, uint _deposit, uint numDaysInLobbyingPeriod, uint numDaysInVotingPeriod,
-      uint numDaysInRevealingPeriod)
+  function doCreateProposal(IAventusStorage _storage, uint _deposit, uint lobbyingPeriod, uint votingPeriod,
+      uint revealingPeriod)
     external
     returns (uint proposalId_)
   {
     address owner = msg.sender;
-
     LAVTManager.lockDeposit(_storage, owner, _deposit);
 
-    uint proposalCount = LProposalsStorage.getProposalCount(_storage);
-    proposalId_ = proposalCount + 1;
+    proposalId_ = LProposalsStorage.nextProposalId(_storage);
     LProposalsStorage.setOwner(_storage, proposalId_, owner);
     LProposalsStorage.setDeposit(_storage, proposalId_, _deposit);
-    LProposalsStorage.setProposalCount(_storage, proposalId_);
-    setProposalTimes(_storage, proposalId_, numDaysInLobbyingPeriod, numDaysInVotingPeriod, numDaysInRevealingPeriod);
+    setProposalTimes(_storage, proposalId_, lobbyingPeriod, votingPeriod, revealingPeriod);
   }
 
   function inRevealingPeriodOrLater(IAventusStorage _storage, uint _proposalId)
@@ -84,6 +81,21 @@ library LProposalsEnact {
     result_ = doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.RevealingFinishedProposalNotEnded;
   }
 
+  function implementGovernanceProposal(IAventusStorage _storage, bytes memory _bytecode)
+    public
+    returns (bool success_)
+  {
+    (address contractAddress, bytes memory bytecode, bytes memory remainingBytecode) =
+        abi.decode(_bytecode, (address, bytes, bytes));
+
+    (success_,) = contractAddress.call(bytecode);
+
+    require(success_);
+
+    if (remainingBytecode.length != 0)
+      implementGovernanceProposal(_storage, remainingBytecode);
+  }
+
   function doGetProposalStatus(IAventusStorage _storage, uint _proposalId)
     public
     view
@@ -93,7 +105,6 @@ library LProposalsEnact {
     uint revealingStart = LProposalsStorage.getRevealingStart(_storage, _proposalId);
     uint revealingEnd = LProposalsStorage.getRevealingEnd(_storage, _proposalId);
     uint deposit = getProposalDeposit(_storage, _proposalId);
-
     uint currentTime = LAventusTime.getCurrentTime(_storage);
 
     if (votingStart == 0)
@@ -110,14 +121,14 @@ library LProposalsEnact {
       status_ = ProposalStatus.Ended;
   }
 
-  function setProposalTimes(IAventusStorage _storage, uint _proposalId, uint numDaysInLobbyingPeriod,
-      uint numDaysInVotingPeriod, uint numDaysInRevealingPeriod)
+  function setProposalTimes(IAventusStorage _storage, uint _proposalId, uint lobbyingPeriod, uint votingPeriod,
+      uint revealingPeriod)
     private
   {
     uint lobbyingStart = LAventusTime.getCurrentTime(_storage);
-    uint votingStart = lobbyingStart + (1 days * numDaysInLobbyingPeriod);
-    uint revealingStart = votingStart + (1 days * numDaysInVotingPeriod);
-    uint revealingEnd = revealingStart + (1 days * numDaysInRevealingPeriod);
+    uint votingStart = lobbyingStart + lobbyingPeriod;
+    uint revealingStart = votingStart + votingPeriod;
+    uint revealingEnd = revealingStart + revealingPeriod;
 
     LProposalsStorage.setLobbyingStart(_storage, _proposalId, lobbyingStart);
     LProposalsStorage.setVotingStart(_storage, _proposalId, votingStart);
@@ -146,6 +157,6 @@ library LProposalsEnact {
     view
     returns (bool result_)
   {
-    result_ = LProposalsStorage.getUnrevealedVotesCount(_storage, _proposalId) > 0;
+    result_ = LProposalsStorage.getUnrevealedVotesCount(_storage, _proposalId) != 0;
   }
 }

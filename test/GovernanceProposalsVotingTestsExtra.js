@@ -2,8 +2,10 @@ const testHelper = require('./helpers/testHelper');
 const timeTestHelper = require('./helpers/timeTestHelper');
 const avtTestHelper = require('./helpers/avtTestHelper');
 const votingTestHelper = require('./helpers/votingTestHelper');
-const signingTestHelper = require('./helpers/signingTestHelper');
-const governanceProposalsTestHelper = require('./helpers/governanceProposalsTestHelper');
+const signingHelper = require('../utils/signingHelper');
+const proposalsTestHelper = require('./helpers/proposalsTestHelper');
+
+const BN = testHelper.BN;
 
 // These tests are required to achieve 100% line and branch coverage and are based on GovernanceProposalsVotingTests
 // The setup for these tests does not fit with our standard test structure so they have been split out in a new file
@@ -14,9 +16,8 @@ contract('Governance proposals voting - extra', async () => {
     await testHelper.init();
     await timeTestHelper.init(testHelper);
     await avtTestHelper.init(testHelper);
-    await signingTestHelper.init(testHelper);
-    await votingTestHelper.init(testHelper, timeTestHelper, signingTestHelper);
-    await governanceProposalsTestHelper.init(testHelper, avtTestHelper, votingTestHelper);
+    await votingTestHelper.init(testHelper, timeTestHelper);
+    await proposalsTestHelper.init(testHelper, avtTestHelper, votingTestHelper);
     proposalsManager = testHelper.getProposalsManager();
     accounts = testHelper.getAccounts('governanceProposalOwner', 'goodVoterAddress');
   });
@@ -33,21 +34,17 @@ contract('Governance proposals voting - extra', async () => {
     const goodVoteOption = 2;
 
     async function castVoteSucceeds() {
-      let goodPrevTime = await proposalsManager.getPrevTimeParamForCastVote(goodGovernanceProposalId,
-          {from: accounts.goodVoterAddress});
-      await proposalsManager.castVote(goodGovernanceProposalId, goodCastVoteSecret, goodPrevTime,
-          {from: accounts.goodVoterAddress});
+      await proposalsManager.castVote(goodGovernanceProposalId, goodCastVoteSecret, {from: accounts.goodVoterAddress});
       const logArgs = await testHelper.getLogArgs(proposalsManager, 'LogVoteCast');
       assert.equal(logArgs.proposalId.toNumber(), goodGovernanceProposalId.toNumber());
       assert.equal(logArgs.sender, accounts.goodVoterAddress);
       assert.equal(logArgs.secret, goodCastVoteSecret);
-      assert.equal(logArgs.prevTime.toNumber(), goodPrevTime.toNumber());
     }
 
-    async function castVoteFails(_governanceProposalId, _prevTime, _expectedError) {
+    async function castVoteFails(_governanceProposalId, _expectedError) {
       // Parameter 'goodCastVoteSecret' is not validated by the protocol when casting a vote.
       // Anyone can cast a vote so there is no bad voter.
-      await testHelper.expectRevert(() => proposalsManager.castVote(_governanceProposalId, goodCastVoteSecret, _prevTime,
+      await testHelper.expectRevert(() => proposalsManager.castVote(_governanceProposalId, goodCastVoteSecret,
           {from: accounts.goodVoterAddress}), _expectedError);
     }
 
@@ -64,20 +61,20 @@ contract('Governance proposals voting - extra', async () => {
       //  - 2 with the same time periods
       //  - 1 starting after the other 2
       goodGovernanceProposalId =
-          await governanceProposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
+          await proposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
 
       governanceProposalId2 =
-          await governanceProposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
+          await proposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
 
       await timeTestHelper.advanceToTime(timeTestHelper.now().add(timeTestHelper.oneDay));
 
       governanceProposalId3 =
-          await governanceProposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
+          await proposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
 
-      goodCastVoteSecret = await signingTestHelper.getCastVoteSecret(accounts.goodVoterAddress, goodGovernanceProposalId,
+      goodCastVoteSecret = await signingHelper.getCastVoteSecret(accounts.goodVoterAddress, goodGovernanceProposalId,
           goodVoteOption);
 
-      goodRevealVoteSignedMessage = await signingTestHelper.getRevealVoteSignedMessage(accounts.goodVoterAddress,
+      goodRevealVoteSignedMessage = await signingHelper.getRevealVoteSignedMessage(accounts.goodVoterAddress,
           goodGovernanceProposalId, goodVoteOption);
 
       await votingTestHelper.advanceTimeToVotingStart(governanceProposalId3);
@@ -87,7 +84,7 @@ contract('Governance proposals voting - extra', async () => {
     });
 
     after(async () => {
-      await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(accounts.governanceProposalOwner,
+      await proposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(accounts.governanceProposalOwner,
           governanceProposalId3);
       await endGovernanceProposalAndWithdrawDeposit(goodGovernanceProposalId);
       await endGovernanceProposalAndWithdrawDeposit(governanceProposalId2);
@@ -100,12 +97,6 @@ contract('Governance proposals voting - extra', async () => {
 
     it('cast vote succeeds when voting on more than 1 governance proposal with the same end time', async () => {
       await castVoteSucceeds();
-    });
-
-    it('cast vote fails with bad parameter PrevTime (using PrevTime of a different proposal user voted on)', async () => {
-      // badPrevTime must be a valid prevTime parameter of a previous vote on a proposal that started before the current one
-      const badPrevTime = await proposalsManager.getPrevTimeParamForCastVote(governanceProposalId2);
-      await castVoteFails(governanceProposalId3, badPrevTime, 'Invalid next value');
     });
 
     it('reveal vote succeeds when revealing vote after voting more than once', async () => {
@@ -124,27 +115,103 @@ contract('Governance proposals voting - extra', async () => {
 
     it('successfully revealing outside the revealing period', async () => {
       const governanceProposalId =
-          await governanceProposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
+          await proposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
       await votingTestHelper.advanceTimeAndCastVote(voter, governanceProposalId, optionId);
       await votingTestHelper.advanceTimeToEndOfProposal(governanceProposalId);
-      await governanceProposalsTestHelper.revealVoteEndProposalAndWithdrawDeposit(accounts.governanceProposalOwner, voter,
+      await proposalsTestHelper.revealVoteEndGovernanceProposalAndWithdrawDeposit(accounts.governanceProposalOwner, voter,
           governanceProposalId, optionId);
     });
 
     it('successfully voting in a different order to proposal creation', async () => {
       const governanceProposalId_1 =
-          await governanceProposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
+          await proposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
       await timeTestHelper.advanceToTime(timeTestHelper.now().add(timeTestHelper.oneDay));
       const governanceProposalId_2 =
-          await governanceProposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
+          await proposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
       await votingTestHelper.advanceTimeToVotingStart(governanceProposalId_2);
       await votingTestHelper.castVote(voter, governanceProposalId_2, optionId);
       await votingTestHelper.castVote(voter, governanceProposalId_1, optionId);
       await votingTestHelper.advanceTimeToRevealingStart(governanceProposalId_2);
-      await governanceProposalsTestHelper.revealVoteEndProposalAndWithdrawDeposit(accounts.governanceProposalOwner, voter,
+      await proposalsTestHelper.revealVoteEndGovernanceProposalAndWithdrawDeposit(accounts.governanceProposalOwner, voter,
           governanceProposalId_1, optionId);
-      await governanceProposalsTestHelper.revealVoteEndProposalAndWithdrawDeposit(accounts.governanceProposalOwner, voter,
+      await proposalsTestHelper.revealVoteEndGovernanceProposalAndWithdrawDeposit(accounts.governanceProposalOwner, voter,
           governanceProposalId_2, optionId);
+    });
+  });
+
+  context('governance proposal bytecode', async () => {
+
+    async function runProposal(_newGovernanceDeposit, _newCommunityDeposit, _badMiddle) {
+      let bytecode = await proposalsTestHelper.generateBytecode(_newGovernanceDeposit,'GovernanceProposalFixedDeposit');
+
+      if (_badMiddle) {
+        bytecode = (_badMiddle === 1) ?
+            testHelper.randomBytes32() : // to revert at decode stage
+            testHelper.encodeParams(['address', 'bytes', 'bytes'], [testHelper.getAventusStorage().address,
+                testHelper.randomBytes32(), bytecode]); // to revert at call stage
+      }
+
+      bytecode = await proposalsTestHelper.generateBytecode(_newCommunityDeposit, 'CommunityProposalFixedDeposit', bytecode);
+
+      const governanceProposalId =
+          await proposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner, bytecode);
+
+      const stake = avtTestHelper.oneAVTTo18SigFig;
+      await avtTestHelper.addAVT(stake, accounts.goodVoterAddress);
+      await votingTestHelper.advanceTimeCastAndRevealVotes(governanceProposalId,
+          [{voter: accounts.goodVoterAddress, option: 1}]); // vote in favour of the proposal
+      await proposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(accounts.governanceProposalOwner,
+          governanceProposalId);
+      const logArgs = await testHelper.getLogArgs(proposalsManager, 'LogGovernanceProposalEnded');
+      await avtTestHelper.withdrawAVT(stake, accounts.goodVoterAddress);
+      return logArgs.implemented;
+    }
+
+    it('two storage value changes are implemented automatically after a successful vote', async () => {
+      const startGovernanceDeposit = await proposalsManager.getGovernanceProposalDeposit();
+      const startCommunityDeposit = await proposalsManager.getCommunityProposalDeposit();
+      const newGovernanceDeposit = startGovernanceDeposit.mul(new BN(2));
+      const newCommunityDeposit = startCommunityDeposit.mul(new BN(3));
+
+      const wasImplemented = await runProposal(newGovernanceDeposit, newCommunityDeposit);
+      assert.equal(wasImplemented, true);
+
+      const endGovernanceDeposit = await proposalsManager.getGovernanceProposalDeposit();
+      const endCommunityDeposit = await proposalsManager.getCommunityProposalDeposit();
+      testHelper.assertBNEquals(newGovernanceDeposit, endGovernanceDeposit);
+      testHelper.assertBNEquals(newCommunityDeposit, endCommunityDeposit);
+    });
+
+    it('three changes are attempted with the middle change being un-decodable causing none to be implemented', async () => {
+      const startGovernanceDeposit = await proposalsManager.getGovernanceProposalDeposit();
+      const startCommunityDeposit = await proposalsManager.getCommunityProposalDeposit();
+      const newGovernanceDeposit = startGovernanceDeposit.mul(new BN(2));
+      const newCommunityDeposit = startCommunityDeposit.mul(new BN(3));
+
+      const badMiddle = 1;
+      const wasImplemented = await runProposal(newGovernanceDeposit, newCommunityDeposit, badMiddle);
+      assert.equal(wasImplemented, false);
+
+      const endGovernanceDeposit = await proposalsManager.getGovernanceProposalDeposit();
+      const endCommunityDeposit = await proposalsManager.getCommunityProposalDeposit();
+      testHelper.assertBNEquals(startGovernanceDeposit, endGovernanceDeposit);
+      testHelper.assertBNEquals(startCommunityDeposit, endCommunityDeposit);
+    });
+
+    it('three changes are attempted with the middle change being un-callable causing none to be implemented', async () => {
+      const startGovernanceDeposit = await proposalsManager.getGovernanceProposalDeposit();
+      const startCommunityDeposit = await proposalsManager.getCommunityProposalDeposit();
+      const newGovernanceDeposit = startGovernanceDeposit.mul(new BN(2));
+      const newCommunityDeposit = startCommunityDeposit.mul(new BN(3));
+
+      const badMiddle = 2;
+      const wasImplemented = await runProposal(newGovernanceDeposit, newCommunityDeposit, badMiddle);
+      assert.equal(wasImplemented, false);
+
+      const endGovernanceDeposit = await proposalsManager.getGovernanceProposalDeposit();
+      const endCommunityDeposit = await proposalsManager.getCommunityProposalDeposit();
+      testHelper.assertBNEquals(startGovernanceDeposit, endGovernanceDeposit);
+      testHelper.assertBNEquals(startCommunityDeposit, endCommunityDeposit);
     });
   });
 });

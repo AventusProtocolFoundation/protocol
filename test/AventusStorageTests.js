@@ -19,26 +19,8 @@ contract('AventusStorage', async () => {
 
   context('ParameterRegistry test', async () => {
     it('cannot reinitialise the ParameterRegistry', async () => {
-      // ParameterRegistry has already been initiailised at this stage via the migration script
-
-      // get one of the original initialised values
-      const pKey = testHelper.hash('Proposal', 'governanceProposalLobbyingPeriodDays');
-      const value = await aventusStorage.getUInt(pKey);
-
-      // increment and set to a new value
-      const valuePlusOne = value.toNumber() + 1;
-      await aventusStorage.setUInt(pKey, valuePlusOne);
-      assert.equal((await aventusStorage.getUInt(pKey)).toNumber(), valuePlusOne);
-
-      //attempt to reinitialise the ParameterRegistry with all its default values
-      await parameterRegistry.init();
-
-      // recheck - the initialisation should have failed so the updated value will persist
-      assert.equal((await aventusStorage.getUInt(pKey)).toNumber(), valuePlusOne);
-
-      //reset to the original value
-      await aventusStorage.setUInt(pKey, value);
-      assert.equal((await aventusStorage.getUInt(pKey)).toNumber(), value);
+      // The ParameterRegistry has already been initiailised at this stage via the migration script so:
+      await testHelper.expectRevert(() => parameterRegistry.init({from:accounts.owner}),'Cannot reinit ParameterRegistry');
     });
   });
 

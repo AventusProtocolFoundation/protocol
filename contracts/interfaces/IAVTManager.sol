@@ -36,4 +36,11 @@ interface IAVTManager {
    * @param _account the address that we want the balance of.
    */
   function getBalance(address _account) external view returns (uint balance_);
+
+  /**
+   * @return the amount of AVT stored for the given address at a specified timestamp.
+   * @param _account the address that we want the balance of.
+   * @param _timestamp the time at which we want to know the balance.
+   */
+  function getHistoricBalance(address _account, uint _timestamp) external view returns (uint balance_);
 }

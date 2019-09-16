@@ -16,6 +16,8 @@ module.exports = {
       'libraries/LAventusTime.sol',
       'libraries/testing/LAventusTimeMock.sol',
       'libraries/testing/LProposalForTesting.sol',
+      'testing/AVTContractForTesting.sol',
+      'libraries/zokrates/LzKSNARKVerifier.sol',
       'testing/AventusStorageForTesting.sol'
     ]
 };

@@ -10,39 +10,17 @@ contract EventsManager is IEventsManager, Owned, Versioned {
 
   IAventusStorage public s;
 
-  constructor(IAventusStorage _s) public {
+  constructor(IAventusStorage _s)
+    public
+  {
     s = _s;
   }
 
-  function createEvent(string calldata _eventDesc, uint _eventTime, uint _offSaleTime, bytes calldata _ownerProof,
-      address _eventOwner)
+  function createEvent(string calldata _eventDesc, bytes32 _eventRef, uint _eventTime, bytes calldata _ownerProof,
+      address _eventOwner, bytes calldata _rules)
     external
   {
-    LEvents.createEvent(s, _eventDesc, _eventTime, _offSaleTime, _ownerProof, _eventOwner);
-  }
-
-  function takeEventOffSale(uint _eventId, bytes calldata _eventOwnerProof)
-    external
-  {
-    LEvents.takeEventOffSale(s, _eventId, _eventOwnerProof);
-  }
-
-  function sellTicket(uint _eventId, bytes32 _vendorTicketRefHash, string calldata _ticketMetadata, address _buyer)
-    external
-  {
-    LEvents.sellTicket(s, _eventId, _vendorTicketRefHash, _ticketMetadata, _buyer);
-  }
-
-  function cancelTicket(uint _eventId, uint _ticketId)
-    external
-  {
-    LEvents.cancelTicket(s, _eventId, _ticketId);
-  }
-
-  function resellTicket(uint _eventId, uint _ticketId, bytes calldata _ticketOwnerPermission, address _newBuyer)
-    external
-  {
-    LEvents.resellTicket(s, _eventId, _ticketId, _ticketOwnerPermission, _newBuyer);
+    LEvents.createEvent(s, _eventDesc, _eventRef, _eventTime, _ownerProof, _eventOwner, _rules);
   }
 
   function registerRoleOnEvent(uint _eventId, address _roleAddress, string calldata _role,
@@ -50,5 +28,29 @@ contract EventsManager is IEventsManager, Owned, Versioned {
     external
   {
     LEvents.registerRoleOnEvent(s, _eventId, _roleAddress, _role, _registerRoleEventOwnerProof);
+  }
+
+  function checkRuleCondition(bytes calldata _conditionData)
+    external
+  {
+    LEvents.checkRuleCondition(s, _conditionData);
+  }
+
+  function checkRule(bytes calldata _ruleData)
+    external
+  {
+    LEvents.checkRule(s, _ruleData);
+  }
+
+  function checkTransactionRules(bytes calldata _transactionRulesData)
+    external
+  {
+    LEvents.checkTransactionRules(s, _transactionRulesData);
+  }
+
+  function checkEventRules(bytes calldata _eventRulesData)
+    external
+  {
+    LEvents.checkEventRules(s, _eventRulesData);
   }
 }

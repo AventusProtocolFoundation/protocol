@@ -1,5 +1,5 @@
 let testHelper, avtTestHelper, votingTestHelper;
-let membersManager;
+let validatorsManager;
 
 const BN = web3.utils.BN;
 
@@ -8,15 +8,15 @@ async function init(_testHelper, _avtTestHelper, _votingTestHelper) {
   avtTestHelper  =_avtTestHelper;
   votingTestHelper = _votingTestHelper;
 
-  membersManager = testHelper.getMembersManager();
+  validatorsManager = testHelper.getValidatorsManager();
 }
 
-async function challengeMemberAndMarkAsFraudulent(_memberAddress, _memberType, _challenger) {
-  const challenge = await challengeMember(_memberAddress, _memberType, _challenger);
+async function challengeValidatorAndMarkAsFraudulent(_validatorAddress, _challenger) {
+  const challenge = await challengeValidator(_validatorAddress, _challenger);
 
   await avtTestHelper.addAVT(avtTestHelper.oneAVTTo18SigFig, _challenger);
   await votingTestHelper.advanceTimeCastAndRevealVotes(challenge.proposalId, [{voter: _challenger, option: 1}]);
-  await advanceTimeAndEndMemberChallenge(_memberAddress, _memberType, challenge.proposalId, _challenger);
+  await advanceTimeAndEndValidatorChallenge(_validatorAddress, challenge.proposalId, _challenger);
 
   await withdrawSuccessfulChallengeWinnings(challenge.proposalId, _challenger, _challenger,
       _challenger, challenge.deposit);
@@ -25,17 +25,17 @@ async function challengeMemberAndMarkAsFraudulent(_memberAddress, _memberType, _
   return challenge;
 }
 
-async function challengeMember(_memberAddress, _memberType, _challengeOwner) {
-  const existingDeposit = await membersManager.getExistingMemberDeposit(_memberAddress, _memberType);
+async function challengeValidator(_validatorAddress, _challengeOwner) {
+  const existingDeposit = await validatorsManager.getExistingValidatorDeposit(_validatorAddress);
   await avtTestHelper.addAVT(existingDeposit, _challengeOwner);
-  await membersManager.challengeMember(_memberAddress, _memberType, {from: _challengeOwner});
-  const logArgs = await testHelper.getLogArgs(membersManager, 'LogMemberChallenged');
+  await validatorsManager.challengeValidator(_validatorAddress, {from: _challengeOwner});
+  const logArgs = await testHelper.getLogArgs(validatorsManager, 'LogValidatorChallenged');
   return {proposalId : logArgs.proposalId.toNumber(), deposit : existingDeposit};
 }
 
-async function advanceTimeAndEndMemberChallenge(_memberAddress, _memberType, _challengeProposalId, _challengeEnder) {
+async function advanceTimeAndEndValidatorChallenge(_validatorAddress, _challengeProposalId, _challengeEnder) {
   await votingTestHelper.advanceTimeToEndOfProposal(_challengeProposalId);
-  await membersManager.endMemberChallenge(_memberAddress, _memberType, {from: _challengeEnder});
+  await validatorsManager.endValidatorChallenge(_validatorAddress, {from: _challengeEnder});
 }
 
 async function withdrawSuccessfulChallengeWinnings(_challengeProposalId, _challengeOwner, _challengeEnder, _voter, _deposit) {
@@ -53,8 +53,8 @@ async function withdrawSuccessfulChallengeWinnings(_challengeProposalId, _challe
 
 // Keep exports alphabetical.
 module.exports = {
-  advanceTimeAndEndMemberChallenge,
-  challengeMember,
-  challengeMemberAndMarkAsFraudulent,
+  advanceTimeAndEndValidatorChallenge,
+  challengeValidator,
+  challengeValidatorAndMarkAsFraudulent,
   init,
 };

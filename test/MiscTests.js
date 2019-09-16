@@ -1,8 +1,8 @@
 const testHelper = require('./helpers/testHelper');
-const governanceProposalsTestHelper = require('./helpers/governanceProposalsTestHelper');
+const governanceProposalsTestHelper = require('./helpers/proposalsTestHelper');
 const avtTestHelper = require('./helpers/avtTestHelper');
 const timeTestHelper = require('./helpers/timeTestHelper');
-const signingTestHelper = require('./helpers/signingTestHelper');
+const signingHelper = require('../utils/signingHelper');
 const votingTestHelper = require('./helpers/votingTestHelper');
 
 contract('Misc testing', async () => {
@@ -11,8 +11,7 @@ contract('Misc testing', async () => {
     await testHelper.init();
     await avtTestHelper.init(testHelper);
     await timeTestHelper.init(testHelper);
-    await signingTestHelper.init(testHelper);
-    await votingTestHelper.init(testHelper, timeTestHelper, signingTestHelper);
+    await votingTestHelper.init(testHelper, timeTestHelper);
     await governanceProposalsTestHelper.init(testHelper, avtTestHelper, votingTestHelper);
     const accounts = testHelper.getAccounts('governanceProposalOwner', 'voter');
 
@@ -24,7 +23,7 @@ contract('Misc testing', async () => {
     await votingTestHelper.castVote(voter, proposalId, optionId);
 
     await votingTestHelper.advanceTimeToRevealingStart(proposalId);
-    const signedMessage = await signingTestHelper.getRevealVoteSignedMessage(voter, proposalId, optionId);
+    const signedMessage = await signingHelper.getRevealVoteSignedMessage(voter, proposalId, optionId);
     const badSignedMessage = signedMessage.substr(0, signedMessage.length - 2) + '55';
     const proposalsManager = testHelper.getProposalsManager();
     testHelper.expectRevert(() => proposalsManager.revealVote(badSignedMessage, proposalId, optionId, {from: voter}),

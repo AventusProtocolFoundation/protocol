@@ -5,7 +5,6 @@ import "./LAVTManager.sol";
 import "./zeppelin/LECRecovery.sol";
 import "./LProposalsEnact.sol";
 import "./LProposalsStorage.sol";
-import "./LAventusDLL.sol";
 
 library LProposalsVoting {
 
@@ -36,15 +35,13 @@ library LProposalsVoting {
     _;
   }
 
-  function castVote(IAventusStorage _storage, uint _proposalId, bytes32 _secret, uint _prevTime)
+  function castVote(IAventusStorage _storage, uint _proposalId, bytes32 _secret)
     external
   {
     require(LProposalsStorage.getVoterSecret(_storage, msg.sender, _proposalId) == 0, "Already voted");
     LProposalsStorage.setVoterSecret(_storage, msg.sender, _proposalId, _secret);
-
     uint unrevealedVotesCount = LProposalsStorage.getUnrevealedVotesCount(_storage, _proposalId);
     LProposalsStorage.setUnrevealedVotesCount(_storage, _proposalId, unrevealedVotesCount + 1);
-    addSendersVoteToDLL(_storage, _proposalId, _prevTime);
   }
 
   function cancelVote(IAventusStorage _storage, uint _proposalId)
@@ -55,52 +52,20 @@ library LProposalsVoting {
     doRemoveVote(_storage, _proposalId);
   }
 
-  function getPrevTimeParamForCastVote(IAventusStorage _storage, uint _proposalId)
-    external
-    view
-    returns (uint prevTime_)
-  {
-    uint proposalRevealTime = LProposalsStorage.getRevealingStart(_storage, _proposalId);
-    require(proposalRevealTime != 0, "Proposal does not exist");
-    prevTime_ = LAventusDLL.getPreviousValue(_storage, msg.sender, proposalRevealTime);
-  }
-
   function revealVote(IAventusStorage _storage, bytes memory _signedMessage, uint _proposalId, uint _optId)
     public
     onlyInRevealingPeriodOrLater(_storage, _proposalId)
     onlyValidOptionId(_optId)
     onlyWhenVoterIsSender(_proposalId, _optId, _signedMessage)
   {
-    bool storedVoteMatches = LProposalsStorage.getVoterSecret(_storage, msg.sender, _proposalId) ==
-        keccak256(abi.encodePacked(_signedMessage));
-    require(storedVoteMatches, "Stored vote must be the same as the revealed one");
+    bytes32 storedVote = LProposalsStorage.getVoterSecret(_storage, msg.sender, _proposalId);
+    require(storedVote == keccak256(abi.encodePacked(_signedMessage)), "Stored vote must be the same as the revealed one");
 
     // IFF we are still in the reveal period then add any stake
-    if (LProposalsEnact.inRevealingPeriod(_storage, _proposalId)) {
+    if (LProposalsEnact.inRevealingPeriod(_storage, _proposalId))
       addVoterStakeToProposal(_storage, _proposalId, _optId, msg.sender);
-    }
 
     doRemoveVote(_storage, _proposalId);
-  }
-
-  // Add the vote to the doubly linked list of vote counts that this user is
-  // currently voting in. The list is sorted in proposal revealTime order.
-  function addSendersVoteToDLL(IAventusStorage _storage, uint _proposalId, uint _prevTime)
-    private
-  {
-    // The proposal's reveal period start time, used for position in the reveal time DLL.
-    uint proposalRevealTime = LProposalsStorage.getRevealingStart(_storage, _proposalId);
-    // update the existing count for this time or insert if no votes exist yet.
-    LAventusDLL.incrementCount(_storage, msg.sender, proposalRevealTime, _prevTime);
-  }
-
-  // Remove the vote from the doubly linked list of vote counts that this user is
-  // currently voting in. The list is sorted in proposal revealTime order.
-  function removeSendersVoteFromDLL(IAventusStorage _storage, uint _proposalId)
-    private
-  {
-    uint proposalRevealTime = LProposalsStorage.getRevealingStart(_storage, _proposalId);
-    LAventusDLL.decrementCount(_storage, msg.sender, proposalRevealTime);
   }
 
   function doRemoveVote(IAventusStorage _storage, uint _proposalId)
@@ -108,7 +73,6 @@ library LProposalsVoting {
   {
     uint unrevealedVotesCount = LProposalsStorage.getUnrevealedVotesCount(_storage, _proposalId);
     LProposalsStorage.setUnrevealedVotesCount(_storage, _proposalId, unrevealedVotesCount - 1);
-    removeSendersVoteFromDLL(_storage, _proposalId);
     LProposalsStorage.setVoterSecret(_storage, msg.sender, _proposalId, 0);
   }
 
@@ -126,9 +90,11 @@ library LProposalsVoting {
   function addVoterStakeToProposal(IAventusStorage _storage, uint _proposalId, uint _optId, address _voter)
     private
   {
-    uint stake = LAVTManager.getBalance(_storage, _voter);
+    uint proposalRevealTime = LProposalsStorage.getRevealingStart(_storage, _proposalId);
+    uint stake = LAVTManager.getHistoricBalance(_storage, _voter, proposalRevealTime);
 
-    if (stake == 0) return;
+    if (stake == 0)
+      return;
 
     LProposalsStorage.increaseTotalRevealedStake(_storage, _proposalId, _optId, stake);
     LProposalsStorage.incrementNumVotersRevealedWithStake(_storage, _proposalId, _optId);

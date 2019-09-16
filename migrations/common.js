@@ -30,7 +30,12 @@ function saveStorageContractToJsonFile(_aventusStorage, _network = '') {
 }
 
 function getStorageFileName(_network) {
-  const networkSuffix = (_network === 'rinkeby' || _network === 'live') ? _network : '';
+  var networkSuffix = '';
+  // Use startsWith in case we are doing a dry-run migration.
+  if (_network.startsWith('rinkeby'))
+    networkSuffix = 'rinkeby';
+  else if (_network.startsWith('mainnet'))
+    networkSuffix = 'mainnet';
   return storageJsonFilePath + 'storage' + networkSuffix + '.json'
 }
 
@@ -41,8 +46,20 @@ async function getVersion(versioned) {
   return version;
 }
 
+async function deploy(_deployer, _contract, ..._contractArguments) {
+  const gasEstimate = await _contract.new.estimateGas(..._contractArguments);
+  return _deployer.deploy(_contract, ..._contractArguments, {gas: gasEstimate});
+}
+
+function isTestNetwork(_networkName) {
+  // NOTE: truffle dry-run migrations add a suffix: always check with startsWith.
+  return _networkName.startsWith('development') || _networkName.startsWith('coverage') || _networkName.startsWith('rinkeby');
+}
+
 module.exports = {
+  deploy,
   getStorageContractFromJsonFile,
+  isTestNetwork,
   saveStorageContractToJsonFile,
   getStorageContractDescriptor,
   getVersion

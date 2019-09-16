@@ -1,9 +1,6 @@
 const testHelper = require('./helpers/testHelper');
 const avtTestHelper = require('./helpers/avtTestHelper');
-const governanceProposalsTestHelper = require('./helpers/governanceProposalsTestHelper');
-const votingTestHelper = require('./helpers/votingTestHelper');
 const timeTestHelper = require('./helpers/timeTestHelper');
-const signingTestHelper = require('./helpers/signingTestHelper');
 
 const BN = testHelper.BN;
 
@@ -16,34 +13,18 @@ contract('AVTManager', async () => {
     await testHelper.init();
     await avtTestHelper.init(testHelper);
     await timeTestHelper.init(testHelper);
-    await signingTestHelper.init(testHelper);
-    await votingTestHelper.init(testHelper, timeTestHelper, signingTestHelper);
-    await governanceProposalsTestHelper.init(testHelper, avtTestHelper, votingTestHelper);
 
     aventusStorage = testHelper.getAventusStorage();
     avt = testHelper.getAVTIERC20();
     avtManager = testHelper.getAVTManager();
 
-    accounts = testHelper.getAccounts('goodAVTDepositOwner', 'goodAVTStakeOwner', 'governanceProposalOwner', 'otherAccount');
-    await avt.transfer(accounts.goodAVTStakeOwner, goodAVTAmount);
-    await avt.transfer(accounts.otherAccount, goodAVTAmount);
+    accounts = testHelper.getAccounts('goodAVTDepositOwner', 'governanceProposalOwner', 'otherAccount', 'avtHolder1',
+        'avtHolder2', 'avtHolder3', 'avtHolder4', 'avtHolder5', 'avtHolder6');
   });
 
   async function checkBalance(_address, _expectedAmount) {
     const balance = await avtManager.getBalance(_address);
     assert.equal(balance.toNumber(), _expectedAmount);
-  }
-
-  async function createProposalVoteAndAdvanceToReveal(_votingAddress) {
-    const proposalId = await governanceProposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
-    await votingTestHelper.advanceTimeAndCastVote(_votingAddress, proposalId, optionId);
-    await votingTestHelper.advanceTimeToRevealingStart(proposalId);
-    return proposalId;
-  }
-
-  async function endProposalVoteAndWithdrawDeposit(_votingAddress, _proposalId) {
-    await governanceProposalsTestHelper.revealVoteEndProposalAndWithdrawDeposit(accounts.governanceProposalOwner,
-        _votingAddress, _proposalId, optionId);
   }
 
   context('deposit()', async () => {
@@ -67,23 +48,12 @@ contract('AVTManager', async () => {
 
     beforeEach(async () => {
       await avt.approve(aventusStorage.address, goodAVTAmount, {from: accounts.goodAVTDepositOwner});
-      await avt.approve(aventusStorage.address, goodAVTAmount, {from: accounts.goodAVTStakeOwner});
     });
 
-    afterEach(async () => {
-      await avtTestHelper.clearAVTAccount(accounts.goodAVTDepositOwner);
-      await avtTestHelper.clearAVTAccount(accounts.goodAVTStakeOwner);
-    });
-
-    context('succeeds with', async () => {
-      context('good parameters', async () => {
-        it('for a deposit', async () => {
-          await depositSucceeds(accounts.goodAVTDepositOwner);
-        });
-
-        it('for a stake', async () => {
-          await depositSucceeds(accounts.goodAVTStakeOwner);
-        });
+    context('succeeds', async () => {
+      it('for a deposit', async () => {
+        await depositSucceeds(accounts.goodAVTDepositOwner);
+        await avtTestHelper.withdrawAVT(goodAVTAmount, accounts.goodAVTDepositOwner);
       });
     });
 
@@ -92,11 +62,6 @@ contract('AVTManager', async () => {
         it('amount (deposit higher than approved)', async () => {
           const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
           await depositFailsDueToERC20Error(badAmount, accounts.goodAVTDepositOwner);
-        });
-
-        it('amount (stake higher than approved)', async () => {
-          const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
-          await depositFailsDueToERC20Error(badAmount, accounts.goodAVTStakeOwner);
         });
 
         it('amount (zero)', async () => {
@@ -110,13 +75,6 @@ contract('AVTManager', async () => {
           const badSender = accounts.otherAccount;
           await depositFailsDueToERC20Error(goodAVTAmount, badSender);
         });
-
-        it('deposit into an account that is blocked', async () => {
-          const votingAddress = accounts.goodAVTDepositOwner;
-          const proposalId = await createProposalVoteAndAdvanceToReveal(votingAddress);
-          await depositFails(goodAVTAmount, votingAddress, 'Cannot deposit until all votes are revealed');
-          await endProposalVoteAndWithdrawDeposit(votingAddress, proposalId);
-        });
       });
     });
   });
@@ -124,12 +82,6 @@ contract('AVTManager', async () => {
   context('withdraw()', async () => {
     beforeEach(async () => {
       await avtTestHelper.addAVT(goodAVTAmount, accounts.goodAVTDepositOwner);
-      await avtTestHelper.addAVT(goodAVTAmount, accounts.goodAVTStakeOwner);
-    });
-
-    afterEach(async () => {
-      await avtTestHelper.clearAVTAccount(accounts.goodAVTDepositOwner);
-      await avtTestHelper.clearAVTAccount(accounts.goodAVTStakeOwner);
     });
 
     async function withdrawSucceeds(_account) {
@@ -150,43 +102,14 @@ contract('AVTManager', async () => {
         it('for a deposit', async () => {
           await withdrawSucceeds(accounts.goodAVTDepositOwner);
         });
-
-        it('for a stake', async () => {
-          await withdrawSucceeds(accounts.goodAVTStakeOwner);
-        });
-      });
-
-      context('extra state for coverage', async () => {
-        it('stake owner having voted on a proposal that is still in voting period', async () => {
-          const proposalId =
-              await governanceProposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
-          await votingTestHelper.advanceTimeAndCastVote(accounts.goodAVTStakeOwner, proposalId, optionId);
-
-          await withdrawSucceeds(accounts.goodAVTStakeOwner);
-
-          await votingTestHelper.advanceTimeToRevealingStart(proposalId);
-          await votingTestHelper.revealVote(accounts.goodAVTStakeOwner, proposalId, optionId);
-          await governanceProposalsTestHelper.advanceTimeEndGovernanceProposalAndWithdrawDeposit(accounts.governanceProposalOwner,
-              proposalId);
-        });
       });
     });
 
-    context('fails with', async () => {
-      context('bad parameters', async () => {
-        it('amount (withdraw more deposit than current balance)', async () => {
-          const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
-          await withdrawFails(badAmount, accounts.goodAVTDepositOwner, 'Amount taken must be less than current balance');
-        });
-      });
-
-      context('bad state', async () => {
-        it('in revealing period of proposal with unrevealed vote', async () => {
-          const votingAddress = accounts.goodAVTStakeOwner;
-          const proposalId = await createProposalVoteAndAdvanceToReveal(votingAddress);
-          await withdrawFails(goodAVTAmount, votingAddress, 'Cannot withdraw until all votes are revealed');
-          await endProposalVoteAndWithdrawDeposit(votingAddress, proposalId);
-        });
+    context('fails with bad parameters', async () => {
+      it('amount (withdraw more deposit than current balance)', async () => {
+        const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
+        await withdrawFails(badAmount, accounts.goodAVTDepositOwner, 'Amount taken must be less than current balance');
+        await avtTestHelper.withdrawAVT(goodAVTAmount, accounts.goodAVTDepositOwner);
       });
     });
   });
@@ -205,35 +128,21 @@ contract('AVTManager', async () => {
           _expectedError);
     }
 
-    beforeEach(async () => {
-      await avtTestHelper.addAVT(goodAVTAmount, accounts.goodAVTDepositOwner);
-      await avtTestHelper.addAVT(goodAVTAmount, accounts.goodAVTStakeOwner);
-    });
-
-    afterEach(async () => {
-      await avtTestHelper.clearAVTAccount(accounts.goodAVTDepositOwner);
-      await avtTestHelper.clearAVTAccount(accounts.goodAVTStakeOwner);
-      await avtTestHelper.clearAVTAccount(accounts.otherAccount);
-    });
-
     context('succeeds with', async () => {
-      context('good parameters', async () => {
-        it('deposit transfer', async () => {
-          await transferSucceeds(accounts.goodAVTDepositOwner);
-        });
-
-        it('stake transfer', async () => {
-          await transferSucceeds(accounts.goodAVTStakeOwner);
-        });
+      it('good parameters', async () => {
+        await avtTestHelper.addAVT(goodAVTAmount, accounts.goodAVTDepositOwner);
+        await transferSucceeds(accounts.goodAVTDepositOwner);
+        await avtTestHelper.withdrawAVT(goodAVTAmount, accounts.otherAccount);
       });
     });
 
     context('fails with', async () => {
       context('bad parameters', async () => {
         it('amount (transfer more deposit than current balance)', async () => {
+          await avtTestHelper.addAVT(goodAVTAmount, accounts.goodAVTDepositOwner);
           const badAmount = goodAVTAmount.add(testHelper.BN_ONE);
-          await transferFails(accounts.goodAVTDepositOwner, badAmount,
-              'Amount taken must be less than current balance');
+          await transferFails(accounts.goodAVTDepositOwner, badAmount, 'Amount taken must be less than current balance');
+          await avtTestHelper.withdrawAVT(goodAVTAmount, accounts.goodAVTDepositOwner);
         });
 
         it('amount (zero)', async () => {
@@ -247,21 +156,6 @@ contract('AVTManager', async () => {
           const badTransferrer = accounts.otherAccount;
           await transferFails(badTransferrer, goodAVTAmount, 'Amount taken must be less than current balance');
         });
-
-        it('transfer from an account that is blocked', async () => {
-          const votingAddress = accounts.goodAVTStakeOwner;
-          const proposalId = await createProposalVoteAndAdvanceToReveal(votingAddress);
-          await transferFails(votingAddress, goodAVTAmount, 'Cannot transfer until all votes are revealed');
-          await endProposalVoteAndWithdrawDeposit(votingAddress, proposalId);
-        });
-
-        it('transfer to an account that is blocked', async () => {
-          const votingAddress = accounts.otherAccount;
-          const proposalId = await createProposalVoteAndAdvanceToReveal(votingAddress);
-          await transferFails(accounts.goodAVTDepositOwner, goodAVTAmount,
-              'Cannot recieve transfers until all votes are revealed');
-          await endProposalVoteAndWithdrawDeposit(votingAddress, proposalId);
-        });
       });
     });
   });
@@ -272,39 +166,119 @@ contract('AVTManager', async () => {
       // There are no logs to check
     }
 
-    async function getBalanceFails(_avtOwner, _expectedError) {
-      await testHelper.expectRevert(() => avtManager.getBalance(_avtOwner), _expectedError);
-    }
-
-    beforeEach(async () => {
-      await avtTestHelper.addAVT(goodAVTAmount, accounts.goodAVTDepositOwner);
-      await avtTestHelper.addAVT(goodAVTAmount, accounts.goodAVTStakeOwner);
-    });
-
-    afterEach(async () => {
-      await avtTestHelper.clearAVTAccount(accounts.goodAVTDepositOwner);
-      await avtTestHelper.clearAVTAccount(accounts.goodAVTStakeOwner);
-    });
-
-    context('succeeds with', async () => {
-      context('good parameters', async () => {
-        it('for a deposit', async () => {
-          const balance = await getBalanceSucceeds(accounts.goodAVTDepositOwner);
-          assert.equal(balance.toNumber(), goodAVTAmount);
-        });
-
-        it('for a stake', async () => {
-          const balance = await getBalanceSucceeds(accounts.goodAVTStakeOwner);
-          assert.equal(balance.toNumber(), goodAVTAmount);
-        });
+    context('succeeds', async () => {
+      it('with good parameters', async () => {
+        await avtTestHelper.addAVT(goodAVTAmount, accounts.goodAVTDepositOwner);
+        const balance = await getBalanceSucceeds(accounts.goodAVTDepositOwner);
+        assert.equal(balance.toNumber(), goodAVTAmount);
+        await avtTestHelper.withdrawAVT(goodAVTAmount, accounts.goodAVTDepositOwner);
       });
 
       context('extra state for coverage', async () => {
-        it('account has got AVT in it', async () => {
+        it('account has 0 AVT in it', async () => {
           const balance = await getBalanceSucceeds(accounts.otherAccount);
           assert.equal(balance.toNumber(), 0);
         });
       });
+    });
+  });
+
+  context('getHistoricBalance()', async () => {
+
+    // creates transaction history for AVT account then checks all its historic balances against the local store it builds
+    async function createAndCheckAVTHistory(_numDeposits, _numWithdrawls, _avtHolder) {
+      let transactionHistoryStore = {}; // key value store of {transaction timestamp : balance}
+      let currentAVTBalance = await avtManager.getBalance(_avtHolder); // fresh accounts should be zero balance anyway
+      let currentTime;
+
+      // transfer some AVT into the holder's account and have them approve enough to cover all upcoming deposits
+      const fullDeposit = goodAVTAmount * _numDeposits;
+      await avt.transfer(_avtHolder, fullDeposit);
+      await avt.approve(aventusStorage.address, fullDeposit, {from: _avtHolder});
+
+      // create a transaction history of deposits for the AVT holder...
+      for (i = 0; i < _numDeposits; i++) {
+        await avtManager.deposit(goodAVTAmount, {from: _avtHolder});
+        currentAVTBalance = currentAVTBalance.add(goodAVTAmount);
+        currentTime = timeTestHelper.now();
+        transactionHistoryStore[currentTime] = currentAVTBalance;
+        await timeTestHelper.advanceByNumDays(1);
+      }
+
+      // ...and some withdrawls
+      for (i = 0; i < _numWithdrawls; i++) {
+        await avtManager.withdraw(goodAVTAmount, {from: _avtHolder});
+        currentAVTBalance = currentAVTBalance.sub(goodAVTAmount);
+        currentTime = timeTestHelper.now();
+        transactionHistoryStore[currentTime] = currentAVTBalance;
+        await timeTestHelper.advanceByNumDays(1);
+      }
+
+      const localStore = Object.entries(transactionHistoryStore);
+      // 2D array where each element is kv pair: [0] = transaction timestamp, [1] = AVT balance
+
+      for (offset = -1; offset <= 1; offset++) {
+        for (i = 0; i < localStore.length; i++) {
+          // use offsets to create target timestamps 1 second before, exactly on, and 1 second after stored value timestamps
+          const targetTimestamp = parseInt(localStore[i][0]) + offset;
+          const actualBalance = await avtManager.getHistoricBalance(_avtHolder, targetTimestamp);
+          let expectedBalance;
+
+          // balance 1 second before should be zero prior to any transactions otherwise the previous stored value
+          if (offset < 0) expectedBalance = (i == 0) ? testHelper.BN_ZERO : localStore[i-1][1];
+          else expectedBalance = localStore[i][1]; // balance on or 1 second after a transaction should be that stored value
+          testHelper.assertBNEquals(actualBalance, expectedBalance);
+        };
+      }
+
+      // clean up
+      await avtTestHelper.withdrawAVT(currentAVTBalance, _avtHolder);
+    }
+
+    // use a clean account with no balance history for each test
+    it('with no AVT transaction history', async () => {
+      const targetTimestamp = timeTestHelper.now();
+      const balance = await avtManager.getHistoricBalance(accounts.avtHolder1, targetTimestamp);
+      testHelper.assertBNEquals(balance, testHelper.BN_ZERO);
+    });
+
+    it('with 1 AVT deposit, 0 AVT withdrawls', async () => {
+      await createAndCheckAVTHistory(1, 0, accounts.avtHolder2);
+    });
+
+    it('with 1 AVT deposit, 1 AVT withdrawl', async () => {
+      await createAndCheckAVTHistory(1, 1, accounts.avtHolder3);
+    });
+
+    it('with 2 AVT deposits, 2 AVT withdrawls', async () => {
+      await createAndCheckAVTHistory(2, 2, accounts.avtHolder4);
+    });
+
+    it('with 5 AVT deposits, 2 AVT withdrawls', async () => {
+      await createAndCheckAVTHistory(5, 2, accounts.avtHolder5);
+    });
+
+    it('with more than one transaction in the same block timestamp', async () => {
+      // transfer and approve all the AVT required for the upcoming deposits
+      const fullDeposit = goodAVTAmount * 2;
+      await avt.transfer(accounts.avtHolder6, fullDeposit);
+      await avt.approve(aventusStorage.address, fullDeposit, {from: accounts.avtHolder6});
+
+      // get balance and time at start of multiple transaction block
+      const startBalance = await avtManager.getBalance(accounts.avtHolder6);
+      const transactionTime = timeTestHelper.now();
+
+      // do a net deposit of 1 goodAVTAmount
+      await avtManager.deposit(goodAVTAmount * 2, {from: accounts.avtHolder6});
+      await avtManager.withdraw(goodAVTAmount, {from: accounts.avtHolder6});
+
+      // difference between startBalance and endBalance should reflect targeted net deposits only
+      const endBalance = await avtManager.getHistoricBalance(accounts.avtHolder6, transactionTime);
+      const expectedEndBalance = startBalance.add(goodAVTAmount);
+      testHelper.assertBNEquals(endBalance, expectedEndBalance);
+
+      // clean up
+      await avtTestHelper.withdrawAVT(endBalance, accounts.avtHolder6);
     });
   });
 });

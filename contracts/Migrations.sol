@@ -3,6 +3,7 @@ pragma solidity ^0.5.2;
 import "./Owned.sol";
 
 contract Migrations is Owned {
+
   uint public last_completed_migration;
 
   function setCompleted(uint _completed)

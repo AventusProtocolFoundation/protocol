@@ -1,31 +1,27 @@
-let testHelper, timeTestHelper, signingTestHelper, aventusStorage;
+const signingHelper = require('../../utils/signingHelper');
+
+let testHelper, timeTestHelper;
 let proposalsManager;
 
-async function init(_testHelper, _timeTestHelper, _signingTestHelper) {
+async function init(_testHelper, _timeTestHelper) {
   testHelper = _testHelper;
   timeTestHelper = _timeTestHelper;
-  signingTestHelper = _signingTestHelper;
-
-  aventusStorage = testHelper.getAventusStorage();
   proposalsManager = testHelper.getProposalsManager();
 }
 
-async function advanceToProposalPeriod(_proposalId, _period) {
-  const periodKey = testHelper.hash('Proposal', _proposalId, _period);
-  const period = await aventusStorage.getUInt(periodKey);
-  await timeTestHelper.advanceToTime(parseInt(period));
-}
-
 async function advanceTimeToVotingStart(_proposalId) {
-  await advanceToProposalPeriod(_proposalId, 'votingStart');
+  const votingStart = await proposalsManager.getVotingStartTime(_proposalId);
+  await timeTestHelper.advanceToTime(votingStart);
 }
 
 async function advanceTimeToRevealingStart(_proposalId) {
-  await advanceToProposalPeriod(_proposalId, 'revealingStart');
+  const revealingStart = await proposalsManager.getVotingRevealStartTime(_proposalId);
+  await timeTestHelper.advanceToTime(revealingStart);
 }
 
 async function advanceTimeToEndOfProposal(_proposalId) {
-  await advanceToProposalPeriod(_proposalId, 'revealingEnd');
+  const revealingEnd = await proposalsManager.getVotingRevealEndTime(_proposalId);
+  await timeTestHelper.advanceToTime(revealingEnd);
 }
 
 async function advanceTimeCastAndRevealVotes(_proposalId, _votes) {
@@ -36,19 +32,18 @@ async function advanceTimeCastAndRevealVotes(_proposalId, _votes) {
 }
 
 async function castVote(_voter, _proposalId, _optionId) {
-  const voteSecret = await signingTestHelper.getCastVoteSecret(_voter, _proposalId, _optionId);
-  let prevTime = await proposalsManager.getPrevTimeParamForCastVote(_proposalId, {from: _voter});
-  await proposalsManager.castVote(_proposalId, voteSecret, prevTime, {from: _voter});
+  const voteSecret = await signingHelper.getCastVoteSecret(_voter, _proposalId, _optionId);
+  await proposalsManager.castVote(_proposalId, voteSecret, {from: _voter});
 }
 
 async function revealVote(_voter, _proposalId, _optionId) {
-  const signedMessage = await signingTestHelper.getRevealVoteSignedMessage(_voter, _proposalId, _optionId);
+  const signedMessage = await signingHelper.getRevealVoteSignedMessage(_voter, _proposalId, _optionId);
   await proposalsManager.revealVote(signedMessage, _proposalId, _optionId, {from: _voter});
 }
 
 async function advanceTimeAndRevealVote(_voter, _proposalId, _optionId) {
   await advanceTimeToRevealingStart(_proposalId);
-  const signedMessage = await signingTestHelper.getRevealVoteSignedMessage(_voter, _proposalId, _optionId);
+  const signedMessage = await signingHelper.getRevealVoteSignedMessage(_voter, _proposalId, _optionId);
   await proposalsManager.revealVote(signedMessage, _proposalId, _optionId, {from: _voter});
 }
 

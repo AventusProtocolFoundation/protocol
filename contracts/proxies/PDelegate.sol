@@ -15,7 +15,6 @@ contract PDelegate {
     assembly {
       let result := delegatecall(sub(gas, 10000), _dst, add(_calldata, 0x20), mload(_calldata), 0, 0)
       let size := returndatasize
-
       let ptr := mload(0x40)
       returndatacopy(ptr, 0, size)
 
@@ -26,7 +25,7 @@ contract PDelegate {
     }
   }
 
-// DEBUG_ONLY:
+// ONLY_IF_ASSERTS_ON:
   function isContract(address _target)
     view
     internal
@@ -35,10 +34,10 @@ contract PDelegate {
     uint256 size;
 
     assembly {
-        size := extcodesize(_target)
+      size := extcodesize(_target)
     }
 
     result_ = (size != 0);
   }
-// :DEBUG_ONLY
+// :ONLY_IF_ASSERTS_ON
 }

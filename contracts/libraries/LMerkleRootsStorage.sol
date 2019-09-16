@@ -4,13 +4,14 @@ import "../interfaces/IAventusStorage.sol";
 
 library LMerkleRootsStorage {
 
-  string constant merkleRootSchema = "MerkleRoot";
-  string constant merkleRootsSchema = "MerkleRoots";
-  bytes32 constant baseDepositHash = keccak256(abi.encodePacked(merkleRootsSchema, "baseDeposit"));
-  bytes32 constant coolingOffPeriodHash = keccak256(abi.encodePacked(merkleRootsSchema, "coolingOffPeriod"));
-  bytes32 constant depositMultiplierHash = keccak256(abi.encodePacked(merkleRootsSchema, "depositMultiplier"));
-  bytes32 constant maxTreeDepthHash = keccak256(abi.encodePacked(merkleRootsSchema, "maxTreeDepth"));
-  bytes32 constant maxInterveningEventTimeHash = keccak256(abi.encodePacked(merkleRootsSchema, "maxInterveningEventTime"));
+  string constant merkleRootTable = "MerkleRoot";
+  string constant merkleRootsTable = "MerkleRoots";
+  bytes32 constant baseDepositHash = keccak256(abi.encodePacked(merkleRootsTable, "BaseDeposit"));
+  bytes32 constant coolingOffPeriodHash = keccak256(abi.encodePacked(merkleRootsTable, "CoolingOffPeriod"));
+  bytes32 constant depositMultiplierHash = keccak256(abi.encodePacked(merkleRootsTable, "DepositMultiplier"));
+  bytes32 constant maxTreeDepthHash = keccak256(abi.encodePacked(merkleRootsTable, "MaxTreeDepth"));
+  bytes32 constant maxInterveningTimeHash = keccak256(abi.encodePacked(merkleRootsTable, "MaxInterveningTime"));
+  bytes32 constant challengeWindowHash = keccak256(abi.encodePacked(merkleRootsTable, "ChallengeWindow"));
 
   function getBaseDeposit(IAventusStorage _storage)
     external
@@ -44,26 +45,26 @@ library LMerkleRootsStorage {
     maxDepth_ = _storage.getUInt(maxTreeDepthHash);
   }
 
-  function getMaxInterveningEventTime(IAventusStorage _storage)
+  function getMaxInterveningTime(IAventusStorage _storage)
     external
     view
-    returns (uint maxInterveningEventTime_)
+    returns (uint maxInterveningTime_)
   {
-    maxInterveningEventTime_ = _storage.getUInt(maxInterveningEventTimeHash);
+    maxInterveningTime_ = _storage.getUInt(maxInterveningTimeHash);
   }
 
-  function getRootHashOwner(IAventusStorage _storage, bytes32 _rootHash)
+  function getRootOwner(IAventusStorage _storage, bytes32 _rootHash)
     external
     view
     returns (address owner_)
   {
-    owner_ = _storage.getAddress(keccak256(abi.encodePacked(merkleRootSchema, _rootHash, "owner")));
+    owner_ = _storage.getAddress(keccak256(abi.encodePacked(merkleRootTable, _rootHash, "Owner")));
   }
 
-  function setRootHashOwner(IAventusStorage _storage, bytes32 _rootHash, address _owner)
+  function setRootOwner(IAventusStorage _storage, bytes32 _rootHash, address _owner)
     external
   {
-    _storage.setAddress(keccak256(abi.encodePacked(merkleRootSchema, _rootHash, "owner")), _owner);
+    _storage.setAddress(keccak256(abi.encodePacked(merkleRootTable, _rootHash, "Owner")), _owner);
   }
 
   function getTreeDepth(IAventusStorage _storage, bytes32 _rootHash)
@@ -71,27 +72,27 @@ library LMerkleRootsStorage {
     view
     returns (uint treeDepth_)
   {
-    treeDepth_ = _storage.getUInt(keccak256(abi.encodePacked(merkleRootSchema, _rootHash, "treeDepth")));
+    treeDepth_ = _storage.getUInt(keccak256(abi.encodePacked(merkleRootTable, _rootHash, "TreeDepth")));
   }
 
   function setTreeDepth(IAventusStorage _storage, bytes32 _rootHash, uint _treeDepth)
     external
   {
-    _storage.setUInt(keccak256(abi.encodePacked(merkleRootSchema, _rootHash, "treeDepth")), _treeDepth);
+    _storage.setUInt(keccak256(abi.encodePacked(merkleRootTable, _rootHash, "TreeDepth")), _treeDepth);
   }
 
-  function getLastEventTime(IAventusStorage _storage, bytes32 _rootHash)
+  function getRootExpiryTime(IAventusStorage _storage, bytes32 _rootHash)
     external
     view
-    returns (uint lastEventTime_)
+    returns (uint rootExpiryTime_)
   {
-    lastEventTime_ = _storage.getUInt(keccak256(abi.encodePacked(merkleRootSchema, _rootHash, "lastEventTime")));
+    rootExpiryTime_ = _storage.getUInt(keccak256(abi.encodePacked(merkleRootTable, _rootHash, "RootExpiryTime")));
   }
 
-  function setLastEventTime(IAventusStorage _storage, bytes32 _rootHash, uint _lastEventTime)
+  function setRootExpiryTime(IAventusStorage _storage, bytes32 _rootHash, uint _rootExpiryTime)
     external
   {
-    _storage.setUInt(keccak256(abi.encodePacked(merkleRootSchema, _rootHash, "lastEventTime")), _lastEventTime);
+    _storage.setUInt(keccak256(abi.encodePacked(merkleRootTable, _rootHash, "RootExpiryTime")), _rootExpiryTime);
   }
 
   function getDeposit(IAventusStorage _storage, bytes32 _rootHash)
@@ -99,12 +100,34 @@ library LMerkleRootsStorage {
     view
     returns (uint deposit_)
   {
-    deposit_ = _storage.getUInt(keccak256(abi.encodePacked(merkleRootSchema, _rootHash, "deposit")));
+    deposit_ = _storage.getUInt(keccak256(abi.encodePacked(merkleRootTable, _rootHash, "Deposit")));
   }
 
   function setDeposit(IAventusStorage _storage, bytes32 _rootHash, uint _deposit)
     external
   {
-    _storage.setUInt(keccak256(abi.encodePacked(merkleRootSchema, _rootHash, "deposit")), _deposit);
+    _storage.setUInt(keccak256(abi.encodePacked(merkleRootTable, _rootHash, "Deposit")), _deposit);
+  }
+
+  function setRootRegistrationTime(IAventusStorage _storage, bytes32 _rootHash, uint _registrationTime)
+    external
+  {
+    _storage.setUInt(keccak256(abi.encodePacked(merkleRootTable, _rootHash, "RegistrationTime")), _registrationTime);
+  }
+
+  function getRootChallengeExpiryTime(IAventusStorage _storage, bytes32 _rootHash)
+    external
+    view
+    returns (uint expiryTime_)
+  {
+    expiryTime_ = getRootRegistrationTime(_storage, _rootHash) + _storage.getUInt(challengeWindowHash);
+  }
+
+  function getRootRegistrationTime(IAventusStorage _storage, bytes32 _rootHash)
+    public
+    view
+    returns (uint registrationTime_)
+  {
+    registrationTime_ = _storage.getUInt(keccak256(abi.encodePacked(merkleRootTable, _rootHash, "RegistrationTime")));
   }
 }

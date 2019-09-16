@@ -17,5 +17,4 @@ contract AventusStorageForTesting {
   {
     return testValue;
   }
-
 }

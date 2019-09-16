@@ -2,7 +2,7 @@ pragma solidity ^0.5.2;
 
 import "./interfaces/IAventusStorage.sol";
 import "./interfaces/IProposalsManager.sol";
-import "./libraries/LEvents.sol";
+import "./libraries/LValidators.sol";
 import "./libraries/LProposals.sol";
 import "./Owned.sol";
 import "./Versioned.sol";
@@ -11,14 +11,28 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
 
   IAventusStorage public s;
 
-  constructor(IAventusStorage _s) public {
+  constructor(IAventusStorage _s)
+    public
+  {
     s = _s;
   }
 
-  function createGovernanceProposal(string calldata _desc)
+  function createCommunityProposal(string calldata _desc)
     external
   {
-    LProposals.createGovernanceProposal(s, _desc);
+    LProposals.createCommunityProposal(s, _desc);
+  }
+
+  function endCommunityProposal(uint _proposalId)
+    external
+  {
+    LProposals.endCommunityProposal(s, _proposalId);
+  }
+
+  function createGovernanceProposal(string calldata _desc, bytes calldata _bytecode)
+    external
+  {
+    LProposals.createGovernanceProposal(s, _desc, _bytecode);
   }
 
   function endGovernanceProposal(uint _proposalId)
@@ -27,10 +41,10 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
     LProposals.endGovernanceProposal(s, _proposalId);
   }
 
-  function castVote(uint _proposalId, bytes32 _secret, uint _prevTime)
+  function castVote(uint _proposalId, bytes32 _secret)
     external
   {
-    LProposals.castVote(s, _proposalId, _secret, _prevTime);
+    LProposals.castVote(s, _proposalId, _secret);
   }
 
   function cancelVote(uint _proposalId)
@@ -48,18 +62,54 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
   function claimVoterWinnings(uint _proposalId)
     external
   {
-    LAventities.claimVoterWinnings(s, _proposalId);
+    LValidators.claimVoterWinnings(s, _proposalId);
   }
 
-  function getGovernanceProposalDeposit() external view returns (uint proposalDeposit_) {
+  function getCommunityProposalDeposit()
+    external
+    view
+    returns (uint proposalDeposit_)
+  {
+    proposalDeposit_ = LProposals.getCommunityProposalDeposit(s);
+  }
+
+  function getGovernanceProposalDeposit()
+    external
+    view
+    returns (uint proposalDeposit_)
+  {
     proposalDeposit_ = LProposals.getGovernanceProposalDeposit(s);
   }
 
-  function getPrevTimeParamForCastVote(uint _proposalId) external view returns (uint prevTime_) {
-    prevTime_ = LProposals.getPrevTimeParamForCastVote(s, _proposalId);
+  function getAventusTime()
+    external
+    view
+    returns (uint time_)
+  {
+    time_ = LProposals.getAventusTime(s);
   }
 
-  function getAventusTime() external view returns (uint time_) {
-    time_ = LProposals.getAventusTime(s);
+  function getVotingStartTime(uint _proposalId)
+    external
+    view
+    returns (uint votingStartTime_)
+  {
+    votingStartTime_ = LProposals.getVotingStartTime(s, _proposalId);
+  }
+
+  function getVotingRevealStartTime(uint _proposalId)
+    external
+    view
+    returns (uint votingRevealStartTime_)
+  {
+    votingRevealStartTime_ = LProposals.getVotingRevealStartTime(s, _proposalId);
+  }
+
+  function getVotingRevealEndTime(uint _proposalId)
+    external
+    view
+    returns (uint votingRevealEndTime_)
+  {
+    votingRevealEndTime_ = LProposals.getVotingRevealEndTime(s, _proposalId);
   }
 }

@@ -8,6 +8,7 @@ import "./Owned.sol";
 // Persistent storage on the blockchain
 
 contract AventusStorage is Owned, PDelegate, IAventusStorage {
+
   bytes32 constant avtContractAddressKey = keccak256(abi.encodePacked("AVTERC20Instance"));
 
   event LogStorageAccessAllowed(string accessType, address indexed accessAddress);
@@ -24,7 +25,6 @@ contract AventusStorage is Owned, PDelegate, IAventusStorage {
   }
 
   mapping(bytes32 => bool) accessAllowed;
-
   mapping(bytes32 => uint) UInt;
   mapping(bytes32 => string) String;
   mapping(bytes32 => address) Address;
@@ -33,25 +33,37 @@ contract AventusStorage is Owned, PDelegate, IAventusStorage {
   mapping(bytes32 => bool) Boolean;
   mapping(bytes32 => int) Int;
 
-  function allowAccess(string calldata _accessType, address _address) external onlyOwner {
+  function allowAccess(string calldata _accessType, address _address)
+    external
+    onlyOwner
+  {
     accessAllowed[getKey(_accessType, _address)] = true;
     emit LogStorageAccessAllowed(_accessType, _address);
   }
 
-  function denyAccess(string calldata _accessType, address _address) external onlyOwner {
+  function denyAccess(string calldata _accessType, address _address)
+    external
+    onlyOwner
+  {
     accessAllowed[getKey(_accessType, _address)] = false;
     emit LogStorageAccessDenied(_accessType, _address);
   }
 
-  function transferAVTTo(address _to, uint _tokens) external onlyWithTransferAVTAccess {
+  function transferAVTTo(address _to, uint _tokens)
+    external
+    onlyWithTransferAVTAccess
+  {
     IERC20 avt = IERC20(doGetAddress(avtContractAddressKey));
-    // RELEASE_ONLY avt.transfer(_to, _tokens);
+    // ONLY_IF_ASSERTS_OFF avt.transfer(_to, _tokens);
     assert(avt.transfer(_to, _tokens));
   }
 
-  function transferAVTFrom(address _from, uint _tokens) external onlyWithTransferAVTAccess {
+  function transferAVTFrom(address _from, uint _tokens)
+    external
+    onlyWithTransferAVTAccess
+  {
     IERC20 avt = IERC20(doGetAddress(avtContractAddressKey));
-    // RELEASE_ONLY avt.transferFrom(_from, address(this), _tokens);
+    // ONLY_IF_ASSERTS_OFF avt.transferFrom(_from, address(this), _tokens);
     assert(avt.transferFrom(_from, address(this), _tokens));
   }
 
@@ -181,7 +193,10 @@ contract AventusStorage is Owned, PDelegate, IAventusStorage {
     value_ = Address[_record];
   }
 
-  function isAllowedAccess(string memory _accessType) private view {
+  function isAllowedAccess(string memory _accessType)
+    private
+    view
+  {
     require(msg.sender == owner || accessAllowed[getKey(_accessType, msg.sender)], "Access denied for storage");
   }
 

@@ -10,8 +10,8 @@ const AVTManagerInterface = artifacts.require('IAVTManager');
 const ProposalsManager = artifacts.require('ProposalsManager');
 const ProposalsManagerInterface = artifacts.require('IProposalsManager');
 
-const MembersManager = artifacts.require('MembersManager');
-const MembersManagerInterface = artifacts.require('IMembersManager');
+const ValidatorsManager = artifacts.require('ValidatorsManager');
+const ValidatorsManagerInterface = artifacts.require('IValidatorsManager');
 
 const EventsManager = artifacts.require('EventsManager');
 const EventsManagerInterface = artifacts.require('IEventsManager');
@@ -19,91 +19,121 @@ const EventsManagerInterface = artifacts.require('IEventsManager');
 const MerkleRootsManager = artifacts.require('MerkleRootsManager');
 const MerkleRootsManagerInterface = artifacts.require('IMerkleRootsManager');
 
+const MerkleLeafChallenges = artifacts.require('MerkleLeafChallenges');
+const MerkleLeafChallengesInterface = artifacts.require('IMerkleLeafChallenges');
+
+const TimeMachine = artifacts.require('TimeMachine');
+const TimeMachineInterface = artifacts.require('ITimeMachine');
+
 const ParameterRegistry = artifacts.require('ParameterRegistry');
 const abiPartLength = 16;
 
 const Versioned = artifacts.require('Versioned');
 
-module.exports = async function(_deployer, _network, _accounts) {
-  await deployContracts(_deployer, _network);
+module.exports = async function(_deployer, _networkName, _accounts) {
+  await deployContracts(_deployer, _networkName);
   console.log('*** CONTRACTS DEPLOY COMPLETE');
 };
 
 let deployAVTManager;
 let deployProposalsManager;
-let deployMembersManager;
+let deployValidatorsManager;
 let deployEventsManager;
 let deployMerkleRootsManager;
+let deployMerkleLeafChallenges;
 let deployParameterRegistry;
+let deployTimeMachine;
 
 let version;
 
-async function deployContracts(_deployer, _network) {
+const proposalsOn = true; // Manual switch to turn off challenges and proposals.
+
+async function deployContracts(_deployer, _networkName) {
   console.log('Deploying Contracts...');
-  const developmentMode = _network === 'development' || _network === 'coverage' || _network === 'rinkeby';
+  const developmentMode = common.isTestNetwork(_networkName);
 
   // ALWAYS deploy to development, NEVER to another network unless hard coded.
   deployAVTManager = developmentMode;
-  deployProposalsManager = developmentMode;
-  deployMembersManager = developmentMode;
+  deployProposalsManager = proposalsOn && developmentMode;
+  deployValidatorsManager = developmentMode;
   deployEventsManager = developmentMode;
   deployMerkleRootsManager = developmentMode;
+  deployMerkleLeafChallenges = proposalsOn && developmentMode;
   deployParameterRegistry = developmentMode;
+  deployTimeMachine = developmentMode;
 
   version = await common.getVersion(Versioned);
   console.log('Deploying contracts with version', version);
 
-  const storage = await common.getStorageContractFromJsonFile(IAventusStorage, _network);
+  const storage = await common.getStorageContractFromJsonFile(IAventusStorage, _networkName);
   await doDeployProposalsManager(_deployer, storage);
   await doDeployAVTManager(_deployer, storage);
-  await doDeployMembersManager(_deployer, storage);
+  await doDeployValidatorsManager(_deployer, storage);
   await doDeployEventsManager(_deployer, storage);
   await doDeployMerkleRootsManager(_deployer, storage);
+  await doDeployMerkleLeafChallenges(_deployer, storage);
   await doDeployParameterRegistry(_deployer, storage);
+  await doDeployTimeMachine(_deployer, storage);
 }
 
 async function doDeployProposalsManager(_deployer, _storage) {
   if (!deployProposalsManager) return;
-  await _deployer.deploy(ProposalsManager, _storage.address);
+  await common.deploy(_deployer, ProposalsManager, _storage.address);
   await saveInterfaceToStorage(_storage, 'IProposalsManager', ProposalsManagerInterface, ProposalsManager);
   await _storage.allowAccess('write', ProposalsManager.address);
 }
 
 async function doDeployAVTManager(_deployer, _storage) {
   if (!deployAVTManager) return;
-  await _deployer.deploy(AVTManager, _storage.address);
+  await common.deploy(_deployer, AVTManager, _storage.address);
   await saveInterfaceToStorage(_storage, 'IAVTManager', AVTManagerInterface, AVTManager);
   await _storage.allowAccess('write', AVTManager.address);
   await _storage.allowAccess('transferAVT', AVTManager.address);
 }
 
-async function doDeployMembersManager(_deployer, _storage) {
-  if (!deployMembersManager) return;
-  await _deployer.deploy(MembersManager, _storage.address);
-  await saveInterfaceToStorage(_storage, 'IMembersManager', MembersManagerInterface, MembersManager);
-  await _storage.allowAccess('write', MembersManager.address);
+async function doDeployValidatorsManager(_deployer, _storage) {
+  if (!deployValidatorsManager) return;
+  await common.deploy(_deployer, ValidatorsManager, _storage.address, proposalsOn);
+  await saveInterfaceToStorage(_storage, 'IValidatorsManager', ValidatorsManagerInterface, ValidatorsManager);
+  await _storage.allowAccess('write', ValidatorsManager.address);
 }
 
 async function doDeployEventsManager(_deployer, _storage) {
   if (!deployEventsManager) return;
-  await _deployer.deploy(EventsManager, _storage.address);
+  await common.deploy(_deployer, EventsManager, _storage.address);
   await saveInterfaceToStorage(_storage, 'IEventsManager', EventsManagerInterface, EventsManager);
   await _storage.allowAccess('write', EventsManager.address);
 }
 
 async function doDeployMerkleRootsManager(_deployer, _storage) {
   if (!deployMerkleRootsManager) return;
-  await _deployer.deploy(MerkleRootsManager, _storage.address);
+  await common.deploy(_deployer, MerkleRootsManager, _storage.address);
   await saveInterfaceToStorage(_storage, 'IMerkleRootsManager', MerkleRootsManagerInterface, MerkleRootsManager);
   await _storage.allowAccess('write', MerkleRootsManager.address);
 }
 
+async function doDeployMerkleLeafChallenges(_deployer, _storage) {
+  if (!deployMerkleLeafChallenges) return;
+  await common.deploy(_deployer, MerkleLeafChallenges, _storage.address);
+  await saveInterfaceToStorage(_storage, 'IMerkleLeafChallenges', MerkleLeafChallengesInterface, MerkleLeafChallenges);
+  await _storage.allowAccess('write', MerkleLeafChallenges.address);
+}
+
 async function doDeployParameterRegistry(_deployer, _storage) {
   if (!deployParameterRegistry) return;
-  await _deployer.deploy(ParameterRegistry, _storage.address);
+  await common.deploy(_deployer, ParameterRegistry, _storage.address);
   await _storage.allowAccess('write', ParameterRegistry.address);
   const parameterRegistry = await ParameterRegistry.deployed();
   await parameterRegistry.init();
+}
+
+async function doDeployTimeMachine(_deployer, _storage) {
+  if (!deployTimeMachine) return;
+  await common.deploy(_deployer, TimeMachine, _storage.address);
+  await saveInterfaceToStorage(_storage, 'ITimeMachine', TimeMachineInterface, TimeMachine);
+  await _storage.allowAccess('write', TimeMachine.address);
+  const timeMachine = await TimeMachine.deployed();
+  await timeMachine.init()
 }
 
 async function saveInterfaceToStorage(_storage, _interfaceName, _interfaceInstance, _implementation) {
