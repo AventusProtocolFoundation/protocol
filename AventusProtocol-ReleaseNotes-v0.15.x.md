@@ -19,14 +19,11 @@ Breaking changes:
 
 New functionality:
 - Merkle leaf tickets now use Sigma protocol instead of SNARKS
-- Upgraded to use Truffle v4.0.41, Solidity 0.5.12, Solidity-coverage 0.7.0-beta.2
+- Upgraded to use Truffle v5.0.41, Solidity 0.5.12, Solidity-coverage 0.7.0-beta.2
 - Support for switching off proposals and challenges at deploy time
 
 Bug fixes:
 - Validator deregistration time penalties now increase correctly with each subsequent leaf challenge: see getCoolingOffPeriod
-
-Minor changes:
--
 
 Internal only major changes:
 - Root owner is no longer cleared when root deposit is unlocked: owner remains forever, as does the root
