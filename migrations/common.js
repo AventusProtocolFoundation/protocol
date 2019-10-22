@@ -2,6 +2,10 @@ const eip55 = require('eip55');
 const fs = require('fs');
 const path = require('path');
 
+// Set these to true to force deployment on a public net, eg Rinkeby or mainnet
+const deployAllOnPublic = true;
+const forceMockTime = false;
+
 const storageJsonFilePath = path.join(__dirname, '..', '/api/');
 
 /**
@@ -10,7 +14,7 @@ const storageJsonFilePath = path.join(__dirname, '..', '/api/');
  * 'then' method and the storage methods:
  * see https://github.com/trufflesuite/truffle-contract/blob/develop/contract.js
  */
-function getStorageContractFromJsonFile(_aventusStorage, _network = '') {
+async function getStorageContractFromJsonFile(_aventusStorage, _network = '') {
   const storageJsonFile = getStorageFileName(_network);
   const rawdata = fs.readFileSync(storageJsonFile);
   return _aventusStorage.at(JSON.parse(rawdata).address);
@@ -51,15 +55,30 @@ async function deploy(_deployer, _contract, ..._contractArguments) {
   return _deployer.deploy(_contract, ..._contractArguments, {gas: gasEstimate});
 }
 
-function isTestNetwork(_networkName) {
+function deployAll(_networkName) {
+  return isPrivateNetwork(_networkName) || deployAllOnPublic;
+}
+
+function isMainnet(_networkName) {
+  return _networkName.startsWith('mainnet');
+}
+
+function isPrivateNetwork(_networkName) {
   // NOTE: truffle dry-run migrations add a suffix: always check with startsWith.
-  return _networkName.startsWith('development') || _networkName.startsWith('coverage') || _networkName.startsWith('rinkeby');
+  return _networkName.startsWith('development') || _networkName.startsWith('coverage');
+}
+
+function mockTime(_networkName) {
+  return isPrivateNetwork(_networkName) || forceMockTime;
 }
 
 module.exports = {
   deploy,
   getStorageContractFromJsonFile,
-  isTestNetwork,
+  deployAll,
+  isMainnet,
+  isPrivateNetwork,
+  mockTime,
   saveStorageContractToJsonFile,
   getStorageContractDescriptor,
   getVersion

@@ -12,8 +12,8 @@ async function main() {
   }
 
   const unit = process.argv[4];
-  if (unit != 'avt' && unit != 'nat') {
-    error("Must pass unit of 'avt' or 'nat'");
+  if (unit != 'avt' && unit != 'atto') {
+    error("Must pass unit of 'avt' or 'atto'");
   }
 
   console.log("\n*** Initialising Aventus.js... ***");
@@ -28,13 +28,13 @@ async function main() {
 
   const currentAccount = (await web3.eth.getAccounts())[0];
   console.log("Using account", currentAccount);
-  console.log("avt", aventusApi.avt.methods.balanceOf);
-  console.log(currentAccount, "currently has", await aventusApi.avt.methods.balanceOf(currentAccount).call(), "AVT");
+  console.log(currentAccount, "currently has", await aventusApi.avt.methods.balanceOf(currentAccount).call(), " ATTOAVT");
 
-  console.log("Sending", amount, "NAT AVT from", currentAccount, "to", payeeAddress, "...");
+  console.log("Sending", amount, "ATTOAVT from", currentAccount, "to", payeeAddress, "...");
   try {
-    if (process.argv[5] == 'abi') {
+    if (process.argv[5] != 'pay') {
       console.log("ABI ENCODED TRANSACTION:", await aventusApi.avt.methods.transfer(payeeAddress, amount).encodeABI());
+      console.log('To actually send this transaction, run again with "pay" as the last parameter');
     } else {
       await aventusApi.avt.methods.transfer(payeeAddress, amount).send({from: currentAccount});
       console.log("AVT sent");
@@ -44,8 +44,8 @@ async function main() {
   }
   console.log("...done");
 
-  console.log(currentAccount, "now has", await aventusApi.avt.methods.balanceOf(currentAccount).call(), "AVT");
-  console.log(payeeAddress, "now has", await aventusApi.avt.methods.balanceOf(payeeAddress).call(), "AVT");
+  console.log(currentAccount, "now has", await aventusApi.avt.methods.balanceOf(currentAccount).call(), "ATTOAVT");
+  console.log(payeeAddress, "now has", await aventusApi.avt.methods.balanceOf(payeeAddress).call(), "ATTOAVT");
 
   aventusApi.tearDown();
 }

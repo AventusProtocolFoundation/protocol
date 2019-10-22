@@ -14,13 +14,13 @@ async function init(_testHelper, _avtTestHelper, _votingTestHelper) {
 async function challengeValidatorAndMarkAsFraudulent(_validatorAddress, _challenger) {
   const challenge = await challengeValidator(_validatorAddress, _challenger);
 
-  await avtTestHelper.addAVT(avtTestHelper.oneAVTTo18SigFig, _challenger);
+  await avtTestHelper.addAVT(avtTestHelper.oneAVTInAttoAVTBN, _challenger);
   await votingTestHelper.advanceTimeCastAndRevealVotes(challenge.proposalId, [{voter: _challenger, option: 1}]);
   await advanceTimeAndEndValidatorChallenge(_validatorAddress, challenge.proposalId, _challenger);
 
   await withdrawSuccessfulChallengeWinnings(challenge.proposalId, _challenger, _challenger,
       _challenger, challenge.deposit);
-  await avtTestHelper.withdrawAVT(avtTestHelper.oneAVTTo18SigFig, _challenger);
+  await avtTestHelper.withdrawAVT(avtTestHelper.oneAVTInAttoAVTBN, _challenger);
 
   return challenge;
 }

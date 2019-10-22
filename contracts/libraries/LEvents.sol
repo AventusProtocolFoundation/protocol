@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity >=0.5.2 <=0.5.12;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LAventusTime.sol";
@@ -19,7 +19,7 @@ import "./LEventsRules.sol";
 library LEvents {
 
   // See IEventsManager interface for logs description
-  event LogEventCreated(uint indexed eventId, address indexed eventOwner, string eventDesc, uint eventTime, bytes rules);
+  event LogEventCreated(uint indexed eventId, address indexed eventOwner, string eventDesc, bytes rules);
   event LogEventRoleRegistered(uint indexed eventId, address indexed roleAddress, string role);
 
   modifier onlyWhenExistent(IAventusStorage _storage, uint _eventId) {
@@ -27,17 +27,13 @@ library LEvents {
     _;
   }
 
-  function createEvent(IAventusStorage _storage, string calldata _eventDesc, bytes32 _eventRef, uint _eventTime,
+  function createEvent(IAventusStorage _storage, string calldata _eventDesc, bytes32 _eventRef,
       bytes calldata _createEventOwnerProof, address _eventOwner, bytes calldata _rules)
     external
   {
-    (uint eventId, bool validatorRegisteredOnEvent) = LEventsEvents.createEvent(_storage, _eventDesc, _eventRef, _eventTime,
-        _createEventOwnerProof, _eventOwner, _rules);
+    uint eventId = LEventsEvents.createEvent(_storage, _eventDesc, _eventRef, _createEventOwnerProof, _eventOwner, _rules);
 
-    emit LogEventCreated(eventId, _eventOwner, _eventDesc, _eventTime, _rules);
-
-    if (validatorRegisteredOnEvent)
-      emit LogEventRoleRegistered(eventId, msg.sender, "Validator");
+    emit LogEventCreated(eventId, _eventOwner, _eventDesc, _rules);
   }
 
   function registerRoleOnEvent(IAventusStorage _storage, uint _eventId, address _roleAddress, string calldata _role,
@@ -47,15 +43,6 @@ library LEvents {
   {
     LEventsRoles.registerRoleOnEvent(_storage, _eventId, _roleAddress, _role, _registerRoleEventOwnerProof);
     emit LogEventRoleRegistered(_eventId, _roleAddress, _role);
-  }
-
-  function getEventTime(IAventusStorage _storage, uint _eventId)
-    external
-    view
-    onlyWhenExistent(_storage, _eventId)
-    returns (uint eventTime_)
-  {
-    eventTime_ = LEventsEvents.getEventTime(_storage, _eventId);
   }
 
   function isEventOwnerOrRole(IAventusStorage _storage, uint _eventId, address _address, string calldata _role)

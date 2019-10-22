@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity >=0.5.2 <=0.5.12;
 
 import "../interfaces/IAventusStorage.sol";
 
@@ -6,51 +6,23 @@ library LMerkleRootsStorage {
 
   string constant merkleRootTable = "MerkleRoot";
   string constant merkleRootsTable = "MerkleRoots";
-  bytes32 constant baseDepositHash = keccak256(abi.encodePacked(merkleRootsTable, "BaseDeposit"));
-  bytes32 constant coolingOffPeriodHash = keccak256(abi.encodePacked(merkleRootsTable, "CoolingOffPeriod"));
-  bytes32 constant depositMultiplierHash = keccak256(abi.encodePacked(merkleRootsTable, "DepositMultiplier"));
-  bytes32 constant maxTreeDepthHash = keccak256(abi.encodePacked(merkleRootsTable, "MaxTreeDepth"));
-  bytes32 constant maxInterveningTimeHash = keccak256(abi.encodePacked(merkleRootsTable, "MaxInterveningTime"));
-  bytes32 constant challengeWindowHash = keccak256(abi.encodePacked(merkleRootsTable, "ChallengeWindow"));
+  bytes32 constant rootDepositHash = keccak256(abi.encodePacked(merkleRootsTable, "RootDeposit"));
+  bytes32 constant rootDepositLockPeriodHash = keccak256(abi.encodePacked(merkleRootsTable, "RootDepositLockPeriod"));
 
-  function getBaseDeposit(IAventusStorage _storage)
+  function getRootDeposit(IAventusStorage _storage)
     external
     view
-    returns (uint baseDeposit_)
+    returns (uint rootDeposit_)
   {
-    baseDeposit_ = _storage.getUInt(baseDepositHash);
+    rootDeposit_ = _storage.getUInt(rootDepositHash);
   }
 
-  function getCoolingOffPeriod(IAventusStorage _storage)
+  function getRootDepositLockPeriod(IAventusStorage _storage)
     external
     view
-    returns (uint coolingOffPeriod_)
+    returns (uint rootDepositLockPeriod_)
   {
-    coolingOffPeriod_ = _storage.getUInt(coolingOffPeriodHash);
-  }
-
-  function getDepositMultiplier(IAventusStorage _storage)
-    external
-    view
-    returns (uint multiplier_)
-  {
-    multiplier_ = _storage.getUInt(depositMultiplierHash);
-  }
-
-  function getMaxTreeDepth(IAventusStorage _storage)
-    external
-    view
-    returns (uint maxDepth_)
-  {
-    maxDepth_ = _storage.getUInt(maxTreeDepthHash);
-  }
-
-  function getMaxInterveningTime(IAventusStorage _storage)
-    external
-    view
-    returns (uint maxInterveningTime_)
-  {
-    maxInterveningTime_ = _storage.getUInt(maxInterveningTimeHash);
+    rootDepositLockPeriod_ = _storage.getUInt(rootDepositLockPeriodHash);
   }
 
   function getRootOwner(IAventusStorage _storage, bytes32 _rootHash)
@@ -65,34 +37,6 @@ library LMerkleRootsStorage {
     external
   {
     _storage.setAddress(keccak256(abi.encodePacked(merkleRootTable, _rootHash, "Owner")), _owner);
-  }
-
-  function getTreeDepth(IAventusStorage _storage, bytes32 _rootHash)
-    external
-    view
-    returns (uint treeDepth_)
-  {
-    treeDepth_ = _storage.getUInt(keccak256(abi.encodePacked(merkleRootTable, _rootHash, "TreeDepth")));
-  }
-
-  function setTreeDepth(IAventusStorage _storage, bytes32 _rootHash, uint _treeDepth)
-    external
-  {
-    _storage.setUInt(keccak256(abi.encodePacked(merkleRootTable, _rootHash, "TreeDepth")), _treeDepth);
-  }
-
-  function getRootExpiryTime(IAventusStorage _storage, bytes32 _rootHash)
-    external
-    view
-    returns (uint rootExpiryTime_)
-  {
-    rootExpiryTime_ = _storage.getUInt(keccak256(abi.encodePacked(merkleRootTable, _rootHash, "RootExpiryTime")));
-  }
-
-  function setRootExpiryTime(IAventusStorage _storage, bytes32 _rootHash, uint _rootExpiryTime)
-    external
-  {
-    _storage.setUInt(keccak256(abi.encodePacked(merkleRootTable, _rootHash, "RootExpiryTime")), _rootExpiryTime);
   }
 
   function getDeposit(IAventusStorage _storage, bytes32 _rootHash)
@@ -113,14 +57,6 @@ library LMerkleRootsStorage {
     external
   {
     _storage.setUInt(keccak256(abi.encodePacked(merkleRootTable, _rootHash, "RegistrationTime")), _registrationTime);
-  }
-
-  function getRootChallengeExpiryTime(IAventusStorage _storage, bytes32 _rootHash)
-    external
-    view
-    returns (uint expiryTime_)
-  {
-    expiryTime_ = getRootRegistrationTime(_storage, _rootHash) + _storage.getUInt(challengeWindowHash);
   }
 
   function getRootRegistrationTime(IAventusStorage _storage, bytes32 _rootHash)

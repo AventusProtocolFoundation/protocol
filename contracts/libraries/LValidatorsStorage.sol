@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity >=0.5.2 <=0.5.12;
 
 import "../interfaces/IAventusStorage.sol";
 
@@ -79,8 +79,8 @@ library LValidatorsStorage {
     uint numFailedChallenges = _storage.getUInt(numFailedChallengesKey);
     uint numValidatorCoolingOffPeriods = _storage.getUInt(numValidatorCoolingOffPeriodsKey);
 
-    if (numFailedChallenges > numValidatorCoolingOffPeriods)
-      numFailedChallenges = numValidatorCoolingOffPeriods;
+    if (numFailedChallenges > numValidatorCoolingOffPeriods - 1)
+      numFailedChallenges = numValidatorCoolingOffPeriods - 1;
 
     bytes32 coolingOffPeriodKey = keccak256(abi.encodePacked(validatorsTable, "ValidatorCoolingOffPeriod", numFailedChallenges));
     coolingOffPeriod_ = _storage.getUInt(coolingOffPeriodKey);

@@ -1,18 +1,24 @@
-pragma solidity ^0.5.2;
+pragma solidity >=0.5.2 <=0.5.12;
 
 import "../interfaces/IERC20.sol";
 
+// NOTE: Includes optional fields.
+// See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md for details.
 contract AVTContractForTesting is IERC20 {
-  uint private constant oneAVTInNat = 10**18;
+  string public constant name = "Aventus";
+  string public constant symbol = "AVT";
+  uint8 public constant decimals = 18;
+
+  uint private constant oneAVTInAttoAVT = 10**uint(decimals);
   uint private constant totalSupplyInAVT = 10000000; // 10,000,000 - same as the one on mainnet so we don't go over this.
-  uint private constant totalSupplyInNat = totalSupplyInAVT * oneAVTInNat;
+  uint private constant totalSupplyInAttoAVT = totalSupplyInAVT * oneAVTInAttoAVT;
   mapping (address => uint) balances;
   mapping (address => mapping (address => uint)) approvals;
 
   constructor ()
     public
   {
-    balances[msg.sender] = totalSupplyInNat;
+    balances[msg.sender] = totalSupplyInAttoAVT;
   }
 
   function totalSupply()
@@ -20,7 +26,7 @@ contract AVTContractForTesting is IERC20 {
     view
     returns (uint totalSupply_)
   {
-    totalSupply_ = totalSupplyInNat;
+    totalSupply_ = totalSupplyInAttoAVT;
   }
 
   function balanceOf(address _owner)

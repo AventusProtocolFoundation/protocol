@@ -1,6 +1,6 @@
 const signingHelper = require('../../utils/signingHelper');
 
-let testHelper, timeTestHelper, avtTestHelper, eventsManager, uniqueEventNum;
+let testHelper, avtTestHelper, eventsManager, uniqueEventNum;
 
 const roles = {
   validator: 'Validator',
@@ -9,9 +9,8 @@ const roles = {
   invalid: 'invalid'
 };
 
-async function init(_testHelper, _timeTestHelper, _avtTestHelper) {
+async function init(_testHelper, _avtTestHelper) {
   testHelper = _testHelper;
-  timeTestHelper = _timeTestHelper;
   avtTestHelper = _avtTestHelper;
   eventsManager = testHelper.getEventsManager();
   uniqueEventNum = 0;
@@ -21,11 +20,9 @@ async function createEvent(_eventOwner, _sender, _rules) {
   const sender = _sender || _eventOwner;
   const eventDesc = 'My event';
   const eventRef = testHelper.hash(uniqueEventNum++);
-  const sixWeeks = timeTestHelper.oneWeek.mul(new web3.utils.BN(6));
-  const eventTime = timeTestHelper.now().add(sixWeeks);
   const rules = _rules || '0x';
-  const eventOwnerProof = await signingHelper.getCreateEventEventOwnerProof(_eventOwner, eventDesc, eventTime, rules, sender);
-  await eventsManager.createEvent(eventDesc, eventRef, eventTime, eventOwnerProof, _eventOwner, rules, {from: sender});
+  const eventOwnerProof = await signingHelper.getCreateEventEventOwnerProof(_eventOwner, eventDesc, rules);
+  await eventsManager.createEvent(eventDesc, eventRef, eventOwnerProof, _eventOwner, rules, {from: sender});
   const eventArgs = await testHelper.getLogArgs(eventsManager, 'LogEventCreated');
   return eventArgs.eventId;
 }

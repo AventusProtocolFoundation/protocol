@@ -57,7 +57,7 @@ contract('MerkleLeafChallenges', async () => {
       assert.equal(logArgs.challengeReason, "Is a duplicate transaction leaf");
 
       if (!_sameTree) {
-        await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(existingMerkleTree.rootHash, accounts.validator,
+        await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(existingMerkleTree.rootHash, accounts.validator,
           existingMerkleTree.deposit);
       }
 
@@ -116,7 +116,7 @@ contract('MerkleLeafChallenges', async () => {
       });
 
       afterEach(async () => {
-        await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(validTree.rootHash, accounts.validator,
+        await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(validTree.rootHash, accounts.validator,
             validTree.deposit);
       });
 
@@ -151,15 +151,15 @@ contract('MerkleLeafChallenges', async () => {
       async function createLeavesAndRegisterTrees(_ticketId1, _ticketId2, _trxType, _wait) {
         validLeaf1 = createEncodedLeaf(_ticketId1, _trxType);
         validTree1 = await createAndRegisterMerkleTree(validLeaf1);
-        if (_wait) await timeTestHelper.advanceByNumDays(1);
+        if (_wait) await timeTestHelper.advanceByOneMinute();
         validLeaf2 = createEncodedLeaf(_ticketId2, _trxType);
         validTree2 = await createAndRegisterMerkleTree(validLeaf2);
       }
 
       afterEach(async () => {
-        await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(validTree1.rootHash, accounts.validator,
+        await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(validTree1.rootHash, accounts.validator,
             validTree1.deposit);
-        await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(validTree2.rootHash, accounts.validator,
+        await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(validTree2.rootHash, accounts.validator,
             validTree2.deposit);
       });
 
@@ -179,15 +179,6 @@ contract('MerkleLeafChallenges', async () => {
         await createLeavesAndRegisterTrees(1, 1, TransactionType.Resell);
         await challengeLeafDuplicationFails(validLeaf2, validTree2.merklePath1, validLeaf1, validTree1.merklePath1,
             'Challenge failed - not a duplicate');
-      });
-
-      it ('when the challenge window has passed', async () => {
-        // would cause challenge to succeed - if it were made in time
-        await createLeavesAndRegisterTrees(1, 1, TransactionType.Sell, true);
-
-        await timeTestHelper.advancePastChallengeWindow();
-        await challengeLeafDuplicationFails(validLeaf2, validTree2.merklePath1, validLeaf1, validTree1.merklePath1,
-            'Challenge window expired');
       });
     });
   });

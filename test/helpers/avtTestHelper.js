@@ -2,7 +2,7 @@ const BN = web3.utils.BN;
 
 let testHelper, avtManager, aventusStorage, avt, accounts;
 
-const oneAVTTo18SigFig = (new BN(10)).pow(new BN(18));
+const oneAVTInAttoAVTBN = (new BN(10)).pow(new BN(18));
 
 async function init(_testHelper) {
   testHelper = _testHelper;
@@ -58,8 +58,8 @@ async function checkBalanceIsZero(_account, _accountName) {
   testHelper.assertBNZero(depositBalance, (_accountName + ' has AVT: ' + depositBalance));
 }
 
-function toNat(_amountInAVT) {
-  return _amountInAVT.mul(oneAVTTo18SigFig);
+function toAttoAVT(_amountInAVT) {
+  return _amountInAVT.mul(oneAVTInAttoAVTBN);
 }
 
 // Keep exports alphabetical.
@@ -70,8 +70,8 @@ module.exports = {
   checkBalancesAreZero,
   clearAVTAccount,
   init,
-  oneAVTTo18SigFig,
-  toNat,
+  oneAVTInAttoAVTBN,
+  toAttoAVT,
   totalBalance,
   withdrawAVT,
 };

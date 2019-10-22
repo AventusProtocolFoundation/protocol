@@ -8,13 +8,12 @@ const merkleTreeHelper = require('../utils/merkleTreeHelper');
 const BN = testHelper.BN;
 
 contract('ValidatorsManager', async () => {
-  let validatorsManager, accounts, goodValidator;
+  let validatorsManager, merkleLeafChallenges, accounts, goodValidator, coolingOffPeriods;
 
   const goodEvidenceURL = testHelper.validEvidenceURL;
   const goodValidatorDescription = 'Some validator to be registered';
   const badValidatorAddress = testHelper.zeroAddress;
-  const validatorDepositInAVTDecimals = avtTestHelper.toNat(new BN(5000)); // From ParameterRegistry
-
+  const validatorDepositInAVTDecimals = avtTestHelper.toAttoAVT(new BN(5000)); // From ParameterRegistry
 
   before(async () => {
     await testHelper.init();
@@ -23,9 +22,19 @@ contract('ValidatorsManager', async () => {
     await validatorsTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
     await merkleRootsTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
 
+    merkleLeafChallenges = testHelper.getMerkleLeafChallenges();
     validatorsManager = testHelper.getValidatorsManager();
-    accounts = testHelper.getAccounts('validator', 'otherValidator', 'validator');
+    merkleLeafChallenges = testHelper.getMerkleLeafChallenges();
+    accounts = testHelper.getAccounts('validator', 'otherValidator', 'challenger');
     goodValidator = accounts.validator;
+
+    // Mirrors values in parameter registry
+    coolingOffPeriods = [
+     timeTestHelper.oneDay.mul(new testHelper.BN(2)),
+     timeTestHelper.oneWeek.mul(new testHelper.BN(15)),
+     timeTestHelper.oneWeek.mul(new testHelper.BN(41)),
+     timeTestHelper.oneWeek.mul(new testHelper.BN(80))
+    ];
   });
 
   after(async () => {
@@ -152,7 +161,7 @@ contract('ValidatorsManager', async () => {
           const root = await merkleRootsTestHelper.depositAndRegisterMerkleRoot(goodValidator);
           await deregisterValidatorFails(goodValidator, 'Validator cannot be deregistered yet');
 
-          await merkleRootsTestHelper.advanceTimeAndDeregisterMerkleRoot(root.rootHash);
+          await merkleRootsTestHelper.advanceTimeAndUnlockMerkleRootDeposit(root.rootHash);
           await deregisterValidatorFails(goodValidator, 'Validator cannot be deregistered yet');
 
           // Tear down
@@ -220,52 +229,108 @@ contract('ValidatorsManager', async () => {
     });
   });
 
-  context('extra tests for special cases', async () => {
-    const treeDepth = 3;
-
-    let validator, tree, rootExpiryTime, timeToRootExpiry, rootDeposit;
+// TODO: Refactor these tests - bad mix of globals and locals and repeated code
+  context('validator deregistration special cases', async () => {
+    let tree, encodedLeaf, rootRegistrationTime, rootDeposit;
     let coolingOffNoPenalties, coolingOffOnePenalty;
 
     before(() => {
-      validator = accounts.validator;
-      timeToRootExpiry = timeTestHelper.oneWeek.mul(new testHelper.BN(100));
-      coolingOffNoPenalties = timeTestHelper.oneWeek.mul(new testHelper.BN(3));
-      coolingOffOnePenalty = timeTestHelper.oneWeek.mul(new testHelper.BN(15));
+      coolingOffNoPenalties = coolingOffPeriods[0];
+      coolingOffOnePenalty = coolingOffPeriods[1];
     });
 
     async function registerValidatorAndBadRoot() {
-      await validatorsTestHelper.depositAndRegisterValidator(validator);
-      const deregistrationTimeBefore = await validatorsTestHelper.getDeregistrationTime(validator, 'Validator');
+      await validatorsTestHelper.depositAndRegisterValidator(goodValidator);
+      const deregistrationTimeBefore = await validatorsTestHelper.getDeregistrationTime(goodValidator, 'Validator');
       assert.equal(deregistrationTimeBefore, 0);
 
-      tree = merkleTreeHelper.createRandomTree(treeDepth);
-      rootExpiryTime = timeTestHelper.now().add(timeToRootExpiry);
-      const retVal = await merkleRootsTestHelper.depositAndRegisterMerkleRoot(validator, tree.rootHash,
-          treeDepth - 1, rootExpiryTime);
-      rootDeposit = retVal.deposit;
-      const deregistrationTimeAfter = await validatorsTestHelper.getDeregistrationTime(validator, 'Validator');
+      const leaf = merkleTreeHelper.getBaseLeaf(0);
+      encodedLeaf = merkleTreeHelper.encodeLeaf(leaf);
+      const leaves = [encodedLeaf, testHelper.randomBytes32()];
+      tree = await merkleRootsTestHelper.createAndRegisterMerkleTree(leaves, goodValidator);
+      rootRegistrationTime = timeTestHelper.now();
+      rootDeposit = tree.deposit;
+      const deregistrationTimeAfter = await validatorsTestHelper.getDeregistrationTime(goodValidator, 'Validator');
 
-      testHelper.assertBNEquals(deregistrationTimeAfter, rootExpiryTime.add(coolingOffNoPenalties));
+      testHelper.assertBNEquals(deregistrationTimeAfter, rootRegistrationTime.add(coolingOffNoPenalties));
     }
 
-    it('Ensure that validator deregister after merkle leaf challenge clears expiry time and penalties', async () => {
+    it('deregistration time and penalties are cleared', async () => {
       await registerValidatorAndBadRoot();
 
-      await merkleRootsTestHelper.autoChallengeTreeDepth(tree.leafHash, tree.merklePath, validator);
-      await avtTestHelper.withdrawAVT(rootDeposit, validator);
-      const deregistrationTimeAfterChallenge = await validatorsTestHelper.getDeregistrationTime(validator, 'Validator');
-      testHelper.assertBNEquals(deregistrationTimeAfterChallenge, rootExpiryTime.add(coolingOffOnePenalty));
-
-      await validatorsTestHelper.advanceToDeregistrationTime(validator, 'Validator');
-      await validatorsTestHelper.deregisterValidatorAndWithdrawDeposit(validator);
-
+      await merkleLeafChallenges.challengeLeafConsistency(encodedLeaf, tree.merklePath, {from: accounts.challenger});
+      await avtTestHelper.withdrawAVT(rootDeposit, accounts.challenger);
+      const deregistrationTimeAfterChallenge = await validatorsTestHelper.getDeregistrationTime(goodValidator, 'Validator');
+      testHelper.assertBNEquals(deregistrationTimeAfterChallenge, rootRegistrationTime.add(coolingOffOnePenalty));
+      await validatorsTestHelper.advanceToDeregistrationTime(goodValidator, 'Validator');
+      await validatorsTestHelper.deregisterValidatorAndWithdrawDeposit(goodValidator);
       await registerValidatorAndBadRoot();
 
       // TIDY UP
-      await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(tree.rootHash, validator, rootDeposit);
+      await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(tree.rootHash, goodValidator, rootDeposit);
+      await validatorsTestHelper.advanceToDeregistrationTime(goodValidator, 'Validator');
+      await validatorsTestHelper.deregisterValidatorAndWithdrawDeposit(goodValidator);
+    });
 
-      await validatorsTestHelper.advanceToDeregistrationTime(validator, 'Validator');
-      await validatorsTestHelper.deregisterValidatorAndWithdrawDeposit(validator);
+    it('safely challenge the same leaf more than once', async () => {
+      await registerValidatorAndBadRoot();
+
+      // Challenge leaf once
+      await merkleLeafChallenges.challengeLeafConsistency(encodedLeaf, tree.merklePath, {from: accounts.challenger});
+      let logArgs = await testHelper.getLogArgs(merkleLeafChallenges, 'LogMerkleLeafChallengeSucceeded');
+      assert.equal(logArgs.leafHash, tree.leafHash);
+      const challengerBalanceFirstChallenge = await avtTestHelper.balanceOf(accounts.challenger);
+      const deregistrationTimeFirstChallenge = await validatorsTestHelper.getDeregistrationTime(goodValidator, 'Validator');
+
+      // And again - nothing should change
+      await merkleLeafChallenges.challengeLeafConsistency(encodedLeaf, tree.merklePath, {from: accounts.challenger});
+      logArgs = await testHelper.getLogArgs(merkleLeafChallenges, 'LogMerkleLeafChallengeSucceeded');
+      assert.equal(logArgs.leafHash, tree.leafHash);
+      const challengerBalanceSecondChallenge = await avtTestHelper.balanceOf(accounts.challenger);
+      testHelper.assertBNEquals(challengerBalanceFirstChallenge, challengerBalanceSecondChallenge);
+      const deregistrationTimeSecondChallenge = await validatorsTestHelper.getDeregistrationTime(goodValidator, 'Validator');
+      testHelper.assertBNEquals(deregistrationTimeFirstChallenge, deregistrationTimeSecondChallenge);
+
+      // TIDY UP
+      await avtTestHelper.withdrawAVT(rootDeposit, accounts.challenger);
+      await validatorsTestHelper.advanceToDeregistrationTime(goodValidator, 'Validator');
+      await validatorsTestHelper.deregisterValidatorAndWithdrawDeposit(goodValidator);
+    });
+
+    async function registerRootAndRunSuccessfulChallenge(expectNoPenaltyIncrease){
+      const deregistrationTimeBefore = await validatorsTestHelper.getDeregistrationTime(goodValidator, 'Validator');
+
+      const leaf = merkleTreeHelper.getBaseLeaf(0);
+      const encodedLeaf = merkleTreeHelper.encodeLeaf(leaf);
+      const leaves = [encodedLeaf, testHelper.randomBytes32()];
+      const merkleTree = await merkleRootsTestHelper.createAndRegisterMerkleTree(leaves, goodValidator);
+      await merkleLeafChallenges.challengeLeafConsistency(encodedLeaf, merkleTree.merklePath, {from: accounts.challenger});
+      await avtTestHelper.withdrawAVT(merkleTree.deposit, accounts.challenger);
+      const deregistrationTimeAfter = await validatorsTestHelper.getDeregistrationTime(goodValidator, 'Validator');
+
+      if (expectNoPenaltyIncrease) {
+        testHelper.assertBNEquals(deregistrationTimeAfter, deregistrationTimeBefore);
+      } else {
+        testHelper.assertBNNotEquals(deregistrationTimeAfter, deregistrationTimeBefore);
+      }
+    }
+
+    it('time penalties after multiple challenges are correct', async () => {
+      await validatorsTestHelper.depositAndRegisterValidator(goodValidator);
+
+      // Up to the number of cooling off period penalties, check that the cooling off period is further penalised every time a
+      // root is challenged.
+      for (let i = 1; i < coolingOffPeriods.length; i++) {
+        await registerRootAndRunSuccessfulChallenge(false);
+      }
+
+      // Check that subsequent challenges do not change the cooling off penalty.
+      await registerRootAndRunSuccessfulChallenge(true);
+      await registerRootAndRunSuccessfulChallenge(true);
+      await registerRootAndRunSuccessfulChallenge(true);
+
+      await validatorsTestHelper.advanceToDeregistrationTime(goodValidator);
+      await validatorsTestHelper.deregisterValidatorAndWithdrawDeposit(goodValidator);
     });
   });
 });

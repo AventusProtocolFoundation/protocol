@@ -20,7 +20,6 @@ const LEventsStorage = artifacts.require('LEventsStorage');
 const LEventsEvents = artifacts.require('LEventsEvents');
 const LValidatorsStorage = artifacts.require('LValidatorsStorage');
 const LAVTStorage = artifacts.require('LAVTStorage');
-const LMerkleLeafChallenges = artifacts.require('LMerkleLeafChallenges');
 const LMerkleRoots = artifacts.require('LMerkleRoots');
 const TimeMachine = artifacts.require('TimeMachine');
 
@@ -29,9 +28,9 @@ const PAventusTime = artifacts.require('PAventusTime');
 const PAVTManager = artifacts.require('PAVTManager');
 
 module.exports = async function(_deployer, _networkName, _accounts) {
-    console.log('*** Deploying Libraries (Part A)...');
-    await deployLibraries(_deployer, _networkName);
-    console.log('*** LIBRARIES PART A DEPLOY COMPLETE');
+  console.log('*** Deploying Libraries (Part A)...');
+  await deployLibraries(_deployer, _networkName);
+  console.log('*** LIBRARIES PART A DEPLOY COMPLETE');
 };
 
 let deployLAventusTime;
@@ -40,11 +39,11 @@ let deployLAventusTimeMock;
 let version;
 
 async function deployLibraries(_deployer, _networkName) {
-  const testMode = common.isTestNetwork(_networkName);
+  const deployAll = common.deployAll(_networkName);
 
-  deployLAventusTime = testMode;
-  deployLAVTManager = testMode;
-  deployLAventusTimeMock = testMode;  // TODO: Do we ALWAYS want Rinkeby to use mock time mode?
+  deployLAventusTime = deployAll;
+  deployLAVTManager = deployAll;
+  deployLAventusTimeMock = common.mockTime(_networkName) && deployAll;
 
   await doDeployVersion(_deployer);
   const storageContract = await common.getStorageContractFromJsonFile(IAventusStorage, _networkName);
@@ -72,12 +71,12 @@ async function doDeployLAventusTime(_deployer, _storage) {
   const deployLibraryAndProxy = deployLAventusTime;
   const dependents = [LAVTStorage, LEventsEvents, LEvents, LEventsStorage, LValidators, LMerkleRoots, LProposalsEnact, LProposals];
 
-  await librariesCommon.doDeployLibraryAndProxy(web3, version, deploySubLibraries, _deployer, _storage, libraryName, proxyName,
+  await librariesCommon.doDeployLibraryAndProxy(version, deploySubLibraries, _deployer, _storage, libraryName, proxyName,
       library, proxy, deployLibraryAndProxy, dependents);
   if (deployLAventusTimeMock) {
     await common.deploy(_deployer, LAventusTimeMock);
     await _deployer.link(LAventusTimeMock, TimeMachine);
-    await librariesCommon.setProxiedLibraryAddress(web3, version, _storage, libraryName, LAventusTimeMock.address);
+    await librariesCommon.setProxiedLibraryAddress(version, _storage, libraryName, LAventusTimeMock.address);
   }
 }
 
@@ -89,6 +88,6 @@ function doDeployLAVTManager(_deployer, _storage) {
   const deployLibraryAndProxy = deployLAVTManager;
   const dependents = [LValidatorsChallenges, LProposalsVoting, LValidators, AVTManager, LProposalsEnact, LMerkleRoots];
 
-  return librariesCommon.doDeployLibraryAndProxy(web3, version, deploySubLibraries, _deployer, _storage, libraryName,
+  return librariesCommon.doDeployLibraryAndProxy(version, deploySubLibraries, _deployer, _storage, libraryName,
       proxyName, library, proxy, deployLibraryAndProxy, dependents);
 }

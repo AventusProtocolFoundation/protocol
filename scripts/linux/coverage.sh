@@ -12,7 +12,7 @@ fi
 rm -rf build
 truffle compile
 touch allFiredEvents
-env SKIP_REVERT_ERR=1 SOLIDITY_COVERAGE_USE_RPC=1 node_modules/.bin/solidity-coverage
+truffle run coverage --network development
 
 if [ "$1" == "SKIP_ASSERTS" ]; then
   node scripts/SwitchMode.js release

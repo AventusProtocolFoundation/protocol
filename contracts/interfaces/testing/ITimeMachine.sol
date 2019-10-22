@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity >=0.5.2 <=0.5.12;
 
 interface ITimeMachine {
   function getCurrentTime() external view returns (uint time_);

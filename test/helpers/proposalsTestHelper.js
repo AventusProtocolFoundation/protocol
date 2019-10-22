@@ -1,3 +1,5 @@
+const web3Tools = require('../../utils/web3Tools.js');
+
 const communityProposalDescription = 'I think we should do something';
 const governanceProposalDescription = 'I think we should change something';
 const EMPTY_BYTES = '0x';
@@ -40,7 +42,7 @@ function generateBytecode(_value, _key, _bytecode) {
     [record, _value.toString()]
   );
 
-  return web3.eth.abi.encodeParameters(['address', 'bytes', 'bytes'], [storageAddress, encodedFunctionCall, bytecode]);
+  return web3Tools.encodeParams(['address', 'bytes', 'bytes'], [storageAddress, encodedFunctionCall, bytecode]);
 }
 
 async function getDoNothingBytecode() {

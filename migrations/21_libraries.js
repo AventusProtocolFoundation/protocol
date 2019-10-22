@@ -1,5 +1,6 @@
 const common = require('./common.js');
 const librariesCommon = require('./librariesCommon.js');
+const web3Tools = require('../utils/web3Tools.js');
 
 const fs = require('fs');
 
@@ -25,6 +26,8 @@ const LValidatorsStorage = artifacts.require('LValidatorsStorage');
 const PValidators = artifacts.require('PValidators');
 const PProposals = artifacts.require('PProposals');
 
+const proposalsOn = true; // See scripts/SwitchProposalsMode.js
+
 module.exports = async function(_deployer, _networkName, _accounts) {
     console.log('*** Deploying Libraries (Part B)...');
     await deployLibraries(_deployer, _networkName);
@@ -37,11 +40,11 @@ let deployLProposalForTesting;
 let version;
 
 async function deployLibraries(_deployer, _networkName) {
-  const developmentMode = common.isTestNetwork(_networkName);
+  const deployAll = common.deployAll(_networkName);
 
-  deployLValidators = developmentMode;
-  deployLProposals = developmentMode;
-  deployLProposalForTesting = developmentMode;
+  deployLValidators = deployAll;
+  deployLProposals = proposalsOn && deployAll;
+  deployLProposalForTesting = proposalsOn && deployAll;
 
   version = await common.getVersion(Versioned);
   const storageContract = await common.getStorageContractFromJsonFile(IAventusStorage, _networkName);
@@ -60,8 +63,10 @@ async function deploySubLibraries(_deployer, _library) {
   } else if (_library === LValidators) {
     await common.deploy(_deployer, LValidatorsStorage);
     await librariesCommon.linkMultiple(_deployer, LValidatorsStorage, [LValidators, LValidatorsChallenges]);
-    await common.deploy(_deployer, LValidatorsChallenges);
-    await _deployer.link(LValidatorsChallenges, LValidators);
+    if (proposalsOn) {
+      await common.deploy(_deployer, LValidatorsChallenges);
+      await _deployer.link(LValidatorsChallenges, LValidators);
+    }
   }
 }
 
@@ -73,7 +78,7 @@ function doDeployLValidators(_deployer, _storage) {
   const deployLibraryAndProxy = deployLValidators;
   const dependents = [LEventsEvents, LEventsRoles, ValidatorsManager, LMerkleRoots, ProposalsManager];
 
-  return librariesCommon.doDeployLibraryAndProxy(web3, version, deploySubLibraries, _deployer, _storage, libraryName,
+  return librariesCommon.doDeployLibraryAndProxy(version, deploySubLibraries, _deployer, _storage, libraryName,
       proxyName, library, proxy, deployLibraryAndProxy, dependents);
 }
 
@@ -85,15 +90,15 @@ async function doDeployLProposals(_deployer, _storage) {
   const deployLibraryAndProxy = deployLProposals;
   const dependents = [ProposalsManager, LValidators, LValidatorsChallenges];
 
-  await librariesCommon.doDeployLibraryAndProxy(web3, version, deploySubLibraries, _deployer, _storage, libraryName, proxyName,
+  await librariesCommon.doDeployLibraryAndProxy(version, deploySubLibraries, _deployer, _storage, libraryName, proxyName,
       library, proxy, deployLibraryAndProxy, dependents);
   if (deployLProposalForTesting) {
     await common.deploy(_deployer, LProposalForTesting);
   }
-  // Special case for direct call between libraries.
-  const lProposalsEnact = await LProposalsEnact.deployed();
-  if (lProposalsEnact) {
-    const lProposalsEnactAddressKey = web3.utils.soliditySha3('LProposalsEnactAddress');
+  if (deployLProposals) {
+    // Special case for direct call between libraries.
+    const lProposalsEnact = await LProposalsEnact.deployed();
+    const lProposalsEnactAddressKey = web3Tools.hash('LProposalsEnactAddress');
     await _storage.setAddress(lProposalsEnactAddressKey, lProposalsEnact.address);
-  } // else LProposalsEnact was not deployed this time, keep the old address.
+  }
 }

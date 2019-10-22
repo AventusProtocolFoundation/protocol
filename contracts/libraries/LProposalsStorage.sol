@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity >=0.5.2 <=0.5.12;
 
 import "../interfaces/IAventusStorage.sol";
 
@@ -155,14 +155,6 @@ library LProposalsStorage {
     external
   {
     _storage.setBytes(keccak256(abi.encodePacked(proposalTable, _proposalId, "GovernanceProposalBytecode")), _bytecode);
-  }
-
-  function getGovernanceProposalBytecode(IAventusStorage _storage, uint _proposalId)
-    public
-    view
-    returns (bytes memory bytecode_)
-  {
-    bytecode_ = _storage.getBytes(keccak256(abi.encodePacked(proposalTable, _proposalId, "GovernanceProposalBytecode")));
   }
 
   function getLobbyingStart(IAventusStorage _storage, uint _proposalId)
@@ -367,6 +359,14 @@ library LProposalsStorage {
     bytes32 key = keccak256(abi.encodePacked(proposalTable, _proposalId, "NumVotersClaimed"));
     numVotersClaimed_ = _storage.getUInt(key);
     _storage.setUInt(key, ++numVotersClaimed_);
+  }
+
+  function getGovernanceProposalBytecode(IAventusStorage _storage, uint _proposalId)
+    public
+    view
+    returns (bytes memory bytecode_)
+  {
+    bytecode_ = _storage.getBytes(keccak256(abi.encodePacked(proposalTable, _proposalId, "GovernanceProposalBytecode")));
   }
 
   function getVotersWinningsPotKey(uint _proposalId)

@@ -1,17 +1,22 @@
 // TODO: Consolidate all usages of testHelper.sign into here.
 
+const merkleTreeHelper = require('./merkleTreeHelper.js');
+const web3Tools = require('./web3Tools.js');
+
+// TODO: Use web3Tools.hash directly.
 function hash() {
-  return web3.utils.soliditySha3(...arguments);
+  return web3Tools.hash(...arguments);
 }
 
+// TODO: Use web3Tools.hash directly.
 async function sign(_data, _signer) {
-  return web3.eth.sign(_data, _signer);
+  return web3Tools.sign(_data, _signer);
 }
 
-async function getCreateEventEventOwnerProof(_eventOwner, _eventDesc, _eventTime, _rules, _sender)
+async function getCreateEventEventOwnerProof(_eventOwner, _eventDesc, _rules)
 {
   const eventDescHash = hash(_eventDesc);
-  const msgHash = hash(eventDescHash, _eventTime, _rules, _sender);
+  const msgHash = hash(eventDescHash, _rules);
   return sign(msgHash, _eventOwner);
 }
 
@@ -28,6 +33,24 @@ async function getRevealVoteSignedMessage(_address, _proposalId, _optionId) {
 
 async function getCastVoteSecretFromRevealVoteSignedMessage(_signedMessage) {
   return hash(_signedMessage);
+}
+
+// TODO: Use this method from test code too. Also, create and share similar methods for all other leaf provenance fields.
+async function getTicketSaleProvenance(_eventId, _ticketRef, _properties, _vendor)
+{
+  const identityVendorProof = await getTicketSaleIdentityVendorProof(_eventId, _ticketRef, _vendor);
+  const propertiesVendorProof = await getTicketSalePropertiesVendorProof(_properties, _vendor);
+  return web3Tools.encodeParams(['bytes', 'bytes'], [identityVendorProof, propertiesVendorProof]);
+}
+
+async function getTicketSaleIdentityVendorProof(_eventId, _ticketRef, _vendor){
+  const saleIdentityHash = hash(merkleTreeHelper.TransactionType.Sell, _eventId, _ticketRef);
+  return sign(saleIdentityHash, _vendor);
+}
+
+async function getTicketSalePropertiesVendorProof(_properties, _vendor){
+  const salePropertiesHash = hash(merkleTreeHelper.TransactionType.Sell, _properties);
+  return sign(salePropertiesHash, _vendor);
 }
 
 async function getCastVoteSecret(_address, _proposalId, _optionId) {
@@ -48,4 +71,5 @@ module.exports = {
   getCreateEventEventOwnerProof,
   getRegisterRoleEventOwnerProof,
   getRevealVoteSignedMessage,
+  getTicketSaleProvenance
 };

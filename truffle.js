@@ -23,26 +23,20 @@ module.exports = {
     rinkeby: {
       provider: () => getWalletProvider(),
       network_id: 4,
-      gas: 7000000, // See https://www.rinkeby.io/#stats to make sure this is not over the network limit
+      gas: 4000000, // See https://www.rinkeby.io/#stats to make sure this is not over the network limit
       gasPrice: 10e9 // see latest blocks on https://www.rinkeby.io/#stats for reasonable prices
     },
     mainnet: {
       provider: () => getWalletProvider(),
       network_id: 1,
-      gas: 7000000, // See https://ethstats.net/ to make sure this is not over the network limit
-      gasPrice: 10e9  // 10 GWEi: see https://ethgasstation.info/ for recommended prices
-    },
-    coverage: { // See https://www.npmjs.com/package/solidity-coverage?activeTab=readme
-      host: "localhost",
-      network_id: "*",
-      port: 8555,         // If you change this, also set the port option in .solcover.js.
-      gas: 0xfffffffffff, // <-- Use this high gas value
-      gasPrice: 0x1       // <-- Use this low gas price
+      gas: 4000000, // See https://ethstats.net/ to make sure this is not over the network limit
+      gasPrice: 20e9  // 20 GWEi: see https://ethgasstation.info/ for recommended prices
     }
   },
   compilers: {
     solc: {
-      version: "0.5.2"
+      version: "0.5.12"
     }
-  }
+  },
+  plugins: ["solidity-coverage"]
 };

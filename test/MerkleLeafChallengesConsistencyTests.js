@@ -2,109 +2,38 @@ const testHelper = require('./helpers/testHelper');
 const avtTestHelper = require('./helpers/avtTestHelper');
 const timeTestHelper = require('./helpers/timeTestHelper');
 const eventsTestHelper = require('./helpers/eventsTestHelper');
+const merkleLeafTestHelper = require('./helpers/merkleLeafTestHelper');
 const merkleRootsTestHelper = require('./helpers/merkleRootsTestHelper');
 const validatorsTestHelper = require('./helpers/validatorsTestHelper');
-const snarksHelper = require('../utils/snarks/snarksHelper');
+const sigmaHelper = require('../utils/sigma/sigmaHelper');
 const merkleTreeHelper = require('../utils/merkleTreeHelper');
 
-const EMPTY_BYTES = '0x';
-const validSecret = '28668f1fc6a154ef446cc6f00b690b4452d603f8c7b114b36499deb36408'; // secret needs to be a 60 char hex string
 const TransactionType = merkleTreeHelper.TransactionType;
 
 contract('MerkleLeafChallenges - consistency', async () => {
   let accounts, merkleLeafChallenges;
-  let ticketId = 0;
-  let eventOwnerSnarkData;
-  let validatorSnarkData;
-  let invalidSnarkData;
 
   before(async () => {
     await testHelper.init();
     await avtTestHelper.init(testHelper);
     await timeTestHelper.init(testHelper);
+    await eventsTestHelper.init(testHelper, avtTestHelper);
+    accounts = testHelper.getAccounts('eventOwner', 'validator', 'challenger', 'ticketOwner');
+
+    await merkleLeafTestHelper.init(testHelper, eventsTestHelper, sigmaHelper, accounts);
     await merkleRootsTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
-    await eventsTestHelper.init(testHelper, timeTestHelper, avtTestHelper);
     await validatorsTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
 
     merkleLeafChallenges = testHelper.getMerkleLeafChallenges();
-    accounts = testHelper.getAccounts('eventOwner', 'validator', 'challenger', 'ticketOwner');
 
     await validatorsTestHelper.depositAndRegisterValidator(accounts.validator);
-
-    const goodSnarkData = await snarksHelper.generateSnarkData(validSecret, accounts.eventOwner, accounts.ticketOwner);
-    eventOwnerSnarkData = snarksHelper.encodeSnarkData(goodSnarkData);
-    validatorSnarkData = await snarksHelper.generateEncodedSnarkData(validSecret, accounts.validator, accounts.ticketOwner);
-    const badVal = '0xbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbada';
-    goodSnarkData.proofObj.proof.A = [badVal, badVal];
-    invalidSnarkData = snarksHelper.encodeSnarkData(goodSnarkData);
   });
 
   after(async () => {
+    await validatorsTestHelper.advanceToDeregistrationTime(accounts.validator, "Validator");
     await validatorsTestHelper.deregisterValidatorAndWithdrawDeposit(accounts.validator);
     await avtTestHelper.checkBalancesAreZero(accounts);
   });
-
-  async function createSaleLeaf() {
-    const leaf = merkleTreeHelper.getBaseLeaf(TransactionType.Sell);
-    const eventId = (await eventsTestHelper.createEvent(accounts.eventOwner, accounts.validator)).toString();
-    const propertiesProof = await testHelper.sign(accounts.eventOwner,
-        testHelper.hash(TransactionType.Sell, leaf.mutableData.properties));
-    const saleProof = await testHelper.sign(accounts.eventOwner,
-        testHelper.hash(TransactionType.Sell, eventId, leaf.immutableData.ticketRef));
-
-    leaf.immutableData.eventId = eventId;
-    leaf.immutableData.vendor = accounts.eventOwner;
-    leaf.mutableData.snarkData = eventOwnerSnarkData;
-    leaf.provenance = testHelper.encodeParams(['bytes', 'bytes'], [saleProof, propertiesProof]);
-    return leaf;
-  }
-
-  async function createResaleLeaf(_previousLeaf, _previousLeafMerklePath) {
-    const resellLeaf = merkleTreeHelper.createModificationLeaf(_previousLeaf, _previousLeafMerklePath,
-        TransactionType.Resell);
-    const ticketOwnerProof = await testHelper.sign(accounts.ticketOwner,
-        testHelper.hash(TransactionType.Resell, resellLeaf.mutableData.prevLeafHash, accounts.eventOwner));
-    const resellerProof = await testHelper.sign(accounts.eventOwner,
-        testHelper.hash(TransactionType.Resell, ticketOwnerProof));
-    resellLeaf.provenance = testHelper.encodeParams(['bytes', 'bytes'], [resellerProof, ticketOwnerProof]);
-    resellLeaf.mutableData.snarkData = eventOwnerSnarkData;
-    return resellLeaf;
-  }
-
-  async function createTransferLeaf(_previousLeaf, _previousLeafMerklePath) {
-    const transferLeaf = merkleTreeHelper.createModificationLeaf(_previousLeaf, _previousLeafMerklePath,
-        TransactionType.Transfer);
-    transferLeaf.provenance = await testHelper.sign(accounts.ticketOwner,
-        testHelper.hash(TransactionType.Transfer, transferLeaf.mutableData.prevLeafHash));
-    transferLeaf.mutableData.snarkData = eventOwnerSnarkData;
-    return transferLeaf;
-  }
-
-  async function createUpdateLeaf(_previousLeaf, _previousLeafMerklePath) {
-    const updateLeaf = merkleTreeHelper.createModificationLeaf(_previousLeaf, _previousLeafMerklePath,
-        TransactionType.Update);
-    updateLeaf.mutableData.properties = 'My event | Doors 20:30 | Seat H' + ticketId;
-    updateLeaf.provenance = await testHelper.sign(accounts.eventOwner,
-        testHelper.hash(TransactionType.Update, updateLeaf.mutableData.prevLeafHash, updateLeaf.mutableData.properties));
-    return updateLeaf;
-  }
-
-  async function createCancelLeaf(_previousLeaf, _previousLeafMerklePath) {
-    const cancelLeaf = merkleTreeHelper.createModificationLeaf(_previousLeaf, _previousLeafMerklePath,
-        TransactionType.Cancel);
-    cancelLeaf.provenance = await testHelper.sign(accounts.eventOwner,
-        testHelper.hash(TransactionType.Cancel, cancelLeaf.mutableData.prevLeafHash));
-    cancelLeaf.mutableData.snarkData = EMPTY_BYTES;
-    return cancelLeaf;
-  }
-
-  async function createRedeemLeaf(_previousLeaf, _previousLeafMerklePath) {
-    const redeemLeaf = merkleTreeHelper.createModificationLeaf(_previousLeaf, _previousLeafMerklePath,
-        TransactionType.Redeem);
-    redeemLeaf.provenance = await testHelper.sign(accounts.eventOwner,
-        testHelper.hash(TransactionType.Redeem, redeemLeaf.mutableData.prevLeafHash));
-    return redeemLeaf;
-  }
 
   context('challengeLeafConsistency', async () => {
     let leaf, merkleTree, prevMerkleTree;
@@ -121,14 +50,10 @@ contract('MerkleLeafChallenges - consistency', async () => {
       assert.equal(logArgs.challengeReason, _expectedChallengeReason);
     }
 
-    async function challengeLeafConsistencyFails(_expectedError, _falsifyMerklePath, _encodedLeaf, _pastChallengeWindow) {
+    async function challengeLeafConsistencyFails(_expectedError, _falsifyMerklePath, _encodedLeaf) {
       const encodedLeaf = _encodedLeaf || merkleTreeHelper.encodeLeaf(leaf);
       merkleTree = await merkleRootsTestHelper.createAndRegisterMerkleTree(encodedLeaf, accounts.validator);
       const merklePath = _falsifyMerklePath ? [testHelper.randomBytes32()] : merkleTree.merklePath;
-
-      if (_pastChallengeWindow) {
-        await timeTestHelper.advancePastChallengeWindow();
-      }
 
       await testHelper.expectRevert(() =>
           merkleLeafChallenges.challengeLeafConsistency(encodedLeaf, merklePath, {from: accounts.challenger}),
@@ -142,7 +67,7 @@ contract('MerkleLeafChallenges - consistency', async () => {
 
       context('for a sale leaf', async () => {
         beforeEach(async () => {
-          leaf = await createSaleLeaf();
+          leaf = await merkleLeafTestHelper.createSaleLeaf();
         });
 
         it('if the referenced event id does not exist', async () => {
@@ -182,22 +107,17 @@ contract('MerkleLeafChallenges - consistency', async () => {
           await challengeLeafConsistencySucceeds('Ticket identity must be signed by vendor');
         });
 
-        it('if the snark merchant signed hash is invalid', async () => {
-          leaf.mutableData.snarkData = validatorSnarkData;
-
-           await challengeLeafConsistencySucceeds('Snark merchant signed hash must be signed by vendor');
+        it('if the sigma merchant signed hash is invalid', async () => {
+          leaf.mutableData.sigmaData = await sigmaHelper.createSigmaData(accounts.validator, accounts.ticketOwner,
+              leaf.immutableData);
+          await challengeLeafConsistencySucceeds('Sigma merchant signed hash must be signed by vendor');
         });
 
-        it('if the snark data is empty', async () => {
-          leaf.mutableData.snarkData = EMPTY_BYTES;
+        it('if the sigma proof is invalid', async () => {
+          leaf.mutableData.sigmaData = await sigmaHelper.createInvalidSigmaData(accounts.eventOwner, accounts.ticketOwner,
+              leaf.immutableData);
 
-          await challengeLeafConsistencySucceeds('Leaf is incorrectly formatted');
-        });
-
-        it('if the snark proof is invalid', async () => {
-          leaf.mutableData.snarkData = invalidSnarkData;
-
-          await challengeLeafConsistencySucceeds('Snark proof is invalid');
+          await challengeLeafConsistencySucceeds('Sigma proof is invalid');
         });
 
         it('if the numResells is greater than zero', async () => {
@@ -217,14 +137,14 @@ contract('MerkleLeafChallenges - consistency', async () => {
         const ticketOwnerProof = testHelper.randomBytes32(); // We don't check the ticket owner proof.
 
         beforeEach(async () => {
-          const saleLeaf = await createSaleLeaf();
+          const saleLeaf = await merkleLeafTestHelper.createSaleLeaf();
           prevMerkleTree = await merkleRootsTestHelper.createAndRegisterMerkleTree(merkleTreeHelper.encodeLeaf(saleLeaf),
               accounts.validator);
-          leaf = await createResaleLeaf(saleLeaf, prevMerkleTree.merklePath);
+          leaf = await merkleLeafTestHelper.createResaleLeaf(saleLeaf, prevMerkleTree.merklePath);
         });
 
         afterEach(async () => {
-          await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(prevMerkleTree.rootHash, accounts.validator,
+          await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(prevMerkleTree.rootHash, accounts.validator,
               prevMerkleTree.deposit);
         });
 
@@ -246,32 +166,34 @@ contract('MerkleLeafChallenges - consistency', async () => {
           leaf.mutableData.prevLeafHash = testHelper.randomBytes32();
           leaf.mutableData.prevMerklePath = [testHelper.randomBytes32()];
 
-          await challengeLeafConsistencySucceeds('Previous merkle root must be active');
+          await challengeLeafConsistencySucceeds('Previous Merkle root must be registered');
         });
 
-        it('if the snark merchant signed hash is invalid', async () => {
-          leaf.mutableData.snarkData = validatorSnarkData;
+        it('if the sigma merchant signed hash is invalid', async () => {
+          leaf.mutableData.sigmaData = await sigmaHelper.createSigmaData(accounts.validator, accounts.ticketOwner,
+              leaf.immutableData);
 
-          await challengeLeafConsistencySucceeds('Snark merchant signed hash must be signed by reseller');
+          await challengeLeafConsistencySucceeds('Sigma merchant signed hash must be signed by reseller');
         });
 
-        it('if the snark proof is invalid', async () => {
-          leaf.mutableData.snarkData = invalidSnarkData;
+        it('if the sigma proof is invalid', async () => {
+          leaf.mutableData.sigmaData = await sigmaHelper.createInvalidSigmaData(accounts.eventOwner, accounts.ticketOwner,
+              leaf.immutableData);
 
-          await challengeLeafConsistencySucceeds('Snark proof is invalid');
+          await challengeLeafConsistencySucceeds('Sigma proof is invalid');
         });
       });
 
       context('for a transfer leaf', async () => {
         beforeEach(async () => {
-          const saleLeaf = await createSaleLeaf();
+          const saleLeaf = await merkleLeafTestHelper.createSaleLeaf();
           prevMerkleTree = await merkleRootsTestHelper.createAndRegisterMerkleTree(merkleTreeHelper.encodeLeaf(saleLeaf),
               accounts.validator);
-          leaf = await createTransferLeaf(saleLeaf, prevMerkleTree.merklePath);
+          leaf = await merkleLeafTestHelper.createTransferLeaf(saleLeaf, prevMerkleTree.merklePath);
         });
 
         afterEach(async () => {
-          await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(prevMerkleTree.rootHash, accounts.validator,
+          await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(prevMerkleTree.rootHash, accounts.validator,
               prevMerkleTree.deposit);
         });
 
@@ -279,26 +201,27 @@ contract('MerkleLeafChallenges - consistency', async () => {
           leaf.mutableData.prevLeafHash = testHelper.randomBytes32();
           leaf.mutableData.prevMerklePath = [testHelper.randomBytes32()];
 
-          await challengeLeafConsistencySucceeds('Previous merkle root must be active');
+          await challengeLeafConsistencySucceeds('Previous Merkle root must be registered');
         });
 
-        it('if the snark proof is invalid', async () => {
-          leaf.mutableData.snarkData = invalidSnarkData;
+        it('if the sigma proof is invalid', async () => {
+          leaf.mutableData.sigmaData = await sigmaHelper.createInvalidSigmaData(accounts.eventOwner, accounts.ticketOwner,
+              leaf.immutableData);
 
-          await challengeLeafConsistencySucceeds('Snark proof is invalid');
+          await challengeLeafConsistencySucceeds('Sigma proof is invalid');
         });
       });
 
       context('for an update leaf', async () => {
         beforeEach(async () => {
-          const saleLeaf = await createSaleLeaf();
+          const saleLeaf = await merkleLeafTestHelper.createSaleLeaf();
           prevMerkleTree = await merkleRootsTestHelper.createAndRegisterMerkleTree(merkleTreeHelper.encodeLeaf(saleLeaf),
               accounts.validator);
-          leaf = await createUpdateLeaf(saleLeaf, prevMerkleTree.merklePath);
+          leaf = await merkleLeafTestHelper.createUpdateLeaf(saleLeaf, prevMerkleTree.merklePath);
         });
 
         afterEach(async () => {
-          await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(prevMerkleTree.rootHash, accounts.validator,
+          await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(prevMerkleTree.rootHash, accounts.validator,
             prevMerkleTree.deposit);
         });
 
@@ -313,20 +236,20 @@ contract('MerkleLeafChallenges - consistency', async () => {
           leaf.mutableData.prevLeafHash = testHelper.randomBytes32();
           leaf.mutableData.prevMerklePath = [testHelper.randomBytes32()];
 
-          await challengeLeafConsistencySucceeds('Previous merkle root must be active');
+          await challengeLeafConsistencySucceeds('Previous Merkle root must be registered');
         });
       });
 
       context('for a cancel leaf', async () => {
         beforeEach(async () => {
-          const saleLeaf = await createSaleLeaf();
+          const saleLeaf = await merkleLeafTestHelper.createSaleLeaf();
           prevMerkleTree = await merkleRootsTestHelper.createAndRegisterMerkleTree(merkleTreeHelper.encodeLeaf(saleLeaf),
               accounts.validator);
-          leaf = await createCancelLeaf(saleLeaf, prevMerkleTree.merklePath);
+          leaf = await merkleLeafTestHelper.createCancelLeaf(saleLeaf, prevMerkleTree.merklePath);
         });
 
         afterEach(async () => {
-          await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(prevMerkleTree.rootHash, accounts.validator,
+          await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(prevMerkleTree.rootHash, accounts.validator,
             prevMerkleTree.deposit);
         });
 
@@ -340,25 +263,25 @@ contract('MerkleLeafChallenges - consistency', async () => {
           leaf.mutableData.prevLeafHash = testHelper.randomBytes32();
           leaf.mutableData.prevMerklePath = [testHelper.randomBytes32()];
 
-          await challengeLeafConsistencySucceeds('Previous merkle root must be active');
+          await challengeLeafConsistencySucceeds('Previous Merkle root must be registered');
         });
 
-        it('if the snark data was not cleared', async () => {
-          leaf.mutableData.snarkData = '0x1234';
-          await challengeLeafConsistencySucceeds('Cancel leaf must have no snark data');
+        it('if the sigma data was not cleared', async () => {
+          leaf.mutableData.sigmaData = '0x1234';
+          await challengeLeafConsistencySucceeds('Cancel leaf must have no sigma data');
         });
       });
 
       context('for a redeem leaf', async () => {
         beforeEach(async () => {
-          const saleLeaf = await createSaleLeaf();
+          const saleLeaf = await merkleLeafTestHelper.createSaleLeaf();
           prevMerkleTree = await merkleRootsTestHelper.createAndRegisterMerkleTree(merkleTreeHelper.encodeLeaf(saleLeaf),
               accounts.validator);
-          leaf = await createRedeemLeaf(saleLeaf, prevMerkleTree.merklePath);
+          leaf = await merkleLeafTestHelper.createRedeemLeaf(saleLeaf, prevMerkleTree.merklePath);
         });
 
         afterEach(async () => {
-          await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(prevMerkleTree.rootHash, accounts.validator,
+          await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(prevMerkleTree.rootHash, accounts.validator,
             prevMerkleTree.deposit);
         });
 
@@ -372,13 +295,14 @@ contract('MerkleLeafChallenges - consistency', async () => {
           leaf.mutableData.prevLeafHash = testHelper.randomBytes32();
           leaf.mutableData.prevMerklePath = [testHelper.randomBytes32()];
 
-          await challengeLeafConsistencySucceeds('Previous merkle root must be active');
+          await challengeLeafConsistencySucceeds('Previous Merkle root must be registered');
         });
 
-        it('if the snark proof is invalid', async () => {
-          leaf.mutableData.snarkData = invalidSnarkData;
+        it('if the sigma proof is invalid', async () => {
+          leaf.mutableData.sigmaData = await sigmaHelper.createInvalidSigmaData(accounts.eventOwner, accounts.ticketOwner,
+              leaf.immutableData);
 
-          await challengeLeafConsistencySucceeds('Snark proof is invalid');
+          await challengeLeafConsistencySucceeds('Sigma proof is invalid');
         });
       });
 
@@ -397,7 +321,7 @@ contract('MerkleLeafChallenges - consistency', async () => {
 
     context ('fails', async () => {
       afterEach(async () => {
-        await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(merkleTree.rootHash, accounts.validator,
+        await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(merkleTree.rootHash, accounts.validator,
             merkleTree.deposit);
       });
 
@@ -407,14 +331,9 @@ contract('MerkleLeafChallenges - consistency', async () => {
         await challengeLeafConsistencyFails('Challenge failed - nodes cannot be challenged', false, node);
       });
 
-      it('the challenge window has passed', async () => {
-        leaf = merkleTreeHelper.getBaseLeaf(TransactionType.Bad); // would cause challenge to succeed - if it were made in time
-        await challengeLeafConsistencyFails('Challenge window expired', false, null, true);
-      });
-
       context('for a sale leaf', async () => {
         beforeEach(async () => {
-          leaf = await createSaleLeaf();
+          leaf = await merkleLeafTestHelper.createSaleLeaf();
         });
 
         it('if the leaf under challenge is in fact legitimate', async () => {
@@ -422,20 +341,20 @@ contract('MerkleLeafChallenges - consistency', async () => {
         });
 
         it('if the merkle proof is invalid', async () => {
-          await challengeLeafConsistencyFails('Leaf and path do not refer to an active merkle root', true);
+          await challengeLeafConsistencyFails('Leaf and path do not refer to a registered merkle root', true);
         });
       });
 
       context('for a resale leaf', async () => {
         beforeEach(async () => {
-          const saleLeaf = await createSaleLeaf();
+          const saleLeaf = await merkleLeafTestHelper.createSaleLeaf();
           prevMerkleTree = await merkleRootsTestHelper.createAndRegisterMerkleTree(merkleTreeHelper.encodeLeaf(saleLeaf),
               accounts.validator);
-          leaf = await createResaleLeaf(saleLeaf, prevMerkleTree.merklePath);
+          leaf = await merkleLeafTestHelper.createResaleLeaf(saleLeaf, prevMerkleTree.merklePath);
         });
 
         afterEach(async () => {
-          await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(prevMerkleTree.rootHash, accounts.validator,
+          await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(prevMerkleTree.rootHash, accounts.validator,
               prevMerkleTree.deposit);
         });
 
@@ -444,20 +363,20 @@ contract('MerkleLeafChallenges - consistency', async () => {
         });
 
         it('if the merkle proof is invalid', async () => {
-          await challengeLeafConsistencyFails('Leaf and path do not refer to an active merkle root', true);
+          await challengeLeafConsistencyFails('Leaf and path do not refer to a registered merkle root', true);
         });
       });
 
       context('for a transfer leaf', async () => {
         beforeEach(async () => {
-          const saleLeaf = await createSaleLeaf();
+          const saleLeaf = await merkleLeafTestHelper.createSaleLeaf();
           prevMerkleTree = await merkleRootsTestHelper.createAndRegisterMerkleTree(merkleTreeHelper.encodeLeaf(saleLeaf),
               accounts.validator);
-          leaf = await createTransferLeaf(saleLeaf, prevMerkleTree.merklePath);
+          leaf = await merkleLeafTestHelper.createTransferLeaf(saleLeaf, prevMerkleTree.merklePath);
         });
 
         afterEach(async () => {
-          await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(prevMerkleTree.rootHash, accounts.validator,
+          await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(prevMerkleTree.rootHash, accounts.validator,
               prevMerkleTree.deposit);
         });
 
@@ -466,20 +385,20 @@ contract('MerkleLeafChallenges - consistency', async () => {
         });
 
         it('if the merkle proof is invalid', async () => {
-          await challengeLeafConsistencyFails('Leaf and path do not refer to an active merkle root', true);
+          await challengeLeafConsistencyFails('Leaf and path do not refer to a registered merkle root', true);
         });
       });
 
       context('for an update leaf', async () => {
         beforeEach(async () => {
-          const saleLeaf = await createSaleLeaf();
+          const saleLeaf = await merkleLeafTestHelper.createSaleLeaf();
           prevMerkleTree = await merkleRootsTestHelper.createAndRegisterMerkleTree(merkleTreeHelper.encodeLeaf(saleLeaf),
               accounts.validator);
-          leaf = await createUpdateLeaf(saleLeaf, prevMerkleTree.merklePath);
+          leaf = await merkleLeafTestHelper.createUpdateLeaf(saleLeaf, prevMerkleTree.merklePath);
         });
 
         afterEach(async () => {
-          await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(prevMerkleTree.rootHash, accounts.validator,
+          await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(prevMerkleTree.rootHash, accounts.validator,
             prevMerkleTree.deposit);
         });
 
@@ -488,20 +407,20 @@ contract('MerkleLeafChallenges - consistency', async () => {
         });
 
         it('if the merkle proof is invalid', async () => {
-          await challengeLeafConsistencyFails('Leaf and path do not refer to an active merkle root', true);
+          await challengeLeafConsistencyFails('Leaf and path do not refer to a registered merkle root', true);
         });
       });
 
       context('for a cancel leaf', async () => {
         beforeEach(async () => {
-          const saleLeaf = await createSaleLeaf();
+          const saleLeaf = await merkleLeafTestHelper.createSaleLeaf();
           prevMerkleTree = await merkleRootsTestHelper.createAndRegisterMerkleTree(merkleTreeHelper.encodeLeaf(saleLeaf),
               accounts.validator);
-          leaf = await createCancelLeaf(saleLeaf, prevMerkleTree.merklePath);
+          leaf = await merkleLeafTestHelper.createCancelLeaf(saleLeaf, prevMerkleTree.merklePath);
         });
 
         afterEach(async () => {
-          await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(prevMerkleTree.rootHash, accounts.validator,
+          await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(prevMerkleTree.rootHash, accounts.validator,
             prevMerkleTree.deposit);
         });
 
@@ -510,20 +429,20 @@ contract('MerkleLeafChallenges - consistency', async () => {
         });
 
         it('if the merkle proof is invalid', async () => {
-          await challengeLeafConsistencyFails('Leaf and path do not refer to an active merkle root', true);
+          await challengeLeafConsistencyFails('Leaf and path do not refer to a registered merkle root', true);
         });
       });
 
       context('for a redeem leaf', async () => {
         beforeEach(async () => {
-          const saleLeaf = await createSaleLeaf();
+          const saleLeaf = await merkleLeafTestHelper.createSaleLeaf();
           prevMerkleTree = await merkleRootsTestHelper.createAndRegisterMerkleTree(merkleTreeHelper.encodeLeaf(saleLeaf),
               accounts.validator);
-          leaf = await createRedeemLeaf(saleLeaf, prevMerkleTree.merklePath);
+          leaf = await merkleLeafTestHelper.createRedeemLeaf(saleLeaf, prevMerkleTree.merklePath);
         });
 
         afterEach(async () => {
-          await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(prevMerkleTree.rootHash, accounts.validator,
+          await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(prevMerkleTree.rootHash, accounts.validator,
             prevMerkleTree.deposit);
         });
 
@@ -532,7 +451,7 @@ contract('MerkleLeafChallenges - consistency', async () => {
         });
 
         it('if the merkle proof is invalid', async () => {
-          await challengeLeafConsistencyFails('Leaf and path do not refer to an active merkle root', true);
+          await challengeLeafConsistencyFails('Leaf and path do not refer to a registered merkle root', true);
         });
       });
     });

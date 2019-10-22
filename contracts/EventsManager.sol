@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity >=0.5.2 <=0.5.12;
 
 import "./interfaces/IAventusStorage.sol";
 import "./interfaces/IEventsManager.sol";
@@ -16,11 +16,11 @@ contract EventsManager is IEventsManager, Owned, Versioned {
     s = _s;
   }
 
-  function createEvent(string calldata _eventDesc, bytes32 _eventRef, uint _eventTime, bytes calldata _ownerProof,
-      address _eventOwner, bytes calldata _rules)
+  function createEvent(string calldata _eventDesc, bytes32 _eventRef, bytes calldata _ownerProof, address _eventOwner,
+      bytes calldata _rules)
     external
   {
-    LEvents.createEvent(s, _eventDesc, _eventRef, _eventTime, _ownerProof, _eventOwner, _rules);
+    LEvents.createEvent(s, _eventDesc, _eventRef, _ownerProof, _eventOwner, _rules);
   }
 
   function registerRoleOnEvent(uint _eventId, address _roleAddress, string calldata _role,

@@ -21,7 +21,7 @@ contract('EventsManager - events', async () => {
     await testHelper.init();
     await avtTestHelper.init(testHelper);
     await timeTestHelper.init(testHelper);
-    await eventsTestHelper.init(testHelper, timeTestHelper, avtTestHelper);
+    await eventsTestHelper.init(testHelper, avtTestHelper);
     await validatorsTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
 
     eventsManager = testHelper.getEventsManager();
@@ -38,14 +38,12 @@ contract('EventsManager - events', async () => {
   async function generateGoodCreateEventParams() {
     const eventDesc = 'My event';
     const eventRef = testHelper.hash(uniqueEventNum++);
-    const thirtyDays = timeTestHelper.oneDay.mul(new BN(30));
-    const eventTime = timeTestHelper.now().add(thirtyDays);
     const eventOwner = accounts.eventOwner;
     const rules = '0x';
     const sender = accounts.validator;
-    const eventOwnerProof = await signingHelper.getCreateEventEventOwnerProof(eventOwner, eventDesc, eventTime, rules, sender);
+    const eventOwnerProof = await signingHelper.getCreateEventEventOwnerProof(eventOwner, eventDesc, rules);
     return {
-      eventDesc, eventRef, eventTime, eventOwner, eventOwnerProof, eventOwner, rules, sender
+      eventDesc, eventRef, eventOwner, eventOwnerProof, eventOwner, rules, sender
     };
   }
 
@@ -57,7 +55,6 @@ contract('EventsManager - events', async () => {
     await eventsManager.createEvent(
         _createEventParams.eventDesc,
         _createEventParams.eventRef,
-        _createEventParams.eventTime,
         _createEventParams.eventOwnerProof,
         _createEventParams.eventOwner,
         _createEventParams.rules,
@@ -78,13 +75,11 @@ contract('EventsManager - events', async () => {
     async function createEventSucceeds() {
       if (goodCreateEventParams.eventOwnerProof === undefined) {
         goodCreateEventParams.eventOwnerProof = await signingHelper.getCreateEventEventOwnerProof(
-            goodCreateEventParams.eventOwner, goodCreateEventParams.eventDesc, goodCreateEventParams.eventTime,
-            goodCreateEventParams.rules, goodCreateEventParams.sender);
+            goodCreateEventParams.eventOwner, goodCreateEventParams.eventDesc, goodCreateEventParams.rules);
       }
       await eventsManager.createEvent(
           goodCreateEventParams.eventDesc,
           goodCreateEventParams.eventRef,
-          goodCreateEventParams.eventTime,
           goodCreateEventParams.eventOwnerProof,
           goodCreateEventParams.eventOwner,
           goodCreateEventParams.rules,
@@ -92,16 +87,15 @@ contract('EventsManager - events', async () => {
       );
       const logArgs = await testHelper.getLogArgs(eventsManager, 'LogEventCreated');
       assert.equal(logArgs.eventDesc, goodCreateEventParams.eventDesc);
-      assert.equal('0x' + logArgs.eventId.toString(16), generateEventId(goodCreateEventParams.eventRef,
-          goodCreateEventParams.eventOwner));
-      testHelper.assertBNEquals(logArgs.eventTime, goodCreateEventParams.eventTime);
+      const logArgsEventId = '0x' + logArgs.eventId.toString(16).padStart(64, '0');
+      assert.equal(logArgsEventId, generateEventId(goodCreateEventParams.eventRef, goodCreateEventParams.eventOwner));
       assert.equal(logArgs.eventOwner, goodCreateEventParams.eventOwner);
       return goodEventId = logArgs.eventId;
     }
 
     async function createEventFails(_params, _expectedError) {
-      await testHelper.expectRevert(() => eventsManager.createEvent(_params.eventDesc, _params.eventRef, _params.eventTime,
-          _params.eventOwnerProof, _params.eventOwner, _params.rules, {from: _params.sender}), _expectedError);
+      await testHelper.expectRevert(() => eventsManager.createEvent(_params.eventDesc, _params.eventRef,_params.eventOwnerProof,
+          _params.eventOwner, _params.rules, {from: _params.sender}), _expectedError);
     }
 
     context('succeeds with', async () => {
@@ -130,7 +124,7 @@ contract('EventsManager - events', async () => {
         async function createEventFailsWithBadParams(_errorString) {
           if (badParams.eventOwnerProof === undefined) {
             badParams.eventOwnerProof = await signingHelper.getCreateEventEventOwnerProof(badParams.eventOwner,
-                badParams.eventDesc, badParams.eventTime, badParams.rules, badParams.sender);
+                badParams.eventDesc, badParams.rules);
           }
           return createEventFails(badParams, _errorString);
         }
@@ -144,11 +138,6 @@ contract('EventsManager - events', async () => {
           await createEventSucceeds();
           badParams.eventRef = goodCreateEventParams.eventRef;
           await createEventFailsWithBadParams('Event already exists');
-        });
-
-        it('event time', async () => {
-          badParams.eventTime = timeTestHelper.now().toNumber() - 1;
-          await createEventFailsWithBadParams('Event time must be in the future');
         });
 
         it('event owner proof', async () => {

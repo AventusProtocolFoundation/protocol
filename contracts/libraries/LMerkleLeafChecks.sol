@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity >=0.5.2 <=0.5.12;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LMerkleLeafRules.sol";
@@ -6,7 +6,7 @@ import "./LMerkleRoots.sol";
 import "./LEvents.sol";
 import "./LEnums.sol";
 import "./zeppelin/LECRecovery.sol";
-import "./zokrates/LzKSNARKVerifier.sol";
+import "./zokrates/LSigmaProofVerifier.sol";
 
 library LMerkleLeafChecks {
 
@@ -25,26 +25,29 @@ library LMerkleLeafChecks {
   }
 
   struct MutableTicketData {
-    bytes snarkData;
+    bytes sigmaData;
     bytes mutableRulesData;
     bytes32 prevLeafHash;
     bytes32[] prevLeafMerklePath;
     string properties;
   }
 
-  struct SnarkData {
-    bytes merchantSignedHash;
-    bytes ticketOwnerSignedHash;
-    bytes snarkProof;
+  struct SigmaData {
+    bytes merchantSignedInput;
+    bytes ticketOwnerSignedInput;
+    bytes sigmaProof;
   }
 
-  struct ExtractedSnarkData {
-    address merchantAddressFromSignedHash;
-    bytes32 merchantHashFromInputs;
-    address merchantAddressReversedFromInputs;
-    address ticketOwnerAddressFromSignedHash;
-    bytes32 ticketOwnerHashFromInputs;
-    address ticketOwnerAddressReversedFromInputs;
+  struct ExtractedSigmaData {
+    address merchantAddress;
+    address ticketOwnerAddress;
+    uint[2] generatorPoint1;
+    uint[2] generatorPoint2;
+    uint[2] publicInput1;
+    uint[2] publicInput2;
+    uint[2] commitment1;
+    uint[2] commitment2;
+    uint[2] proof;
   }
 
   function checkLeafRules(IAventusStorage _storage, bytes calldata _leafData, uint _rootRegistrationTime)
@@ -62,14 +65,14 @@ library LMerkleLeafChecks {
 
     MutableTicketData memory mutableData = decodeMutableTicketData(leafData.mutableData);
 
-    (, ExtractedSnarkData memory extractedSnarkData) = decodeSnarkData(mutableData.snarkData);
+    ExtractedSigmaData memory extractedSigmaData = decodeSigmaData(mutableData.sigmaData);
     checkFailedReason_ = LMerkleLeafRules.runRules(rules, _rootRegistrationTime, immutableData.immutableRulesData,
-        mutableData.mutableRulesData, extractedSnarkData.ticketOwnerAddressFromSignedHash);
+        mutableData.mutableRulesData, extractedSigmaData.ticketOwnerAddress);
     if (bytes(checkFailedReason_).length != 0)
       checkFailedReason_ = string(abi.encodePacked("All rules failed: ", checkFailedReason_));
   }
 
-  // NOTE: Cannot be view: see isValidSnarkData.
+  // NOTE: Cannot be view: see isValidSigmaData.
   function checkLeafConsistency(IAventusStorage _storage, bytes calldata _leafData)
     external
     returns (string memory checkFailureReason_)
@@ -78,7 +81,7 @@ library LMerkleLeafChecks {
     MutableTicketData memory mutableData = decodeMutableTicketData(leafData.mutableData);
     ImmutableTicketData memory immutableData = decodeImmutableTicketData(leafData.immutableData);
 
-    checkFailureReason_ = isValidSnarkData(leafData.transactionType, mutableData.snarkData);
+    checkFailureReason_ = isValidSigmaData(leafData.transactionType, mutableData.sigmaData);
     if (bytes(checkFailureReason_).length != 0) {
       return checkFailureReason_;
     }
@@ -93,7 +96,7 @@ library LMerkleLeafChecks {
     }
 
     if (leafData.transactionType == LEnums.TransactionType.Resell) {
-      return checkLeafConsistencyResell(_storage, immutableData, leafData.provenance, mutableData.snarkData);
+      return checkLeafConsistencyResell(_storage, immutableData, leafData.provenance, mutableData.sigmaData);
     }
 
     if (leafData.transactionType == LEnums.TransactionType.Transfer) {
@@ -186,9 +189,9 @@ library LMerkleLeafChecks {
     LeafData memory leafData = decodeLeafData(_leafData);
     ImmutableTicketData memory immutableData = decodeImmutableTicketData(leafData.immutableData);
     MutableTicketData memory mutableData = decodeMutableTicketData(leafData.mutableData);
-    // TODO: Consider changing this - should snarkData be empty for cancel?
+
     if (leafData.transactionType != LEnums.TransactionType.Cancel)
-      decodeSnarkData(mutableData.snarkData);
+      decodeSigmaData(mutableData.sigmaData);
     decodeProvenance(leafData.transactionType, leafData.provenance);
     LMerkleLeafRules.checkRulesDataFormat(immutableData.immutableRulesData, mutableData.mutableRulesData);
   }
@@ -228,54 +231,35 @@ library LMerkleLeafChecks {
     pure
     returns (MutableTicketData memory mutableTicketData_)
   {
-    (bytes memory snarkData, bytes memory mutableRulesData, bytes32 prevLeafHash, bytes32[] memory prevLeafMerklePath,
+    (bytes memory sigmaData, bytes memory mutableRulesData, bytes32 prevLeafHash, bytes32[] memory prevLeafMerklePath,
       string memory properties) = abi.decode(_encodedMutableData, (bytes, bytes, bytes32, bytes32[], string));
 
-    mutableTicketData_.snarkData = snarkData;
+    mutableTicketData_.sigmaData = sigmaData;
     mutableTicketData_.mutableRulesData = mutableRulesData;
     mutableTicketData_.prevLeafHash = prevLeafHash;
     mutableTicketData_.prevLeafMerklePath = prevLeafMerklePath;
     mutableTicketData_.properties = properties;
   }
 
-  // NOTE: This MUST NOT assert. Reverts are fine. See checkLeafFormat.
-  function decodeSnarkData(bytes memory _snarkData)
+  // NOTE: This MUST NOT assert. Reverts are fine but strings will not be output. See checkLeafFormat.
+  function decodeSigmaData(bytes memory _sigmaData)
     private
     pure
-    returns (SnarkData memory snarkData_, ExtractedSnarkData memory extractedSnarkData_)
+    returns (ExtractedSigmaData memory extractedSigmaData_)
   {
-    (snarkData_.merchantSignedHash, snarkData_.ticketOwnerSignedHash, snarkData_.snarkProof) = abi.decode(_snarkData,
+    SigmaData memory sigmaData;
+    (sigmaData.merchantSignedInput, sigmaData.ticketOwnerSignedInput, sigmaData.sigmaProof) = abi.decode(_sigmaData,
         (bytes, bytes, bytes));
-    (,,,,,,,,, uint[] memory input) = abi.decode(snarkData_.snarkProof,
-        (uint[2], uint[2], uint[2], uint[2], uint[2], uint[2], uint[2], uint[2], uint[2], uint[]));
-    require(input.length >= 19, "Not enough snark inputs");
-    require(input[0] == 0, "First part of snark inputs must be zero");
-    extractedSnarkData_.merchantHashFromInputs = bytesToBytes32(abi.encodePacked(
-        bytes4(uint32(input[1])), bytes4(uint32(input[2])), bytes4(uint32(input[3])), bytes4(uint32(input[4])),
-        bytes4(uint32(input[5])), bytes4(uint32(input[6])), bytes4(uint32(input[7])), bytes4(uint32(input[8]))));
 
-    extractedSnarkData_.ticketOwnerHashFromInputs = bytesToBytes32(abi.encodePacked(
-        bytes4(uint32(input[9])), bytes4(uint32(input[10])), bytes4(uint32(input[11])), bytes4(uint32(input[12])),
-        bytes4(uint32(input[13])), bytes4(uint32(input[14])), bytes4(uint32(input[15])), bytes4(uint32(input[16]))));
+    (extractedSigmaData_.generatorPoint1, extractedSigmaData_.generatorPoint2, extractedSigmaData_.publicInput1,
+        extractedSigmaData_.publicInput2, extractedSigmaData_.commitment1, extractedSigmaData_.commitment2,
+        extractedSigmaData_.proof) = abi.decode(sigmaData.sigmaProof, (uint[2], uint[2], uint[2], uint[2], uint[2], uint[2],
+        uint[2]));
 
-    // The addresses in the input are in little-endian byte order: reverse them if you use them.
-    extractedSnarkData_.merchantAddressReversedFromInputs = address(input[17]);
-    extractedSnarkData_.ticketOwnerAddressReversedFromInputs = address(input[18]);
-
-    extractedSnarkData_.merchantAddressFromSignedHash = LECRecovery.recover(extractedSnarkData_.merchantHashFromInputs,
-        snarkData_.merchantSignedHash);
-    extractedSnarkData_.ticketOwnerAddressFromSignedHash = LECRecovery.recover(extractedSnarkData_.ticketOwnerHashFromInputs,
-        snarkData_.ticketOwnerSignedHash);
-  }
-
-  function bytesToBytes32(bytes memory _b)
-    private
-    pure
-    returns (bytes32 out_)
-  {
-    for (uint i = 0; i < 32; i++) {
-      out_ |= bytes32(_b[i] & 0xFF) >> (i * 8);
-    }
+    extractedSigmaData_.merchantAddress = LECRecovery.recover(keccak256(abi.encodePacked(extractedSigmaData_.publicInput1)),
+        sigmaData.merchantSignedInput);
+    extractedSigmaData_.ticketOwnerAddress = LECRecovery.recover(keccak256(abi.encodePacked(extractedSigmaData_.publicInput2)),
+        sigmaData.ticketOwnerSignedInput);
   }
 
   // NOTE: This MUST NOT assert. Reverts are fine. See checkLeafFormat.
@@ -330,16 +314,16 @@ library LMerkleLeafChecks {
       return "Ticket property must be signed by vendor";
     }
 
-    (, ExtractedSnarkData memory extractedSnarkData) = decodeSnarkData(_mutableData.snarkData);
-    if (extractedSnarkData.merchantAddressFromSignedHash != _immutableData.vendor) {
-      return "Snark merchant signed hash must be signed by vendor";
+    ExtractedSigmaData memory extractedSigmaData = decodeSigmaData(_mutableData.sigmaData);
+    if (extractedSigmaData.merchantAddress != _immutableData.vendor) {
+      return "Sigma merchant signed hash must be signed by vendor";
     }
 
     return LMerkleLeafRules.checkRulesConsistencySell(_mutableData.mutableRulesData);
   }
 
   function checkLeafConsistencyResell(IAventusStorage _storage, ImmutableTicketData memory _immutableData,
-      bytes memory _provenance, bytes memory _snarkData)
+      bytes memory _provenance, bytes memory _sigmaData)
     private
     view
     returns (string memory inconsistentLeafReason_)
@@ -349,9 +333,9 @@ library LMerkleLeafChecks {
       return "Reseller proof must contain correct data and be signed by valid reseller";
     }
 
-    (, ExtractedSnarkData memory extractedSnarkData) = decodeSnarkData(_snarkData);
-    if (extractedSnarkData.merchantAddressFromSignedHash != reseller) {
-      return "Snark merchant signed hash must be signed by reseller";
+    ExtractedSigmaData memory extractedSigmaData = decodeSigmaData(_sigmaData);
+    if (extractedSigmaData.merchantAddress != reseller) {
+      return "Sigma merchant signed hash must be signed by reseller";
     }
   }
 
@@ -401,10 +385,10 @@ library LMerkleLeafChecks {
     pure
     returns (string memory inconsistentUpdateReason_)
   {
-    bytes32 snarkDataHash = keccak256(abi.encodePacked(_mutableData.snarkData));
-    bytes32 previousSnarkDataHash = keccak256(abi.encodePacked(_previousLeafMutableData.snarkData));
-    if (snarkDataHash != previousSnarkDataHash) {
-      return "Ticket updates must not change the snark data";
+    bytes32 sigmaDataHash = keccak256(abi.encodePacked(_mutableData.sigmaData));
+    bytes32 previousSigmaDataHash = keccak256(abi.encodePacked(_previousLeafMutableData.sigmaData));
+    if (sigmaDataHash != previousSigmaDataHash) {
+      return "Ticket updates must not change the sigma data";
     }
   }
 
@@ -418,8 +402,8 @@ library LMerkleLeafChecks {
     address expectedPreviousTicketOwner =
         LECRecovery.recover(keccak256(abi.encodePacked(uint(LEnums.TransactionType.Resell),
         _mutableData.prevLeafHash, reseller)), ticketOwnerProof);
-    (, ExtractedSnarkData memory previousExtractedSnarkData) = decodeSnarkData(_previousLeafMutableData.snarkData);
-    return checkPreviousTicketOwnerPermission(expectedPreviousTicketOwner, previousExtractedSnarkData);
+    ExtractedSigmaData memory previousExtractedSigmaData = decodeSigmaData(_previousLeafMutableData.sigmaData);
+    return checkPreviousTicketOwnerPermission(expectedPreviousTicketOwner, previousExtractedSigmaData);
   }
 
   function checkLeafLifecycleTransfer(bytes memory _provenance, MutableTicketData memory _mutableData,
@@ -428,38 +412,36 @@ library LMerkleLeafChecks {
     pure
     returns (string memory inconsistentTransferReason_)
   {
-    (SnarkData memory previousSnarkData, ExtractedSnarkData memory previousExtractedSnarkData) =
-        decodeSnarkData(_previousLeafMutableData.snarkData);
-    (SnarkData memory newSnarkData,) = decodeSnarkData(_mutableData.snarkData);
-    if (keccak256(abi.encodePacked(newSnarkData.merchantSignedHash)) !=
-        keccak256(abi.encodePacked(previousSnarkData.merchantSignedHash))) {
-      return "Snark merchant signed hash must not change on transfer";
+    ExtractedSigmaData memory previousSigmaData = decodeSigmaData(_previousLeafMutableData.sigmaData);
+    ExtractedSigmaData memory newSigmaData = decodeSigmaData(_mutableData.sigmaData);
+    if (keccak256(abi.encodePacked(newSigmaData.publicInput1)) != keccak256(abi.encodePacked(previousSigmaData.publicInput1))) {
+      return "Sigma merchant signed hash must not change on transfer";
     }
 
     address expectedPreviousTicketOwner =
         LECRecovery.recover(keccak256(abi.encodePacked(uint(LEnums.TransactionType.Transfer),
         _mutableData.prevLeafHash)), _provenance);
-    return checkPreviousTicketOwnerPermission(expectedPreviousTicketOwner, previousExtractedSnarkData);
+    return checkPreviousTicketOwnerPermission(expectedPreviousTicketOwner, previousSigmaData);
   }
 
   function checkPreviousTicketOwnerPermission(address _expectedPreviousTicketOwner,
-      ExtractedSnarkData memory _previousExtractedSnarkData)
+      ExtractedSigmaData memory _previousExtractedSigmaData)
     private
     pure
     returns (string memory invalidTicketOwnerReason_)
   {
-    if (_expectedPreviousTicketOwner != _previousExtractedSnarkData.ticketOwnerAddressFromSignedHash)
+    if (_expectedPreviousTicketOwner != _previousExtractedSigmaData.ticketOwnerAddress)
       invalidTicketOwnerReason_ = "Previous ticket owner proof must be signed by previous ticket owner";
   }
 
-  // NOTE: Cannot be pure due to inline assembly through verifySnarkProof.
-  function isValidSnarkData(LEnums.TransactionType _transactionType, bytes memory _snarkData)
+  // NOTE: Cannot be pure due to inline assembly through verifySigmaProof.
+  function isValidSigmaData(LEnums.TransactionType _transactionType, bytes memory _sigmaData)
     private
     returns (string memory invalidReason_)
   {
     if (_transactionType == LEnums.TransactionType.Cancel) {
-      if (_snarkData.length != 0) {
-        return "Cancel leaf must have no snark data";
+      if (_sigmaData.length != 0) {
+        return "Cancel leaf must have no sigma data";
       }
       return "";
     }
@@ -467,22 +449,15 @@ library LMerkleLeafChecks {
     if (_transactionType == LEnums.TransactionType.Sell
         || _transactionType == LEnums.TransactionType.Resell
         || _transactionType == LEnums.TransactionType.Transfer
-        || _transactionType == LEnums.TransactionType.Redeem) {
-      (SnarkData memory snarkData, ExtractedSnarkData memory extractedSnarkData) = decodeSnarkData(_snarkData);
+        || _transactionType == LEnums.TransactionType.Redeem)
+    {
+      ExtractedSigmaData memory sigmaData = decodeSigmaData(_sigmaData);
 
-      bytes memory merchantAddressFromSignedHashBytes = abi.encodePacked(extractedSnarkData.merchantAddressFromSignedHash);
-      bytes memory merchantAddressReversedBytes = abi.encodePacked(extractedSnarkData.merchantAddressReversedFromInputs);
-      bytes memory ticketOwnerAddressFromSignedHashBytes = abi.encodePacked(extractedSnarkData.ticketOwnerAddressFromSignedHash);
-      bytes memory ticketOwnerAddressReversedBytes = abi.encodePacked(extractedSnarkData.ticketOwnerAddressReversedFromInputs);
-      for (uint8 index = 0; index < 20; index++) {
-        require(merchantAddressFromSignedHashBytes[index] == merchantAddressReversedBytes[19 - index],
-            "Invalid snark data merchant address");
-        require(ticketOwnerAddressFromSignedHashBytes[index] ==  ticketOwnerAddressReversedBytes[19 - index],
-            "Invalid snark data ticket owner address");
-      }
+      bool sigmaProofIsValid = LSigmaProofVerifier.verifySigmaProof(sigmaData.generatorPoint1, sigmaData.generatorPoint2,
+          sigmaData.publicInput1, sigmaData.publicInput2, sigmaData.commitment1, sigmaData.commitment2, sigmaData.proof);
 
-      if (!LzKSNARKVerifier.verifySnarkProof(snarkData.snarkProof))
-        invalidReason_ = "Snark proof is invalid";
+      if (!sigmaProofIsValid)
+        invalidReason_ = "Sigma proof is invalid";
       return invalidReason_;
     }
 
@@ -501,8 +476,8 @@ library LMerkleLeafChecks {
     } else {
       bytes32 prevMerkleRoot = LMerkleRoots.generateMerkleRoot(_storage, _mutableData.prevLeafMerklePath,
             _mutableData.prevLeafHash);
-      if (!LMerkleRoots.merkleRootIsActive(_storage, prevMerkleRoot))
-        invalidReason_ = "Previous merkle root must be active";
+      if (!LMerkleRoots.merkleRootIsRegistered(_storage, prevMerkleRoot))
+        invalidReason_ = "Previous Merkle root must be registered";
     }
   }
 

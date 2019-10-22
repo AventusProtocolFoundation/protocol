@@ -1,11 +1,11 @@
-pragma solidity ^0.5.2;
+pragma solidity >=0.5.2 <=0.5.12;
 
 interface IEventsManager {
 
   /**
    * @notice Event emitted for a createEvent transaction.
    */
-  event LogEventCreated(uint indexed eventId, address indexed eventOwner, string eventDesc, uint eventTime, bytes rules);
+  event LogEventCreated(uint indexed eventId, address indexed eventOwner, string eventDesc, bytes rules);
 
   /**
    * @notice Event emitted for a registerRoleOnEvent transaction.
@@ -16,13 +16,12 @@ interface IEventsManager {
    * @notice Create an event
    * @param _eventDesc Description of the event
    * @param _eventRef unique identifier for the event - no two events for this eventOwner can have the same eventRef
-   * @param _eventTime Timestamp indicating when tickets for an event expire
    * @param _ownerProof The event details signed by the owner
    * @param _eventOwner The event owner
    * @param _rules encoded ticket rules for this event
    */
-  function createEvent(string calldata _eventDesc, bytes32 _eventRef, uint _eventTime, bytes calldata _ownerProof,
-      address _eventOwner, bytes calldata _rules) external;
+  function createEvent(string calldata _eventDesc, bytes32 _eventRef, bytes calldata _ownerProof, address _eventOwner,
+      bytes calldata _rules) external;
 
   /**
    * @notice Register a validator for an event
