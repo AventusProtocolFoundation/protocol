@@ -4,6 +4,7 @@ const timeTestHelper = require('./helpers/timeTestHelper');
 const merkleRootsTestHelper = require('./helpers/merkleRootsTestHelper');
 const validatorsTestHelper = require('./helpers/validatorsTestHelper');
 const merkleTreeHelper = require('../utils/merkleTreeHelper');
+const sigmaHelper = require('../utils/sigma/sigmaHelper');
 
 const TransactionType = merkleTreeHelper.TransactionType;
 const EMPTY_BYTES = '0x';
@@ -25,6 +26,7 @@ contract('MerkleLeafChallenges - lifecycle', async () => {
   });
 
   after(async () => {
+    await validatorsTestHelper.advanceToDeregistrationTime(accounts.validator, "Validator");
     await validatorsTestHelper.deregisterValidatorAndWithdrawDeposit(accounts.validator);
     await avtTestHelper.checkBalancesAreZero(accounts);
   });
@@ -33,7 +35,8 @@ contract('MerkleLeafChallenges - lifecycle', async () => {
     const leaf = merkleTreeHelper.getBaseLeaf(TransactionType.Sell);
 
     leaf.immutableData.vendor = accounts.eventOwner;
-    leaf.mutableData.snarkData = await merkleTreeHelper.createDummySnarkData(accounts.eventOwner, accounts.ticketOwner);
+    leaf.mutableData.sigmaData = await sigmaHelper.createSigmaData(accounts.eventOwner, accounts.ticketOwner,
+        leaf.immutableData);
     return leaf;
   }
 
@@ -91,14 +94,10 @@ contract('MerkleLeafChallenges - lifecycle', async () => {
       assert.equal(logArgs.challengeReason, _expectedChallengeReason);
     }
 
-    async function challengeLeafLifecycleFails(_expectedError, _falsifyMerklePath, _pastChallengeWindow) {
+    async function challengeLeafLifecycleFails(_expectedError, _falsifyMerklePath) {
       const encodedLeaf = merkleTreeHelper.encodeLeaf(leaf);
       merkleTree = await merkleRootsTestHelper.createAndRegisterMerkleTree(encodedLeaf, accounts.validator);
       const merklePath = _falsifyMerklePath ? [testHelper.randomBytes32()] : merkleTree.merklePath;
-
-      if (_pastChallengeWindow) {
-       await timeTestHelper.advancePastChallengeWindow();
-     }
 
       await testHelper.expectRevert(() =>
           merkleLeafChallenges.challengeLeafLifecycle(encodedLeaf, merklePath, merkleTreeHelper.encodeLeaf(prevLeaf),
@@ -196,10 +195,11 @@ contract('MerkleLeafChallenges - lifecycle', async () => {
           await challengeLeafLifecycleSucceeds('Previous ticket owner proof must be signed by previous ticket owner');
         });
 
-        it('if the snark merchant signed hash has been modified', async () => {
+        it('if the sigma merchant signed hash has been modified', async () => {
           leaf = await createTransferLeaf(prevLeaf, prevMerkleTree.merklePath);
-          leaf.mutableData.snarkData = await merkleTreeHelper.createDummySnarkData(accounts.validator, accounts.ticketOwner);
-          await challengeLeafLifecycleSucceeds('Snark merchant signed hash must not change on transfer');
+          leaf.mutableData.sigmaData = await sigmaHelper.createSigmaData(accounts.validator, accounts.ticketOwner,
+              leaf.immutableData);
+          await challengeLeafLifecycleSucceeds('Sigma merchant signed hash must not change on transfer');
         });
 
         it('if numResells has been modified', async () => {
@@ -248,11 +248,11 @@ contract('MerkleLeafChallenges - lifecycle', async () => {
           await challengeLeafLifecycleSucceeds('Cancelled and redeemed tickets cannot be further modified');
         });
 
-        it('if the snark data has been modified', async () => {
+        it('if the sigma data has been modified', async () => {
           leaf = await createUpdateLeaf(prevLeaf, prevMerkleTree.merklePath);
-          leaf.mutableData.snarkData += 'dead';
+          leaf.mutableData.sigmaData += 'dead';
 
-          await challengeLeafLifecycleSucceeds('Ticket updates must not change the snark data');
+          await challengeLeafLifecycleSucceeds('Ticket updates must not change the sigma data');
         });
 
         it ('if the mutable rules data has been modified', async () => {
@@ -330,15 +330,8 @@ contract('MerkleLeafChallenges - lifecycle', async () => {
 
     context('fails', async () => {
       afterEach(async () => {
-        await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(merkleTree.rootHash, accounts.validator,
+        await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(merkleTree.rootHash, accounts.validator,
           merkleTree.deposit);
-      });
-
-      it('if the challenge window has passed', async () => {
-        leaf = await createResaleLeaf(prevLeaf, prevMerkleTree.merklePath);
-        leaf.immutableData.eventId += 1; // would cause challenge to succeed - if it were made in time
-
-        await challengeLeafLifecycleFails('Challenge window expired', false, true);
       });
 
       it('if the previous leaf hash does not match the hash of the previous leaf', async () => {
@@ -358,7 +351,7 @@ contract('MerkleLeafChallenges - lifecycle', async () => {
         });
 
         it('if the merkle proof provided is invalid', async () => {
-          await challengeLeafLifecycleFails('Leaf and path do not refer to an active merkle root', true);
+          await challengeLeafLifecycleFails('Leaf and path do not refer to a registered merkle root', true);
         });
       });
 
@@ -372,7 +365,7 @@ contract('MerkleLeafChallenges - lifecycle', async () => {
         });
 
         it('if the merkle proof provided is invalid', async () => {
-          await challengeLeafLifecycleFails('Leaf and path do not refer to an active merkle root', true);
+          await challengeLeafLifecycleFails('Leaf and path do not refer to a registered merkle root', true);
         });
       });
 
@@ -386,7 +379,7 @@ contract('MerkleLeafChallenges - lifecycle', async () => {
         });
 
         it('if the merkle proof provided is invalid', async () => {
-          await challengeLeafLifecycleFails('Leaf and path do not refer to an active merkle root', true);
+          await challengeLeafLifecycleFails('Leaf and path do not refer to a registered merkle root', true);
         });
       });
 
@@ -400,7 +393,7 @@ contract('MerkleLeafChallenges - lifecycle', async () => {
         });
 
         it('if the merkle proof provided is invalid', async () => {
-          await challengeLeafLifecycleFails('Leaf and path do not refer to an active merkle root', true);
+          await challengeLeafLifecycleFails('Leaf and path do not refer to a registered merkle root', true);
         });
       });
     });

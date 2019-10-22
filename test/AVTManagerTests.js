@@ -202,7 +202,7 @@ contract('AVTManager', async () => {
         currentAVTBalance = currentAVTBalance.add(goodAVTAmount);
         currentTime = timeTestHelper.now();
         transactionHistoryStore[currentTime] = currentAVTBalance;
-        await timeTestHelper.advanceByNumDays(1);
+        await timeTestHelper.advanceByOneMinute();
       }
 
       // ...and some withdrawls
@@ -211,7 +211,7 @@ contract('AVTManager', async () => {
         currentAVTBalance = currentAVTBalance.sub(goodAVTAmount);
         currentTime = timeTestHelper.now();
         transactionHistoryStore[currentTime] = currentAVTBalance;
-        await timeTestHelper.advanceByNumDays(1);
+        await timeTestHelper.advanceByOneMinute();
       }
 
       const localStore = Object.entries(transactionHistoryStore);

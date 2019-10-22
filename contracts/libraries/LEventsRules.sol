@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity >=0.5.2 <=0.5.12;
 
 import "./LEnums.sol";
 
@@ -12,18 +12,14 @@ library LEventsRules {
 
     LEnums.ConditionType conditionType = LEnums.validateConditionType(conditionTypeAsUint);
 
-    if (conditionType == LEnums.ConditionType.TicketGroupMatches) {
+    if (conditionType == LEnums.ConditionType.TicketGroupMatches)
       abi.decode(constraints, (string, bool));
-    }
-    else if (conditionType == LEnums.ConditionType.TicketOwnerIsInWhitelist) {
+    else if (conditionType == LEnums.ConditionType.TicketOwnerIsInWhitelist)
       abi.decode(constraints, (bool));
-    }
-    else if (conditionType == LEnums.ConditionType.TransactionTimeIsBetween) {
+    else if (conditionType == LEnums.ConditionType.TransactionTimeIsBetween)
       abi.decode(constraints, (uint, uint));
-    }
-    else {
+    else
       abi.decode(constraints, (uint));
-    }
   }
 
   function checkRule(bytes memory _rule)

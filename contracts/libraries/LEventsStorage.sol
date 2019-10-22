@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity >=0.5.2 <=0.5.12;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LAventusTime.sol";
@@ -21,14 +21,6 @@ library LEventsStorage {
     external
   {
     _storage.setBoolean(keccak256(abi.encodePacked(eventTable, _eventId, "Role", _role, "Address", _roleAddress)), true);
-  }
-
-  function setEventTime(IAventusStorage _storage, uint _eventId, uint _eventTime)
-    external
-  {
-    assert(getEventTime(_storage, _eventId) == 0);
-    require(_eventTime > LAventusTime.getCurrentTime(_storage), "Event time must be in the future");
-    _storage.setUInt(keccak256(abi.encodePacked(eventTable, _eventId, "EventTime")), _eventTime);
   }
 
   function setEventOwner(IAventusStorage _storage, uint _eventId, address _eventOwner)
@@ -59,13 +51,5 @@ library LEventsStorage {
     returns (address eventOwner_)
   {
     eventOwner_ = _storage.getAddress(keccak256(abi.encodePacked(eventTable, _eventId, "Owner")));
-  }
-
-  function getEventTime(IAventusStorage _storage, uint _eventId)
-    public
-    view
-    returns (uint eventTime_)
-  {
-    eventTime_ = _storage.getUInt(keccak256(abi.encodePacked(eventTable, _eventId, "EventTime")));
   }
 }

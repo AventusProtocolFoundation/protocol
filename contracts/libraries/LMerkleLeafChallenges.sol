@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity >=0.5.2 <=0.5.12;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LMerkleLeafChecks.sol";
@@ -17,7 +17,7 @@ library LMerkleLeafChallenges {
     external
   {
     bytes32 leafHash = keccak256(_leafData);
-    bytes32 merkleRoot = getMerkleRootIfActive(_storage, leafHash, _merklePath);
+    bytes32 merkleRoot = getMerkleRootIfRegistered(_storage, leafHash, _merklePath);
 
     uint rootRegistrationTime = LMerkleRoots.getRootRegistrationTime(_storage, merkleRoot);
 
@@ -34,7 +34,7 @@ library LMerkleLeafChallenges {
     require(_leafData.length != nodeLength, "Challenge failed - nodes cannot be challenged");
 
     bytes32 leafHash = keccak256(_leafData);
-    bytes32 merkleRoot = getMerkleRootIfActive(_storage, leafHash, _merklePath);
+    bytes32 merkleRoot = getMerkleRootIfRegistered(_storage, leafHash, _merklePath);
 
     string memory challengeReason = callCheckLeafFormat(_storage, _leafData);
 
@@ -51,11 +51,11 @@ library LMerkleLeafChallenges {
     external
   {
     bytes32 duplicateLeafHash = keccak256(abi.encodePacked(_duplicateLeafData));
-    bytes32 duplicateRoot = getMerkleRootIfActive(_storage, duplicateLeafHash, _duplicateMerklePath,
+    bytes32 duplicateRoot = getMerkleRootIfRegistered(_storage, duplicateLeafHash, _duplicateMerklePath,
         "Challenge failed - duplicate leaf does not exist");
     bytes32 existingLeafHash = keccak256(abi.encodePacked(_existingLeafData));
-    bytes32 existingRoot = getMerkleRootIfActive(_storage, existingLeafHash, _existingMerklePath,
-         "Challenge failed - existing leaf does not exist");
+    bytes32 existingRoot = getMerkleRootIfRegistered(_storage, existingLeafHash, _existingMerklePath,
+        "Challenge failed - existing leaf does not exist");
 
     require(rootsAreOrdered(_storage, existingRoot, duplicateRoot), "Challenge failed - duplicate leaf was registered first");
 
@@ -77,7 +77,7 @@ library LMerkleLeafChallenges {
     external
   {
     bytes32 leafHash = keccak256(_leafData);
-    bytes32 merkleRoot = getMerkleRootIfActive(_storage, leafHash, _merklePath);
+    bytes32 merkleRoot = getMerkleRootIfRegistered(_storage, leafHash, _merklePath);
 
     string memory challengeReason = LMerkleLeafChecks.checkLeafLifecycle(_leafData, _previousLeafData);
     require(bytes(challengeReason).length != 0, "Challenge failed - leaf is consistent with previous leaf");
@@ -97,23 +97,23 @@ library LMerkleLeafChallenges {
       result_ = "Leaf is incorrectly formatted";
   }
 
-  function getMerkleRootIfActive(IAventusStorage _storage, bytes32 _leafHash, bytes32[] memory _merklePath,
+  function getMerkleRootIfRegistered(IAventusStorage _storage, bytes32 _leafHash, bytes32[] memory _merklePath,
       string memory _errorMsg)
     private
     view
     returns (bytes32 merkleRoot_)
   {
     merkleRoot_ = LMerkleRoots.generateMerkleRoot(_storage, _merklePath, _leafHash);
-    require(LMerkleRoots.merkleRootIsActive(_storage, merkleRoot_), _errorMsg);
+    require(LMerkleRoots.merkleRootIsRegistered(_storage, merkleRoot_), _errorMsg);
   }
 
-  function getMerkleRootIfActive(IAventusStorage _storage, bytes32 _leafHash, bytes32[] memory _merklePath)
+  function getMerkleRootIfRegistered(IAventusStorage _storage, bytes32 _leafHash, bytes32[] memory _merklePath)
     private
     view
     returns (bytes32 merkleRoot_)
   {
-    string memory errorMsg = "Leaf and path do not refer to an active merkle root";
-    merkleRoot_ = getMerkleRootIfActive(_storage, _leafHash, _merklePath, errorMsg);
+    string memory errorMsg = "Leaf and path do not refer to a registered merkle root";
+    merkleRoot_ = getMerkleRootIfRegistered(_storage, _leafHash, _merklePath, errorMsg);
   }
 
   function challengeSuccess(IAventusStorage _storage, bytes32 _merkleRoot, bytes32 _leafHash, string memory _challengeReason)
@@ -128,7 +128,6 @@ library LMerkleLeafChallenges {
     view
     returns (bool ordered_)
   {
-    // TODO: PRODUCT_DECISION: This needs to use the channel nonce if implemented to determine order of roots with same timestamp
     uint firstRootRegistrationTime = LMerkleRoots.getRootRegistrationTime(_storage, _firstRoot);
     uint secondRootRegistrationTime = LMerkleRoots.getRootRegistrationTime(_storage, _secondRoot);
     ordered_ = firstRootRegistrationTime <= secondRootRegistrationTime;

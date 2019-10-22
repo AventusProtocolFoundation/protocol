@@ -14,11 +14,10 @@
   "homepage": "https://github.com/AventusProtocolFoundation/protocol#readme",
   "dependencies": {
     "eip55": "^1.0.3",
-    "ethereumjs-testrpc-sc": "^6.1.2",
     "java": "^0.11.0",
     "keccak256": "^1.0.0",
     "merkletreejs": "^0.1.6",
-    "solidity-coverage": "0.6.0-beta.3",
+    "solidity-coverage": "^0.7.0-beta.2",
     "truffle-hdwallet-provider": "1.0.10",
     "web3": "^1.2.0"
   },

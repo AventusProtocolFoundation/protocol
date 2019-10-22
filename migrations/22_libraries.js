@@ -1,5 +1,6 @@
 const common = require('./common.js');
 const librariesCommon = require('./librariesCommon.js');
+const web3Tools = require('../utils/web3Tools.js');
 
 const IAventusStorage = artifacts.require('IAventusStorage');
 const EventsManager = artifacts.require('EventsManager');
@@ -18,12 +19,14 @@ const LMerkleRootsStorage = artifacts.require('LMerkleRootsStorage');
 const LMerkleLeafChallenges = artifacts.require('LMerkleLeafChallenges');
 const LMerkleLeafChecks = artifacts.require('LMerkleLeafChecks');
 const LMerkleLeafRules = artifacts.require('LMerkleLeafRules');
-const LzKSNARKVerifier = artifacts.require('zokrates/LzKSNARKVerifier');
+const LSigmaProofVerifier = artifacts.require('zokrates/LSigmaProofVerifier');
 
 // Proxies
 const PEvents = artifacts.require('PEvents');
 const PMerkleRoots = artifacts.require('PMerkleRoots');
 const PMerkleLeafChallenges = artifacts.require('PMerkleLeafChallenges');
+
+const proposalsOn = true; // See scripts/SwitchProposalsMode.js
 
 module.exports = async function(_deployer, _networkName, _accounts) {
   console.log('*** Deploying Libraries (Part C)...');
@@ -37,11 +40,11 @@ let deployLMerkleLeafChallenges;
 let version;
 
 async function deployLibraries(_deployer, _networkName) {
-  const developmentMode = common.isTestNetwork(_networkName);
+  const deployAll = common.deployAll(_networkName);
 
-  deployLEvents = developmentMode;
-  deployLMerkleRoots = developmentMode;
-  deployLMerkleLeafChallenges = developmentMode;
+  deployLEvents = deployAll;
+  deployLMerkleRoots = deployAll;
+  deployLMerkleLeafChallenges = proposalsOn && deployAll;
 
   version = await common.getVersion(Versioned);
   const storageContract = await common.getStorageContractFromJsonFile(IAventusStorage, _networkName);
@@ -66,8 +69,8 @@ async function deploySubLibraries(_deployer, _library) {
   } else if (_library === LMerkleLeafChallenges) {
     await common.deploy(_deployer, LMerkleLeafRules);
     await _deployer.link(LMerkleLeafRules, LMerkleLeafChecks);
-    await common.deploy(_deployer, LzKSNARKVerifier);
-    await _deployer.link(LzKSNARKVerifier, LMerkleLeafChecks);
+    await common.deploy(_deployer, LSigmaProofVerifier);
+    await _deployer.link(LSigmaProofVerifier, LMerkleLeafChecks);
     await common.deploy(_deployer, LMerkleLeafChecks);
     await _deployer.link(LMerkleLeafChecks, LMerkleLeafChallenges);
   }
@@ -79,9 +82,9 @@ function doDeployLEvents(_deployer, _storage) {
   const library = LEvents;
   const proxy = PEvents;
   const deployLibraryAndProxy = deployLEvents;
-  const dependents = [EventsManager, LMerkleRoots, LMerkleLeafChallenges, LMerkleLeafChecks];
+  const dependents = [EventsManager, LMerkleLeafChallenges, LMerkleLeafChecks];
 
-  return librariesCommon.doDeployLibraryAndProxy(web3, version, deploySubLibraries, _deployer, _storage, libraryName,
+  return librariesCommon.doDeployLibraryAndProxy(version, deploySubLibraries, _deployer, _storage, libraryName,
       proxyName, library, proxy, deployLibraryAndProxy, dependents);
 }
 
@@ -93,7 +96,7 @@ function doDeployLMerkleRoots(_deployer, _storage) {
   const deployLibraryAndProxy = deployLMerkleRoots;
   const dependents = [MerkleRootsManager, LMerkleLeafChallenges, LMerkleLeafChecks];
 
-  return librariesCommon.doDeployLibraryAndProxy(web3, version, deploySubLibraries, _deployer, _storage, libraryName,
+  return librariesCommon.doDeployLibraryAndProxy(version, deploySubLibraries, _deployer, _storage, libraryName,
       proxyName, library, proxy, deployLibraryAndProxy, dependents);
 }
 
@@ -103,15 +106,15 @@ async function doDeployLMerkleLeafChallenges(_deployer, _storage) {
   const library = LMerkleLeafChallenges;
   const proxy = PMerkleLeafChallenges;
   const deployLibraryAndProxy = deployLMerkleLeafChallenges;
-  const dependents = [MerkleLeafChallenges, LzKSNARKVerifier];
+  const dependents = [MerkleLeafChallenges, LSigmaProofVerifier];
 
-  await librariesCommon.doDeployLibraryAndProxy(web3, version, deploySubLibraries, _deployer, _storage, libraryName,
+  await librariesCommon.doDeployLibraryAndProxy(version, deploySubLibraries, _deployer, _storage, libraryName,
       proxyName, library, proxy, deployLibraryAndProxy, dependents);
 
-  // Special case for direct call between libraries.
-  const lMerkleLeafChecks = await LMerkleLeafChecks.deployed();
-  if (lMerkleLeafChecks) {
-    const lMerkleLeafChecksAddressKey = web3.utils.soliditySha3('LMerkleLeafChecksAddress');
+  if (deployLMerkleLeafChallenges) {
+    // Special case for direct call between libraries.
+    const lMerkleLeafChecks = await LMerkleLeafChecks.deployed();
+    const lMerkleLeafChecksAddressKey = web3Tools.hash('LMerkleLeafChecksAddress');
     await _storage.setAddress(lMerkleLeafChecksAddressKey, lMerkleLeafChecks.address);
-  } // else LMerkleLeafChecks was not deployed this time, keep the old address.
+  }
 }

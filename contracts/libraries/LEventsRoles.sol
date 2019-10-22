@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity >=0.5.2 <=0.5.12;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LEventsEvents.sol";
@@ -12,7 +12,9 @@ library LEventsRoles {
   bytes32 constant secondaryHash = keccak256(abi.encodePacked("Secondary"));
 
   modifier onlyEventOwnerOrValidator(IAventusStorage _storage, uint _eventId) {
-    mustBeValidatorOnEventOrEventOwner(_storage, _eventId, msg.sender);
+    bool isEventOwner = LEventsEvents.isEventOwner(_storage, _eventId, msg.sender);
+    bool isValidator = LValidators.isRegistered(_storage, msg.sender);
+    require(isEventOwner || isValidator, "Sender must be owner or validator");
     _;
   }
 
@@ -51,13 +53,6 @@ library LEventsRoles {
     bool isRole = LEventsStorage.isRoleOnEvent(_storage, _eventId, _address, _role);
     bool isEventOwner = LEventsEvents.isEventOwner(_storage, _eventId, _address);
     isOwnerOrRole_ = isRole || isEventOwner;
-  }
-
-  function mustBeValidatorOnEventOrEventOwner(IAventusStorage _storage, uint _eventId, address _address)
-    public
-    view
-  {
-    require(isEventOwnerOrRole(_storage, _eventId, _address, "Validator"), "Sender must be owner or validator on event");
   }
 
   // Separate method due to stack too deep.

@@ -66,7 +66,7 @@ contract('Governance proposals voting - extra', async () => {
       governanceProposalId2 =
           await proposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
 
-      await timeTestHelper.advanceToTime(timeTestHelper.now().add(timeTestHelper.oneDay));
+      await timeTestHelper.advanceByOneMinute();
 
       governanceProposalId3 =
           await proposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
@@ -125,7 +125,7 @@ contract('Governance proposals voting - extra', async () => {
     it('successfully voting in a different order to proposal creation', async () => {
       const governanceProposalId_1 =
           await proposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
-      await timeTestHelper.advanceToTime(timeTestHelper.now().add(timeTestHelper.oneDay));
+      await timeTestHelper.advanceByOneMinute();
       const governanceProposalId_2 =
           await proposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner);
       await votingTestHelper.advanceTimeToVotingStart(governanceProposalId_2);
@@ -156,7 +156,7 @@ contract('Governance proposals voting - extra', async () => {
       const governanceProposalId =
           await proposalsTestHelper.depositAndCreateGovernanceProposal(accounts.governanceProposalOwner, bytecode);
 
-      const stake = avtTestHelper.oneAVTTo18SigFig;
+      const stake = avtTestHelper.oneAVTInAttoAVTBN;
       await avtTestHelper.addAVT(stake, accounts.goodVoterAddress);
       await votingTestHelper.advanceTimeCastAndRevealVotes(governanceProposalId,
           [{voter: accounts.goodVoterAddress, option: 1}]); // vote in favour of the proposal

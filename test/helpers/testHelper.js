@@ -8,6 +8,7 @@ const MerkleRootsManager = artifacts.require('MerkleRootsManager');
 const EventsManager = artifacts.require('EventsManager');
 const IERC20 = artifacts.require('IERC20');
 const profilingHelper = require('./profilingHelper');
+const web3Tools = require('../../utils/web3Tools.js');
 
 let accounts;
 const validEvidenceURL = 'http://www.example.com/validators?validatorid=1111';
@@ -103,6 +104,13 @@ function assertBNEquals(_actual, _expected, _msg) {
   assert(_actual.eq(_expected), msg);
 }
 
+function assertBNNotEquals(_actual, _expected, _msg){
+  assert(web3.utils.isBN(_actual), "_actual must be a BN");
+  assert(web3.utils.isBN(_expected), "_expected must be a BN");
+  const msg = _msg || `Expected ${_expected} not to equal ${_actual}`;
+  assert(!_actual.eq(_expected), msg);
+}
+
 function assertBNZero(_actual, _msg) {
   assertBNEquals(_actual, BN_ZERO, _msg);
 }
@@ -111,13 +119,15 @@ function toBN(_number) {
   return web3.utils.toBN(_number);
 }
 
+// TODO: Use web3Tools directly in test code.
 function encodeParams(typesArr, argsArr) {
-  return web3.eth.abi.encodeParameters(typesArr, argsArr);
+  return web3Tools.encodeParams(typesArr, argsArr);
 }
 
 // Keep exports alphabetical.
 module.exports = {
   assertBNEquals,
+  assertBNNotEquals,
   assertBNZero,
   BN: web3.utils.BN,
   BN_ONE,

@@ -1,6 +1,7 @@
 const common = require('./common.js');
 const eip55 = require('eip55');
 const fs = require('fs');
+const web3Tools = require('../utils/web3Tools.js');
 
 const IAventusStorage = artifacts.require('IAventusStorage');
 
@@ -46,21 +47,30 @@ let deployTimeMachine;
 
 let version;
 
-const proposalsOn = true; // Manual switch to turn off challenges and proposals.
+const proposalsOn = true; // See scripts/SwitchProposalsMode.js
+
+const TWENTY_FOUR_HOURS = 24 * 60 * 60; // In seconds.
+
+// TODO: This is copied from test/helpers/avtTestHelper - share this code.
+function toAttoAVT(_amountInAVT) {
+  const BN = web3Tools.BN;
+  const oneAVTTo18SigFig = (new BN(10)).pow(new BN(18));
+  const amountInAVT = new BN(_amountInAVT);
+  return amountInAVT.mul(oneAVTTo18SigFig);
+}
 
 async function deployContracts(_deployer, _networkName) {
   console.log('Deploying Contracts...');
-  const developmentMode = common.isTestNetwork(_networkName);
+  const deployAll = common.deployAll(_networkName);
 
-  // ALWAYS deploy to development, NEVER to another network unless hard coded.
-  deployAVTManager = developmentMode;
-  deployProposalsManager = proposalsOn && developmentMode;
-  deployValidatorsManager = developmentMode;
-  deployEventsManager = developmentMode;
-  deployMerkleRootsManager = developmentMode;
-  deployMerkleLeafChallenges = proposalsOn && developmentMode;
-  deployParameterRegistry = developmentMode;
-  deployTimeMachine = developmentMode;
+  deployAVTManager = deployAll;
+  deployProposalsManager = proposalsOn && deployAll;
+  deployValidatorsManager = deployAll;
+  deployEventsManager = deployAll;
+  deployMerkleRootsManager = deployAll;
+  deployMerkleLeafChallenges = proposalsOn && deployAll;
+  deployParameterRegistry = deployAll;
+  deployTimeMachine = common.mockTime(_networkName) && deployAll;
 
   version = await common.getVersion(Versioned);
   console.log('Deploying contracts with version', version);
@@ -139,15 +149,15 @@ async function doDeployTimeMachine(_deployer, _storage) {
 async function saveInterfaceToStorage(_storage, _interfaceName, _interfaceInstance, _implementation) {
   const versionedInterfaceName = _interfaceName + '-' + version;
   console.log('+ saveInterfaceToStorage', versionedInterfaceName);
-  await _storage.setAddress(web3.utils.sha3(versionedInterfaceName + '_Address'), eip55.encode(_implementation.address));
+  await _storage.setAddress(web3Tools.hash(versionedInterfaceName + '_Address'), eip55.encode(_implementation.address));
   const numParts = Math.ceil(_interfaceInstance.abi.length / abiPartLength);
-  await _storage.setUInt(web3.utils.sha3(versionedInterfaceName + '_Abi_NumParts'), numParts);
-  console.log('Splitting ' + versionedInterfaceName + ' ABI into', numParts);
-
+  await _storage.setUInt(web3Tools.hash(versionedInterfaceName + '_Abi_NumParts'), numParts);
+  console.log('Saving ' + versionedInterfaceName + ' ABI in', numParts, 'part(s)...');
   for (let i = 0; i < numParts; ++i) {
     const start = i * abiPartLength;
     const end = start + abiPartLength;
     const part = JSON.stringify(_interfaceInstance.abi.slice(start, end), null, 0);
-    await _storage.setString(web3.utils.sha3(versionedInterfaceName + '_Abi_Part_' + i), part);
+    await _storage.setString(web3Tools.hash(versionedInterfaceName + '_Abi_Part_' + i), part);
   }
+  console.log('- saveInterfaceToStorage', versionedInterfaceName);
 }

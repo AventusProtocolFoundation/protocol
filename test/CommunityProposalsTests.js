@@ -195,7 +195,7 @@ contract('Community proposals voting', async () => {
   context('getCommunityProposalDeposit()', async () => {
     context('succeeds with', async() => {
       it('good parameters', async() => {
-        const expectedDeposit = avtTestHelper.toNat(new BN(100)); // value from parameter registry;
+        const expectedDeposit = avtTestHelper.toAttoAVT(new BN(100)); // value from parameter registry;
         const actualDeposit = await proposalsManager.getCommunityProposalDeposit();
         testHelper.assertBNEquals(actualDeposit, expectedDeposit);
       });

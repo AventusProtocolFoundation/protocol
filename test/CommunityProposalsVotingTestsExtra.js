@@ -64,7 +64,7 @@ contract('Community proposals voting - extra', async () => {
       communityProposalId2 =
           await proposalsTestHelper.depositAndCreateCommunityProposal(accounts.communityProposalOwner);
 
-      await timeTestHelper.advanceToTime(timeTestHelper.now().add(timeTestHelper.oneDay));
+      await timeTestHelper.advanceByOneMinute();
 
       communityProposalId3 =
           await proposalsTestHelper.depositAndCreateCommunityProposal(accounts.communityProposalOwner);
@@ -123,7 +123,7 @@ contract('Community proposals voting - extra', async () => {
     it('successfully voting in a different order to proposal creation', async () => {
       const communityProposalId_1 =
           await proposalsTestHelper.depositAndCreateCommunityProposal(accounts.communityProposalOwner);
-      await timeTestHelper.advanceToTime(timeTestHelper.now().add(timeTestHelper.oneDay));
+      await timeTestHelper.advanceByOneMinute();
       const communityProposalId_2 =
           await proposalsTestHelper.depositAndCreateCommunityProposal(accounts.communityProposalOwner);
       await votingTestHelper.advanceTimeToVotingStart(communityProposalId_2);

@@ -1,5 +1,6 @@
 const {MerkleTree} = require('merkletreejs');
 const keccak256 = require('keccak256');
+const web3Tools = require('./web3Tools.js');
 
 // NOTE; This must increment from zero and the order must match TransactionType in LMerkleLeafRules.
 const TransactionType = {
@@ -23,7 +24,7 @@ function getBaseLeaf(_txType) {
   const eventId = 0;
   const ticketRef = 'Ticket ref';
   const vendor = EMPTY_ADDRESS;
-  const immutableRulesData = web3.eth.abi.encodeParameters(['string', 'address[]'], ['', []]);
+  const immutableRulesData = web3Tools.encodeParams(['string', 'address[]'], ['', []]);
 
   const immutableData = {
     eventId,
@@ -32,23 +33,20 @@ function getBaseLeaf(_txType) {
     immutableRulesData
   }
 
-  const snarkMerchantCommitment = EMPTY_BYTES;
-  const snarkTicketOwnerCommitment = EMPTY_BYTES;
-  const snarkProof = createDummySnarkProof(EMPTY_HASH, EMPTY_HASH);
-  const snarkData = encodeSnarkData(snarkMerchantCommitment, snarkTicketOwnerCommitment, snarkProof);
-  const mutableRulesData = web3.eth.abi.encodeParameters(['uint', 'uint'], [0, 0]);
-  const prevLeafHash = sell ? EMPTY_HASH : web3.utils.randomHex(32);
-  const prevMerklePath = sell ? [] : [web3.utils.randomHex(32)];
+  const sigmaData = createDummySigmaData();
+  const mutableRulesData = web3Tools.encodeParams(['uint', 'uint'], [0, 0]);
+  const prevLeafHash = sell ? EMPTY_HASH : web3Tools.randomBytes32();
+  const prevMerklePath = sell ? [] : [web3Tools.randomBytes32()];
   const properties = 'properties';
   const mutableData = {
-    snarkData,
+    sigmaData,
     mutableRulesData,
     prevLeafHash,
     prevMerklePath,
     properties
   }
 
-  const provenance = sell || resell ? web3.eth.abi.encodeParameters(['bytes', 'bytes'], [EMPTY_BYTES, EMPTY_BYTES]) :
+  const provenance = sell || resell ? web3Tools.encodeParams(['bytes', 'bytes'], [EMPTY_BYTES, EMPTY_BYTES]) :
       EMPTY_BYTES;
 
   return {
@@ -60,25 +58,25 @@ function getBaseLeaf(_txType) {
 }
 
 function encodeImmutableData(_immutableData) {
-  return web3.eth.abi.encodeParameters(['uint', 'string', 'address', 'bytes'],
+  return web3Tools.encodeParams(['uint', 'string', 'address', 'bytes'],
     [_immutableData.eventId, _immutableData.ticketRef, _immutableData.vendor, _immutableData.immutableRulesData]);
 }
 
 function encodeMutableData(_mutableData) {
-  return web3.eth.abi.encodeParameters(['bytes', 'bytes', 'bytes32', 'bytes32[]', 'string'],
-      [_mutableData.snarkData, _mutableData.mutableRulesData, _mutableData.prevLeafHash, _mutableData.prevMerklePath,
+  return web3Tools.encodeParams(['bytes', 'bytes', 'bytes32', 'bytes32[]', 'string'],
+      [_mutableData.sigmaData, _mutableData.mutableRulesData, _mutableData.prevLeafHash, _mutableData.prevMerklePath,
           _mutableData.properties]);
-
 }
+
 function encodeLeaf(_leaf) {
   const immutableData = encodeImmutableData(_leaf.immutableData);
   const mutableData = encodeMutableData(_leaf.mutableData);
-  return web3.eth.abi.encodeParameters(['uint', 'bytes', 'bytes', 'bytes'],
+  return web3Tools.encodeParams(['uint', 'bytes', 'bytes', 'bytes'],
       [_leaf.txType, immutableData, mutableData, _leaf.provenance]);
 }
 
 function createModificationLeaf(_previousLeaf, _previousLeafMerklePath, _txType) {
-  const prevLeafHash = web3.utils.soliditySha3(encodeLeaf(_previousLeaf));
+  const prevLeafHash = web3Tools.hash(encodeLeaf(_previousLeaf));
 
   const modificationLeaf = JSON.parse(JSON.stringify(_previousLeaf)); // Deep clone
   modificationLeaf.txType = _txType;
@@ -87,41 +85,10 @@ function createModificationLeaf(_previousLeaf, _previousLeafMerklePath, _txType)
   return modificationLeaf;
 }
 
-async function createDummySnarkData(_merchant, _ticketOwner) {
-  const merchantHash = web3.utils.randomHex(32);
-  const merchantCommitment = await web3.eth.sign(merchantHash, _merchant);
-  const ticketOwnerHash = web3.utils.randomHex(32);
-  const ticketOwnerCommitment = await web3.eth.sign(ticketOwnerHash, _ticketOwner);
-  const snarkProof = createDummySnarkProof(merchantHash, ticketOwnerHash);
-
-  return encodeSnarkData(merchantCommitment, ticketOwnerCommitment, snarkProof);
-}
-
-function encodeSnarkData(_merchantCommitment, _ticketOwnerCommitment, _snarkProof) {
-  return web3.eth.abi.encodeParameters(['bytes', 'bytes', 'bytes'], [_merchantCommitment, _ticketOwnerCommitment, _snarkProof]);
-}
-
-/**
- * @return snarkProof, encoded as bytes
-   snarkProof = {
-     proof : {
-       uint pairs for A, B, C, H, K, etc
-     },
-     input: ["0x0",  // MUST be ZERO
-       merchantHash split into 8 uints,
-       ticketOwnerHash split into 8 uints,
-       merchantAddress as a little-endian byte ordered uint
-       ticketOwnerAddress as a little-endian byte ordered uint]
-    }
- */
-function createDummySnarkProof(_merchantHash, _ownerHash) {
-  return web3.eth.abi.encodeParameters(['uint[2]', 'uint[2]', 'uint[2]', 'uint[2]', 'uint[2]', 'uint[2]',
-      'uint[2]', 'uint[2]', 'uint[2]', 'uint[]'], [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0],
-      ['0x0', ...splitHashForInput(_merchantHash), ...splitHashForInput(_ownerHash), '0x0', '0x0']]);
-}
-
-function splitHashForInput(_hash) {
-  return _hash.slice(2).match(/.{1,8}/g).map(el => '0x' + el);
+function createDummySigmaData() {
+  const dummySigmaProof = web3Tools.encodeParams(['uint[2]', 'uint[2]', 'uint[2]', 'uint[2]', 'uint[2]', 'uint[2]',
+      'uint[2]'], [[0,0], [0,0], [0,0], [0,0], [0,0], [0,0], [0,0]]);
+  return web3Tools.encodeParams(['bytes', 'bytes', 'bytes'], [EMPTY_BYTES, EMPTY_BYTES, dummySigmaProof]);
 }
 
 function createTree(_dataLeaves) {
@@ -137,18 +104,14 @@ function createTree(_dataLeaves) {
   };
 }
 
-function createRandomTree(_treeDepth) {
-  return createTree(Array(2 ** _treeDepth).fill().map(() => web3.utils.randomHex(32)));
-}
-
 function combinedHash(_first, _second) {
   if (!_first) { return _second; }
   if (!_second) { return _first; }
 
   if (_first < _second) {
-    return web3.utils.soliditySha3(_first, _second);
+    return web3Tools.hash(_first, _second);
   }
-  return web3.utils.soliditySha3(_second, _first);
+  return web3Tools.hash(_second, _first);
 }
 
 function getSubTreeMerkleProof(_leafHash, _merklePath, _subTreeSize) {
@@ -162,9 +125,7 @@ function getSubTreeMerkleProof(_leafHash, _merklePath, _subTreeSize) {
 }
 
 module.exports = {
-  createDummySnarkData,
   createModificationLeaf,
-  createRandomTree,
   createTree,
   encodeLeaf,
   getBaseLeaf,

@@ -15,7 +15,7 @@ contract('EventsManager - role management', async () => {
     await avtTestHelper.init(testHelper);
     await timeTestHelper.init(testHelper);
     await validatorsTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
-    await eventsTestHelper.init(testHelper, timeTestHelper, avtTestHelper);
+    await eventsTestHelper.init(testHelper, avtTestHelper);
 
     eventsManager = testHelper.getEventsManager();
     accounts = testHelper.getAccounts('eventOwner', 'validator', 'primary', 'invalid');
@@ -86,7 +86,7 @@ contract('EventsManager - role management', async () => {
 
         it('sender', async () => {
           await registerRoleOnEventFails(goodEventId, goodRoleAddress, goodRole, goodRegisterRoleEventOwnerProof, badSender,
-              'Sender must be owner or validator on event');
+              'Sender must be owner or validator');
         });
 
         it('proof', async () => {

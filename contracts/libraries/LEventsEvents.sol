@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity >=0.5.2 <=0.5.12;
 
 import "./LEventsStorage.sol";
 import "./LValidators.sol";
@@ -16,27 +16,22 @@ library LEventsEvents {
     bytes rules;
   }
 
-  function createEvent(IAventusStorage _storage, string calldata _eventDesc, bytes32 _eventRef, uint _eventTime,
+  function createEvent(IAventusStorage _storage, string calldata _eventDesc, bytes32 _eventRef,
       bytes calldata _createEventEventOwnerProof, address _eventOwner, bytes calldata _rules)
     external
     onlyWithEventDescription(_storage, _eventDesc)
-    returns (uint eventId_, bool registerValidatorOnEvent_)
+    returns (uint eventId_)
   {
-    eventId_ = getEventId(_eventRef, _eventOwner);
-    registerValidatorOnEvent_ = doCreateEventViaValidatorChecks(_storage, _eventDesc, _eventTime, _createEventEventOwnerProof,
-        _eventOwner, _rules, eventId_);
+    address signer = LECRecovery.recover(keccak256(abi.encodePacked(keccak256(abi.encodePacked(_eventDesc)), _rules)),
+      _createEventEventOwnerProof);
+    require(signer == _eventOwner, "Creation proof must be valid and signed by event owner");
 
+    if (msg.sender != _eventOwner)
+      LValidators.ensureValidatorIsRegistered(_storage);
+
+    eventId_ = uint(keccak256(abi.encodePacked(_eventRef, _eventOwner)));
     LEventsStorage.setEventOwner(_storage, eventId_, _eventOwner);
-    LEventsStorage.setEventTime(_storage, eventId_, _eventTime);
     checkAndSetEventRules(_storage, eventId_, _rules);
-  }
-
-  function getEventTime(IAventusStorage _storage, uint _eventId)
-    external
-    view
-    returns (uint eventTime_)
-  {
-    eventTime_ = LEventsStorage.getEventTime(_storage, _eventId);
   }
 
   function getTransactionRules(IAventusStorage _storage, uint _eventId, uint _transactionType)
@@ -78,32 +73,4 @@ library LEventsEvents {
 
     checkAndSetEventRules(_storage, _eventId, otherRuleSets);
   }
-
-  // Separate method due to stack-too-deep.
-  function doCreateEventViaValidatorChecks(IAventusStorage _storage, string memory _eventDesc, uint _eventTime,
-      bytes memory _createEventEventOwnerProof, address _eventOwner, bytes memory _rules, uint _eventId)
-    private
-    returns (bool registerValidatorOnEvent_)
-  {
-    bytes32 descHash = keccak256(abi.encodePacked(_eventDesc));
-    bytes32 eventHash = keccak256(abi.encodePacked(descHash, _eventTime, _rules, msg.sender));
-    address signer = LECRecovery.recover(eventHash, _createEventEventOwnerProof);
-    require(signer == _eventOwner, "Creation proof must be valid and signed by event owner");
-
-    registerValidatorOnEvent_ = msg.sender != _eventOwner;
-
-    if (registerValidatorOnEvent_) {
-      LValidators.ensureValidatorIsRegistered(_storage);
-      LEventsStorage.setRoleOnEvent(_storage, _eventId, msg.sender, "Validator");
-    }
-  }
-
-  function getEventId(bytes32 _eventRef, address _eventOwner)
-    private
-    pure
-    returns (uint eventId_)
-  {
-    eventId_ = uint(keccak256(abi.encodePacked(_eventRef, _eventOwner)));
-  }
-
 }

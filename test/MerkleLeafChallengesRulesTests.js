@@ -5,6 +5,7 @@ const eventsTestHelper = require('./helpers/eventsTestHelper');
 const merkleRootsTestHelper = require('./helpers/merkleRootsTestHelper');
 const validatorsTestHelper = require('./helpers/validatorsTestHelper');
 const rulesHelper = require('../utils/rulesHelper');
+const sigmaHelper = require('../utils/sigma/sigmaHelper');
 const merkleTreeHelper = require('../utils/merkleTreeHelper');
 
 const EMPTY_BYTES = '0x';
@@ -24,7 +25,7 @@ contract('MerkleLeafChallenges - rules', async () => {
     await avtTestHelper.init(testHelper);
     await timeTestHelper.init(testHelper);
     await merkleRootsTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
-    await eventsTestHelper.init(testHelper, timeTestHelper, avtTestHelper);
+    await eventsTestHelper.init(testHelper, avtTestHelper);
     await validatorsTestHelper.init(testHelper, avtTestHelper, timeTestHelper);
 
     eventsManager = testHelper.getEventsManager();
@@ -35,6 +36,7 @@ contract('MerkleLeafChallenges - rules', async () => {
   });
 
   after(async () => {
+    await validatorsTestHelper.advanceToDeregistrationTime(accounts.validator, "Validator");
     await validatorsTestHelper.deregisterValidatorAndWithdrawDeposit(accounts.validator);
     await avtTestHelper.checkBalancesAreZero(accounts);
   });
@@ -174,16 +176,8 @@ contract('MerkleLeafChallenges - rules', async () => {
     context('fails when valid sale', async () => {
 
       afterEach(async () => {
-        await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(merkleTree.rootHash, accounts.validator,
+        await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(merkleTree.rootHash, accounts.validator,
             merkleTree.deposit);
-      });
-
-      it('if the challenge window has passed', async () => {
-        // would cause challenge to succeed - if it were made in time
-        merkleTree = await merkleRootsTestHelper.createAndRegisterMerkleTree(encodedLeaf, accounts.validator);
-
-        await timeTestHelper.advancePastChallengeWindow();
-        await challengeLeafRulesFails('Challenge window expired');
       });
 
       it('if VIP in first sale period', async () => {
@@ -219,14 +213,14 @@ contract('MerkleLeafChallenges - rules', async () => {
       it('when the number of resales falls within the limit', async () => {
         await createEventWithRulesAndPublishLeafToTestRules(3, 0, TransactionType.Resell);
         await challengeLeafRulesFails('Challenge failed - leaf passes all rules');
-        await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(merkleTree.rootHash, accounts.validator,
+        await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(merkleTree.rootHash, accounts.validator,
             merkleTree.deposit);
       });
 
       it('when the number of changes of ownership falls within the limit', async () => {
         await createEventWithRulesAndPublishLeafToTestRules(3, 4, TransactionType.Resell);
         await challengeLeafRulesFails('Challenge failed - leaf passes all rules');
-        await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(merkleTree.rootHash, accounts.validator,
+        await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(merkleTree.rootHash, accounts.validator,
             merkleTree.deposit);
       });
     });
@@ -249,14 +243,14 @@ contract('MerkleLeafChallenges - rules', async () => {
       it('when the number of transfers falls within the limit', async () => {
         await createEventWithRulesAndPublishLeafToTestRules(0, 5, TransactionType.Transfer);
         await challengeLeafRulesFails('Challenge failed - leaf passes all rules');
-        await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(merkleTree.rootHash, accounts.validator,
+        await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(merkleTree.rootHash, accounts.validator,
             merkleTree.deposit);
       });
 
       it('when the number of changes of ownership falls within the limit', async () => {
         await createEventWithRulesAndPublishLeafToTestRules(3, 4, TransactionType.Transfer);
         await challengeLeafRulesFails('Challenge failed - leaf passes all rules');
-        await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(merkleTree.rootHash, accounts.validator,
+        await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(merkleTree.rootHash, accounts.validator,
             merkleTree.deposit);
       });
     });
@@ -289,9 +283,10 @@ contract('MerkleLeafChallenges - rules', async () => {
 
     async function setWhitelistedLeaf(_transactionType, _ticketOwner) {
       leaf = merkleTreeHelper.getBaseLeaf(_transactionType);
-      leaf.immutableData.immutableRulesData = testHelper.encodeParams(['string', 'address[]'], ['', [accounts.whitelistedTicketOwner]]);
+      leaf.immutableData.immutableRulesData = testHelper.encodeParams(['string', 'address[]'], ['',
+          [accounts.whitelistedTicketOwner]]);
       leaf.immutableData.eventId = eventId.toString();
-      leaf.mutableData.snarkData = await merkleTreeHelper.createDummySnarkData(accounts.validator, _ticketOwner);
+      leaf.mutableData.sigmaData = await sigmaHelper.createSigmaData(accounts.validator, _ticketOwner, leaf.immutableData);
       encodedLeaf = merkleTreeHelper.encodeLeaf(leaf);
     }
 
@@ -317,7 +312,7 @@ contract('MerkleLeafChallenges - rules', async () => {
 
     context('fails', async () => {
       afterEach(async () => {
-        await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(merkleTree.rootHash, accounts.validator,
+        await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(merkleTree.rootHash, accounts.validator,
             merkleTree.deposit);
       });
 
@@ -346,7 +341,7 @@ contract('MerkleLeafChallenges - rules', async () => {
       encodedLeaf = merkleTreeHelper.encodeLeaf(leaf);
       merkleTree = await merkleRootsTestHelper.createAndRegisterMerkleTree(encodedLeaf, accounts.validator);
       await challengeLeafRulesFails('Challenge failed - there are no rules for this transaction type');
-      await merkleRootsTestHelper.advanceTimeDeregisterRootAndWithdrawDeposit(merkleTree.rootHash, accounts.validator,
+      await merkleRootsTestHelper.advanceTimeUnlockAndWithdrawRootDeposit(merkleTree.rootHash, accounts.validator,
           merkleTree.deposit);
     }
 

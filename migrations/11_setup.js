@@ -2,27 +2,60 @@ const avtsaleJson = require('./AVTSale.json');
 const common = require('./common.js');
 const eip55 = require('eip55');
 const binariesCheck = require('../tools/binariesCheck.js');
+const web3Tools = require('../utils/web3Tools.js');
 
 const Migrations = artifacts.require('Migrations');
 const AventusStorage = artifacts.require('AventusStorage');
 const AVTContractForTesting = artifacts.require('AVTContractForTesting');
 
-// ALWAYS deploy storage and AVT ERC20 contracts by default.
-const forceDeployStorage = ((process.env.FORCE_DEPLOY_STORAGE || 1) == 1);
-const forceDeployAvtErc20 = ((process.env.FORCE_DEPLOY_AVTERC20 || 1) == 1);
+const mainNetAvtAddress = '0x0d88ed6e74bbfd96b831231638b66c05571e824f';
+const initTestNetAccountBalances = false;  // Switch on if testing on, eg Rinkeby
 
-const avtErc20InstanceKey = web3.utils.soliditySha3('AVTERC20Instance');
+// Deploy a new (or use the old) AVT contract.
+// PRECONDITION: Storage must already be deployed.
+async function getAVTContractAddress(_storage, _deployer, _networkName) {
+  const avtErc20InstanceKey = web3Tools.hash('AVTERC20Instance');
+  const forceDeployAvtErc20 = common.isPrivateNetwork(_networkName);
 
-async function getExistingAVTContract(_storage) {
-  console.log('Using existing AVT ERC20 contract');
-  const avtErc20Address = await _storage.getAddress(avtErc20InstanceKey);
-  if (avtErc20Address == 0) {
-    throw '***ERROR*** can not re-use AVT ERC20 contract because it is not set in storage';
+  if (common.isMainnet(_networkName) && forceDeployAvtErc20) {
+    throw 'Do NOT force AVT deployment on mainnet!';
   }
+
+  let avtErc20Address;
+  avtErc20Address = await _storage.getAddress(avtErc20InstanceKey);
+
+  if (avtErc20Address == 0) {
+    console.log("Could not get AVT contract from storage");
+  } else if (!forceDeployAvtErc20) {
+    console.log('Using existing AVT contract');
+    if (common.isMainnet(_networkName) &&
+        web3.utils.toChecksumAddress(avtErc20Address) != web3.utils.toChecksumAddress(mainNetAvtAddress)) {
+      throw 'AVT ERC20 contract set in mainnet storage is wrong!';
+    }
+    return avtErc20Address;
+  }
+
+  // Still here? Storage has no AVT contract set.
+
+  try {
+    await AventusStorage.deployed();
+    console.log("AventusStorage has just been deployed.")
+  } catch (e) {
+    throw 'AventusStorage from previous deployment but it has no AVT contract set!';
+  }
+
+  if (common.isMainnet(_networkName)) {
+    avtErc20Address = mainNetAvtAddress;
+  } else {
+    console.log ("Deploying AVT contract");
+    avtErc20Address = (await common.deploy(_deployer, AVTContractForTesting)).address;
+  }
+
+  await _storage.setAddress(avtErc20InstanceKey, avtErc20Address);
   return avtErc20Address;
 }
 
-async function initTestNetAccountBalances(_accounts) {
+async function doInitTestNetAccountBalances(_accounts) {
   const ONE_ETH_IN_WEI = 10**18;
   const accountZero = _accounts[0];
   let index = _accounts.length;
@@ -33,7 +66,7 @@ async function initTestNetAccountBalances(_accounts) {
       await web3.eth.sendTransaction({from: accountZero, to: account, value: ONE_ETH_IN_WEI - balance});
       console.log(" - Account", account, "topped up to 1 ETH");
     } else {
-      console.log(" - Account", account, "balance is", balance);
+      console.log(" - Account", account, "balance is ETH ", balance);
     }
   }
 }
@@ -42,29 +75,30 @@ async function initialDeploy(_deployer, _networkName) {
   await common.deploy(_deployer, Migrations);
   const storage = await getStorageContract(_deployer, _networkName);
   console.log('AventusStorage:', storage.address);
-  let avtErc20Address;
-  if (forceDeployAvtErc20) {
-    avtErc20Address = (await common.deploy(_deployer, AVTContractForTesting)).address;
-    await storage.setAddress(avtErc20InstanceKey, avtErc20Address);
-  } else {
-    avtErc20Address = await getExistingAVTContract(storage);
-  }
+  const avtErc20Address = await getAVTContractAddress(storage, _deployer, _networkName);
   console.log('AVT ERC20:', avtErc20Address);
 }
 
 // Deploy a new (or use the old) storage contract.
 async function getStorageContract(_deployer, _networkName) {
-  if (forceDeployStorage) {
-    console.log('Deploying storage contract');
-    await common.deploy(_deployer, AventusStorage);
-    console.log('...saving storage contract for reuse.');
-    common.saveStorageContractToJsonFile(AventusStorage, _networkName);
-    return await AventusStorage.deployed();
-  } else {
-    console.log('Using existing storage contract');
-    const storage = common.getStorageContractFromJsonFile(AventusStorage, _networkName);
-    return storage;
+  const forceDeployStorage = common.isPrivateNetwork(_networkName);
+
+  let storage;
+  try {
+    storage = await common.getStorageContractFromJsonFile(AventusStorage, _networkName);
+    if (!forceDeployStorage) {
+      console.log('Using existing storage contract');
+      return storage;
+    }
+  } catch (e) {
+    console.log("Could not get contract from JSON file");
   }
+
+  console.log('Deploying storage contract');
+  storage = await common.deploy(_deployer, AventusStorage);
+  console.log('Saving storage contract to JSON file');
+  common.saveStorageContractToJsonFile(AventusStorage, _networkName);
+  return storage;
 }
 
 function exitOnOversizeBinary() {
@@ -72,18 +106,15 @@ function exitOnOversizeBinary() {
 }
 
 module.exports = async function(_deployer, _networkName, _accounts) {
+  global.web3 = web3; // make web3Tools work
+
   if (!_networkName.startsWith('coverage')) exitOnOversizeBinary();
 
-  if (!common.isTestNetwork(_networkName)) {
-    console.log(`test setup: network ${_networkName} not supported by this migration script, skipping...`);
-    return _deployer;
-  }
   console.log(_networkName.toUpperCase() + ' NETWORK DEPLOYMENT');
   console.log('*** Version of web3: ', web3.version);
   console.log('*** Starting setup...');
 
-  if (!_networkName.startsWith('coverage') && !_networkName.startsWith('development'))
-    await initTestNetAccountBalances(_accounts);
+  if (initTestNetAccountBalances) await doInitTestNetAccountBalances(_accounts);
 
   await initialDeploy(_deployer, _networkName);
   console.log('*** SETUP COMPLETE');

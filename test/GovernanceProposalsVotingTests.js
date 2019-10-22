@@ -196,7 +196,7 @@ contract('Governance proposals voting', async () => {
   context('getGovernanceProposalDeposit()', async () => {
     context('succeeds with', async() => {
       it('good parameters', async() => {
-        const expectedDeposit = avtTestHelper.toNat(new BN(100)); // value from parameter registry;
+        const expectedDeposit = avtTestHelper.toAttoAVT(new BN(100)); // value from parameter registry;
         const actualDeposit = await proposalsManager.getGovernanceProposalDeposit();
         testHelper.assertBNEquals(actualDeposit, expectedDeposit);
       });

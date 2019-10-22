@@ -7,10 +7,9 @@ let testHelper, timeMachine;
 let mockTimeKey;
 let blockchainTime = new web3.utils.BN(0);
 
-const challengeWindow = new web3.utils.BN(20 * 60);
-// one day in seconds
+const oneMinute = new web3.utils.BN(60);
 const oneDay = new web3.utils.BN(24 * 60 * 60);
-const oneWeek = oneDay.mul(new web3.utils.BN(7));
+const oneWeek = new web3.utils.BN(7 * 24 * 60 * 60);
 
 async function init(_testHelper) {
   testHelper = _testHelper;
@@ -23,21 +22,14 @@ async function advanceToTime(_timestamp) {
   return timeMachine.advanceToTime(_timestamp);
 }
 
-async function advanceByNumDays(_numDays) {
-  const timeToAdvance = oneDay.mul(new web3.utils.BN(_numDays));
-  const timestamp = blockchainTime.add(timeToAdvance);
-  await advanceToTime(timestamp);
-}
-
-async function advancePastChallengeWindow() {
-  const timestamp = blockchainTime.add(challengeWindow);
+async function advanceByOneMinute() {
+  const timestamp = blockchainTime.add(oneMinute);
   await advanceToTime(timestamp);
 }
 
 // Keep exports alphabetical.
 module.exports = {
-  advanceByNumDays,
-  advancePastChallengeWindow,
+  advanceByOneMinute,
   advanceToTime,
   init,
   now: () => blockchainTime,

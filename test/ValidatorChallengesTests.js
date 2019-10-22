@@ -9,7 +9,7 @@ const BN = testHelper.BN;
 contract('Validator challenges', async () => {
 
   let accounts;
-  const stake1 = avtTestHelper.oneAVTTo18SigFig;
+  const stake1 = avtTestHelper.oneAVTInAttoAVTBN;
   const stake2 = stake1.mul(new BN(2));
 
   let validatorsManager, proposalsManager;
