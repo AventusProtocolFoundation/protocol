@@ -81,24 +81,7 @@
 36
 37
 38
-39
-40
-41
-42
-43
-44
-45
-46
-47
-48
-49
-50
-51
-52
-53
-54
-55
-56</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+39</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -136,85 +119,51 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.5.2;
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity &gt;=0.5.2 &lt;=0.5.12;
 &nbsp;
 interface IMerkleRootsManager {
 &nbsp;
   /**
    * @notice Event emitted for a registerMerkleRoot transaction.
    */
-  event LogMerkleRootRegistered(address indexed ownerAddress, bytes32 indexed rootHash, uint treeDepth, uint lastEventTime);
+  event LogMerkleRootRegistered(address indexed rootOwner, bytes32 indexed rootHash, uint rootDeposit, string treeContentURL);
 &nbsp;
   /**
-   * @notice Event emitted upon a successful merkle root challenge
+   * @notice Event emitted for an unlockMerkleRootDeposit transaction.
    */
-  event LogMerkleRootAutoChallenged(address indexed challenger, bytes32 indexed rootHash);
-&nbsp;
-  /**
-   * @notice Event emitted for a deregisterMerkleRoot transaction.
-   */
-  event LogMerkleRootDeregistered(bytes32 indexed rootHash);
+  event LogMerkleRootDepositUnlocked(address indexed rootOwner, bytes32 indexed rootHash);
 &nbsp;
   /**
    * @notice Register the given merkleRoot on the Aventus Protocol.
    * @param _rootHash Root hash of the merkle tree
-   * @param _treeDepth Number of layers of the merkle tree (including the root)
-   * @param _lastEventTime last even time of any ticket on the merkle tree
+   * @param _treeContentURL url linking to raw leaf data for all leaves on this tree
    */
-  function registerMerkleRoot(bytes32 _rootHash, uint _treeDepth, uint _lastEventTime) external;
+  function registerMerkleRoot(bytes32 _rootHash, string calldata _treeContentURL) external;
+&nbsp;
+  /**
+   * @notice Get the timestamp for when the given root deposit can be unlocked. This is a combination of the root registration
+   * time and the root deposit lock period.
+   * @param _rootHash Root hash of the tree to get the deposit unlock time for
+   */
+  function getMerkleRootDepositUnlockTime(bytes32 _rootHash) external view returns (uint deregistrationTime_);
 &nbsp;
   /**
    * @notice Deregister the given merkle root from the Aventus Protocol.
-   * @param _rootHash Root hash of the tree to be deregistered
+   * @param _rootHash Root hash of the tree deposit to be unlocked
    */
-  function deregisterMerkleRoot(bytes32 _rootHash) external;
+  function unlockMerkleRootDeposit(bytes32 _rootHash) external;
 &nbsp;
   /**
    * @notice Get the required deposit for a new merkle root registration at the time of calling
-   * @param _treeDepth Number of layers of the merkle tree (including the root)
-   * @param _lastEventTime last even time of any ticket on the merkle tree
    */
-  function getNewMerkleRootDeposit(uint _treeDepth, uint _lastEventTime) external view returns (uint deposit_);
-&nbsp;
-  /**
-   * @notice Challenge (with automatic resolution) and claim deposit of existing merkle root based on declared tree depth
-   * @param _leafHash hash of leaf at depth greater than declared
-   * @param _merklePath merkle path of the given leaf hash
-   */
-  function autoChallengeTreeDepth(bytes32 _leafHash, bytes32[] calldata _merklePath) external;
-&nbsp;
-  /**
-   * @notice Challenge (with automatic resolution) and claim deposit of existing merkle root based on declared last event time
-   * @param _eventId event with later event time than declared last event time
-   * @param _remainingLeafContent all remaining leaf content (ie. excluding event id) packed as bytes
-   * @param _merklePath merkle path of the fraudulent leaf
-   */
-  function autoChallengeLastEventTime(uint _eventId, bytes calldata _remainingLeafContent, bytes32 [] calldata _merklePath)
-    external;
+  function getNewMerkleRootDeposit() external view returns (uint deposit_);
 }</pre></td></tr>
 </table></pre>
 <div class='push'></div><!-- for sticky footer -->
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Feb 28 2019 12:07:39 GMT+0000 (GMT)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Tue Oct 22 2019 17:45:51 GMT+0100 (BST)
 </div>
 </div>
 <script src="../../prettify.js"></script>

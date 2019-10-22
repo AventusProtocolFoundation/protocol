@@ -22,7 +22,7 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Statements</span>
-        <span class='fraction'>3/3</span>
+        <span class='fraction'>22/22</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
@@ -37,7 +37,7 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Lines</span>
-        <span class='fraction'>19/19</span>
+        <span class='fraction'>22/22</span>
       </div>
     </div>
   </div>
@@ -129,7 +129,16 @@
 84
 85
 86
-87</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -177,33 +186,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2×</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -211,95 +204,129 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity ^0.5.2;
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">pragma solidity &gt;=0.5.2 &lt;=0.5.12;
 &nbsp;
 import "./interfaces/IAventusStorage.sol";
 import "./Owned.sol";
 import "./Versioned.sol";
 &nbsp;
 contract ParameterRegistry is Owned, Versioned {
-  string constant aventitiesSchema = "Aventities";
-  string constant avtSchema = "AVT";
-  string constant eventsSchema = "Events";
-  string constant membersSchema = "Members";
-  string constant parameterRegistrySchema = "ParameterRegistry";
-  string constant proposalsSchema = "Proposals";
-  string constant merkleRootsSchema = "MerkleRoots";
 &nbsp;
-  uint private constant oneAVTInNat = 10**18;
+  string private constant validatorsTable = "Validators";
+  string private constant parameterRegistryTable = "ParameterRegistry";
+  string private constant proposalsTable = "Proposals";
+  string private constant merkleRootsTable = "MerkleRoots";
+&nbsp;
+  uint private constant oneAVTInAttoAVT = 10**18;
 &nbsp;
   // Proposal default values.
-  uint private constant GOVERNANCE_PROPOSAL_LOBBYING_PERIOD_DAYS = 14;
-  uint private constant GOVERNANCE_PROPOSAL_VOTING_PERIOD_DAYS = 7;
-  uint private constant GOVERNANCE_PROPOSAL_REVEALING_PERIOD_DAYS = 7;
-  uint private constant GOVERNANCE_PROPOSAL_DEPOSIT = 100 * oneAVTInNat; // In AVT
-  uint private constant AVENTITY_CHALLENGE_LOBBYING_PERIOD_DAYS = 14;
-  uint private constant AVENTITY_CHALLENGE_VOTING_PERIOD_DAYS = 7;
-  uint private constant AVENTITY_CHALLENGE_REVEALING_PERIOD_DAYS = 7;
-  uint private constant AVENTITY_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE = 10;
-  uint private constant AVENTITY_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE = 10;
+  uint private constant COMMUNITY_PROPOSAL_LOBBYING_PERIOD = 2 weeks;
+  uint private constant COMMUNITY_PROPOSAL_VOTING_PERIOD = 1 weeks;
+  uint private constant COMMUNITY_PROPOSAL_REVEALING_PERIOD = 1 weeks;
+  uint private constant COMMUNITY_PROPOSAL_DEPOSIT = 100 * oneAVTInAttoAVT;
+  uint private constant GOVERNANCE_PROPOSAL_LOBBYING_PERIOD = 2 weeks;
+  uint private constant GOVERNANCE_PROPOSAL_VOTING_PERIOD = 1 weeks;
+  uint private constant GOVERNANCE_PROPOSAL_REVEALING_PERIOD = 1 weeks;
+  uint private constant GOVERNANCE_PROPOSAL_DEPOSIT = 100 * oneAVTInAttoAVT;
+  uint private constant VALIDATOR_CHALLENGE_LOBBYING_PERIOD = 2 weeks;
+  uint private constant VALIDATOR_CHALLENGE_VOTING_PERIOD = 1 weeks;
+  uint private constant VALIDATOR_CHALLENGE_REVEALING_PERIOD = 1 weeks;
+  uint private constant WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE = 10;
+  uint private constant WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE = 10;
 &nbsp;
-  // Member default values.
-  uint private constant TOKEN_BONDING_CURVE_DEPOSIT = 1000 * oneAVTInNat; // In AVT
-  uint private constant VALIDATOR_DEPOSIT = 5000 * oneAVTInNat; // In AVT
+  // Validator default values.
+  uint private constant VALIDATOR_DEPOSIT = 5000 * oneAVTInAttoAVT;
+  // Times after last merkle root time per lost merkle root challenge.
+  uint[] private VALIDATOR_COOLING_OFF_PERIODS = [
+    uint(2 days),  // Must be greater than MERKLE_ROOT_DEPOSIT_LOCK_PERIOD.
+    15 weeks, // 3 months more than for zero challenges
+    41 weeks, // 6 months more than for one challenges
+    80 weeks  // 9 months more than for two challenges
+  ];
 &nbsp;
   // Base value for merkle root deposits
-  uint private constant MERKLE_ROOT_BASE_DEPOSIT = 100 * oneAVTInNat;
-  // Merkle root cooling off period (length after last event time at which root can be deregistered)
-  uint private constant MERKLE_ROOT_COOLING_OFF_PERIOD = 2 weeks;
-&nbsp;
-  // NOTE: It is important that the product of these three values never overflows a uint256
-  // Multiplier for merkle root deposits (deposit = multipler * number of levels * time until last event)
-  uint private constant MERKLE_ROOT_DEPOSIT_MULTIPLIER = oneAVTInNat / 25000;
-  // Maximum allowed merkle tree depth
-  uint private constant MAX_MERKLE_TREE_DEPTH = 256;
-  // Maximum allowed difference between current and last event time of a merkle tree
-  uint private constant MAX_INTERVENING_EVENT_TIME = 3500 days;
+  uint private constant MERKLE_ROOT_DEPOSIT = 200 * oneAVTInAttoAVT;
+  // Merkle root deposit lock period (length after root registration time at which root deposit can be unlocked)
+  uint private constant MERKLE_ROOT_DEPOSIT_LOCK_PERIOD = 1 days;
 &nbsp;
   IAventusStorage public s;
 &nbsp;
-  constructor(IAventusStorage _s) public {
+  constructor(IAventusStorage _s)
+    public
+  {
     s = _s;
   }
 &nbsp;
   // @dev This must be called ONCE and ONCE ONLY, after the permission is given to write to storage as part of migration.
-  function init() external onlyOwner {
-    if (s.getBoolean(keccak256(abi.encodePacked(parameterRegistrySchema, "init")))) return;
-    s.setBoolean(keccak256(abi.encodePacked(parameterRegistrySchema, "init")), true);
+  function init()
+    external
+    onlyOwner
+  {
+    require(!s.getBoolean(keccak256(abi.encodePacked(parameterRegistryTable, "Init"))), "Cannot reinit ParameterRegistry");
 &nbsp;
-    s.setUInt(keccak256(abi.encodePacked(proposalsSchema, "governanceProposalLobbyingPeriodDays")),
-        GOVERNANCE_PROPOSAL_LOBBYING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked(proposalsSchema, "governanceProposalVotingPeriodDays")),
-        GOVERNANCE_PROPOSAL_VOTING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked(proposalsSchema, "governanceProposalRevealingPeriodDays")),
-        GOVERNANCE_PROPOSAL_REVEALING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked(proposalsSchema, "governanceProposalFixedDeposit")),
-        GOVERNANCE_PROPOSAL_DEPOSIT);
+    s.setBoolean(keccak256(abi.encodePacked(parameterRegistryTable, "Init")), true);
 &nbsp;
-    s.setUInt(keccak256(abi.encodePacked(aventitiesSchema, "challengeLobbyingPeriodDays")),
-        AVENTITY_CHALLENGE_LOBBYING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked(aventitiesSchema, "challengeVotingPeriodDays")),
-        AVENTITY_CHALLENGE_VOTING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked(aventitiesSchema, "challengeRevealingPeriodDays")),
-        AVENTITY_CHALLENGE_REVEALING_PERIOD_DAYS);
-    s.setUInt(keccak256(abi.encodePacked(aventitiesSchema, "winningsForChallengeEnderPercentage")),
-        AVENTITY_WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE);
-    s.setUInt(keccak256(abi.encodePacked(aventitiesSchema, "winningsForChallengeWinnerPercentage")),
-        AVENTITY_WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE);
+    s.setUInt(keccak256(abi.encodePacked(proposalsTable, "CommunityProposalLobbyingPeriod")),
+        COMMUNITY_PROPOSAL_LOBBYING_PERIOD);
+    s.setUInt(keccak256(abi.encodePacked(proposalsTable, "CommunityProposalVotingPeriod")), COMMUNITY_PROPOSAL_VOTING_PERIOD);
+    s.setUInt(keccak256(abi.encodePacked(proposalsTable, "CommunityProposalRevealingPeriod")),
+        COMMUNITY_PROPOSAL_REVEALING_PERIOD);
+    s.setUInt(keccak256(abi.encodePacked(proposalsTable, "CommunityProposalFixedDeposit")), COMMUNITY_PROPOSAL_DEPOSIT);
 &nbsp;
-    s.setUInt(keccak256(abi.encodePacked(membersSchema, "TokenBondingCurve", "fixedDepositAmount")),
-        TOKEN_BONDING_CURVE_DEPOSIT);
-    s.setUInt(keccak256(abi.encodePacked(membersSchema, "Validator", "fixedDepositAmount")), VALIDATOR_DEPOSIT);
+    s.setUInt(keccak256(abi.encodePacked(proposalsTable, "GovernanceProposalLobbyingPeriod")),
+        GOVERNANCE_PROPOSAL_LOBBYING_PERIOD);
+    s.setUInt(keccak256(abi.encodePacked(proposalsTable, "GovernanceProposalVotingPeriod")), GOVERNANCE_PROPOSAL_VOTING_PERIOD);
+    s.setUInt(keccak256(abi.encodePacked(proposalsTable, "GovernanceProposalRevealingPeriod")),
+        GOVERNANCE_PROPOSAL_REVEALING_PERIOD);
+    s.setUInt(keccak256(abi.encodePacked(proposalsTable, "GovernanceProposalFixedDeposit")), GOVERNANCE_PROPOSAL_DEPOSIT);
 &nbsp;
-    s.setUInt(keccak256(abi.encodePacked(merkleRootsSchema, "baseDeposit")), MERKLE_ROOT_BASE_DEPOSIT);
-    s.setUInt(keccak256(abi.encodePacked(merkleRootsSchema, "coolingOffPeriod")), MERKLE_ROOT_COOLING_OFF_PERIOD);
-    s.setUInt(keccak256(abi.encodePacked(merkleRootsSchema, "depositMultiplier")), MERKLE_ROOT_DEPOSIT_MULTIPLIER);
-    s.setUInt(keccak256(abi.encodePacked(merkleRootsSchema, "maxTreeDepth")), MAX_MERKLE_TREE_DEPTH);
-    s.setUInt(keccak256(abi.encodePacked(merkleRootsSchema, "maxInterveningEventTime")), MAX_INTERVENING_EVENT_TIME);
+    s.setUInt(keccak256(abi.encodePacked(validatorsTable, "ChallengeLobbyingPeriod")), VALIDATOR_CHALLENGE_LOBBYING_PERIOD);
+    s.setUInt(keccak256(abi.encodePacked(validatorsTable, "ChallengeVotingPeriod")), VALIDATOR_CHALLENGE_VOTING_PERIOD);
+    s.setUInt(keccak256(abi.encodePacked(validatorsTable, "ChallengeRevealingPeriod")), VALIDATOR_CHALLENGE_REVEALING_PERIOD);
+    s.setUInt(keccak256(abi.encodePacked(validatorsTable, "WinningsForChallengeEnderPercentage")),
+        WINNINGS_FOR_CHALLENGE_ENDER_PERCENTAGE);
+    s.setUInt(keccak256(abi.encodePacked(validatorsTable, "WinningsForChallengeWinnerPercentage")),
+        WINNINGS_FOR_CHALLENGE_WINNER_PERCENTAGE);
+&nbsp;
+    s.setUInt(keccak256(abi.encodePacked(validatorsTable, "FixedDepositAmount")), VALIDATOR_DEPOSIT);
+    s.setUInt(keccak256(abi.encodePacked(validatorsTable, "NumValidatorCoolingOffPeriods")), VALIDATOR_COOLING_OFF_PERIODS.length);
+    // ONLY_IF_ASSERTS_ON // ONLY_IF_ASSERTS_ON // ONLY_IF_ASSERTS_ON assert(VALIDATOR_COOLING_OFF_PERIODS[0] &gt; MERKLE_ROOT_DEPOSIT_LOCK_PERIOD);
+&nbsp;
+    for (uint i = 0; i &lt; VALIDATOR_COOLING_OFF_PERIODS.length; ++i) {
+      s.setUInt(keccak256(abi.encodePacked(validatorsTable, "ValidatorCoolingOffPeriod", i)), VALIDATOR_COOLING_OFF_PERIODS[i]);
+    }
+&nbsp;
+    s.setUInt(keccak256(abi.encodePacked(merkleRootsTable, "RootDeposit")), MERKLE_ROOT_DEPOSIT);
+    s.setUInt(keccak256(abi.encodePacked(merkleRootsTable, "RootDepositLockPeriod")), MERKLE_ROOT_DEPOSIT_LOCK_PERIOD);
   }
 }</pre></td></tr>
 </table></pre>
@@ -307,7 +334,7 @@ contract ParameterRegistry is Owned, Versioned {
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Feb 28 2019 12:07:39 GMT+0000 (GMT)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Tue Oct 22 2019 17:45:51 GMT+0100 (BST)
 </div>
 </div>
 <script src="../prettify.js"></script>
