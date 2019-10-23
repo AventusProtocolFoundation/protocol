@@ -26,8 +26,6 @@ const PEvents = artifacts.require('PEvents');
 const PMerkleRoots = artifacts.require('PMerkleRoots');
 const PMerkleLeafChallenges = artifacts.require('PMerkleLeafChallenges');
 
-const proposalsOn = true; // See scripts/SwitchProposalsMode.js
-
 module.exports = async function(_deployer, _networkName, _accounts) {
   console.log('*** Deploying Libraries (Part C)...');
   await deployLibraries(_deployer, _networkName);
@@ -44,7 +42,7 @@ async function deployLibraries(_deployer, _networkName) {
 
   deployLEvents = deployAll;
   deployLMerkleRoots = deployAll;
-  deployLMerkleLeafChallenges = proposalsOn && deployAll;
+  deployLMerkleLeafChallenges = deployAll;
 
   version = await common.getVersion(Versioned);
   const storageContract = await common.getStorageContractFromJsonFile(IAventusStorage, _networkName);

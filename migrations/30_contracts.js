@@ -47,10 +47,6 @@ let deployTimeMachine;
 
 let version;
 
-const proposalsOn = true; // See scripts/SwitchProposalsMode.js
-
-const TWENTY_FOUR_HOURS = 24 * 60 * 60; // In seconds.
-
 // TODO: This is copied from test/helpers/avtTestHelper - share this code.
 function toAttoAVT(_amountInAVT) {
   const BN = web3Tools.BN;
@@ -64,11 +60,11 @@ async function deployContracts(_deployer, _networkName) {
   const deployAll = common.deployAll(_networkName);
 
   deployAVTManager = deployAll;
-  deployProposalsManager = proposalsOn && deployAll;
+  deployProposalsManager = deployAll;
   deployValidatorsManager = deployAll;
   deployEventsManager = deployAll;
   deployMerkleRootsManager = deployAll;
-  deployMerkleLeafChallenges = proposalsOn && deployAll;
+  deployMerkleLeafChallenges = deployAll;
   deployParameterRegistry = deployAll;
   deployTimeMachine = common.mockTime(_networkName) && deployAll;
 
@@ -103,7 +99,7 @@ async function doDeployAVTManager(_deployer, _storage) {
 
 async function doDeployValidatorsManager(_deployer, _storage) {
   if (!deployValidatorsManager) return;
-  await common.deploy(_deployer, ValidatorsManager, _storage.address, proposalsOn);
+  await common.deploy(_deployer, ValidatorsManager, _storage.address);
   await saveInterfaceToStorage(_storage, 'IValidatorsManager', ValidatorsManagerInterface, ValidatorsManager);
   await _storage.allowAccess('write', ValidatorsManager.address);
 }

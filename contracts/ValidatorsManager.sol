@@ -9,18 +9,11 @@ import "./Versioned.sol";
 contract ValidatorsManager is IValidatorsManager, Owned, Versioned {
 
     IAventusStorage public s;
-    bool public challengesOn;
 
-    constructor(IAventusStorage _s, bool _challengesOn)
+    constructor(IAventusStorage _s)
       public
     {
       s = _s;
-      challengesOn = _challengesOn;
-    }
-
-    modifier onlyIfChallengesSwitchedOn {
-      require(challengesOn, "Validator challenges are not currently supported");
-      _;
     }
 
     function registerValidator(address _validatorAddress, string calldata _evidenceUrl, string calldata _desc)
@@ -38,7 +31,6 @@ contract ValidatorsManager is IValidatorsManager, Owned, Versioned {
     }
 
     function challengeValidator(address _validatorAddress)
-      onlyIfChallengesSwitchedOn
       external
     {
       LValidators.challengeValidator(s, _validatorAddress);

@@ -26,8 +26,6 @@ const LValidatorsStorage = artifacts.require('LValidatorsStorage');
 const PValidators = artifacts.require('PValidators');
 const PProposals = artifacts.require('PProposals');
 
-const proposalsOn = true; // See scripts/SwitchProposalsMode.js
-
 module.exports = async function(_deployer, _networkName, _accounts) {
     console.log('*** Deploying Libraries (Part B)...');
     await deployLibraries(_deployer, _networkName);
@@ -43,8 +41,8 @@ async function deployLibraries(_deployer, _networkName) {
   const deployAll = common.deployAll(_networkName);
 
   deployLValidators = deployAll;
-  deployLProposals = proposalsOn && deployAll;
-  deployLProposalForTesting = proposalsOn && deployAll;
+  deployLProposals = deployAll;
+  deployLProposalForTesting = deployAll;
 
   version = await common.getVersion(Versioned);
   const storageContract = await common.getStorageContractFromJsonFile(IAventusStorage, _networkName);
@@ -63,10 +61,8 @@ async function deploySubLibraries(_deployer, _library) {
   } else if (_library === LValidators) {
     await common.deploy(_deployer, LValidatorsStorage);
     await librariesCommon.linkMultiple(_deployer, LValidatorsStorage, [LValidators, LValidatorsChallenges]);
-    if (proposalsOn) {
-      await common.deploy(_deployer, LValidatorsChallenges);
-      await _deployer.link(LValidatorsChallenges, LValidators);
-    }
+    await common.deploy(_deployer, LValidatorsChallenges);
+    await _deployer.link(LValidatorsChallenges, LValidators);
   }
 }
 
