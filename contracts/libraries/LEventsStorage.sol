@@ -5,7 +5,6 @@ import "./LAventusTime.sol";
 
 library LEventsStorage {
 
-  string constant eventsTable = "Events";
   string constant eventTable = "Event";
 
   function isRoleOnEvent(IAventusStorage _storage, uint _eventId, address _roleAddress, string calldata _role)
