@@ -40,6 +40,10 @@ pragma solidity 0.5.12;
        v := byte(0, mload(add(_sig, 96)))
      }
 
+     // See: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/cryptography/ECDSA.sol
+     if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0)
+      return address(0);
+      
      // Version of signature should be 27 or 28, but 0 and 1 are also possible versions
      if (v < 27)
        v += 27;
