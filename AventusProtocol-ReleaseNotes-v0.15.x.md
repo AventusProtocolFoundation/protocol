@@ -38,7 +38,7 @@ Internal only minor changes:
 - Fixed more inconsistencies with parameter names starting with underscore
 - Ordering of external, public, private methods
 
-## Release 0.15.0 - 2020-04-XX
+## Release 0.15.1 - 2020-04-16
 
 Breaking changes:
 - None.
