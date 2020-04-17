@@ -16,7 +16,7 @@
     "@openzeppelin/test-helpers": "^0.5.4",
     "@truffle/hdwallet-provider": "^1.0.25",
     "eip55": "^1.0.3",
-    "java": "^0.10.0",
+    "java": "^0.11.0",
     "keccak256": "^1.0.0",
     "merkletreejs": "^0.1.6",
     "solidity-coverage": "^0.7.1",
