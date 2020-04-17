@@ -1,4 +1,4 @@
-pragma solidity >=0.5.2 <=0.5.12;
+pragma solidity 0.5.2;
 // This file is abridged and adapted from a file by Christian Reitwiessner. Original licensing below
 
 // This file is LGPL3 Licensed

@@ -1,7 +1,7 @@
-pragma solidity >=0.5.2 <=0.5.12;
+pragma solidity 0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
-import "./LAventusTime.sol";
+import "./LProtocolTime.sol";
 import "./LAVTManager.sol";
 import "./LProposalsStorage.sol";
 
@@ -78,7 +78,7 @@ library LProposalsEnact {
     view
     returns (bool result_)
   {
-    result_ = doGetProposalStatus(_storage, _proposalId) == LProposalsEnact.ProposalStatus.RevealingFinishedProposalNotEnded;
+    result_ = doGetProposalStatus(_storage, _proposalId) == ProposalStatus.RevealingFinishedProposalNotEnded;
   }
 
   function implementGovernanceProposal(IAventusStorage _storage, bytes memory _bytecode)
@@ -105,7 +105,7 @@ library LProposalsEnact {
     uint revealingStart = LProposalsStorage.getRevealingStart(_storage, _proposalId);
     uint revealingEnd = LProposalsStorage.getRevealingEnd(_storage, _proposalId);
     uint deposit = getProposalDeposit(_storage, _proposalId);
-    uint currentTime = LAventusTime.getCurrentTime(_storage);
+    uint currentTime = LProtocolTime.getCurrentTime(_storage);
 
     if (votingStart == 0)
       status_ = ProposalStatus.NonExistent;
@@ -125,7 +125,7 @@ library LProposalsEnact {
       uint revealingPeriod)
     private
   {
-    uint lobbyingStart = LAventusTime.getCurrentTime(_storage);
+    uint lobbyingStart = LProtocolTime.getCurrentTime(_storage);
     uint votingStart = lobbyingStart + lobbyingPeriod;
     uint revealingStart = votingStart + votingPeriod;
     uint revealingEnd = revealingStart + revealingPeriod;

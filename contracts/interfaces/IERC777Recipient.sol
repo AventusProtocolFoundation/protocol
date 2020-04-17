@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity 0.5.2;
 
 // As defined in ERC777TokensRecipient And The tokensToSend Hook section of https://eips.ethereum.org/EIPS/eip-777
 interface IERC777Recipient {

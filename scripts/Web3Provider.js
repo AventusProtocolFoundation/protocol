@@ -4,7 +4,7 @@ function error(errorMsg) {
 }
 
 function getWalletProvider() {
-  const HdWalletProvider = require('truffle-hdwallet-provider');
+  const HdWalletProvider = require('@truffle/hdwallet-provider');
 
   const walletProviderURI = process.env.ETH_walletProvider_URI;
   if (walletProviderURI == null || walletProviderURI == '') {
@@ -18,12 +18,8 @@ function getWalletProvider() {
   if (security == 'random') {
     const bip39 = require('bip39');
     security = bip39.generateMnemonic();
-  } else if (security.startsWith('0x')) {
-    security = security.split(' '); // Private keys are passed as an array.
-    numAccounts = security.length;
   } else if (security == null || security == '') {
     error('must set environment variable ETH_walletProvider_security to one of:' +
-        '\n - your private key: must start with "0x"' +
         '\n - your bip39 mnemonic phrase' +
         '\n - "random": to use a random bip39 mnemonic for readonly access');
   }

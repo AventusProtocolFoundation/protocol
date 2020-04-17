@@ -1,4 +1,4 @@
-const AventusStorageForTesting = artifacts.require('AventusStorageForTesting');
+const AventusStorageExtension = artifacts.require('AventusStorageExtension');
 const ParameterRegistry = artifacts.require('ParameterRegistry');
 const testHelper = require('./helpers/testHelper');
 const avtTestHelper = require('./helpers/avtTestHelper');
@@ -225,22 +225,23 @@ contract('AventusStorage', async () => {
     });
 
     it('can delegate new functionality', async () => {
-      let aventusStorageForTesting = await AventusStorageForTesting.new();
-      // create instance pointing to storage address in order to access methods
-      let aventusStorageForTestingAsDelegate = await AventusStorageForTesting.at(aventusStorage.address);
-      assert.ok(aventusStorageForTesting);
-      assert.ok(aventusStorageForTestingAsDelegate);
+      let aventusStorageExtension = await AventusStorageExtension.new();
+      let aventusStorageExtensionAsDelegate = await AventusStorageExtension.at(aventusStorage.address);
+      assert.ok(aventusStorageExtension);
+      assert.ok(aventusStorageExtensionAsDelegate);
 
       const testValue = 111;
 
-      await testHelper.expectRevert(() => aventusStorageForTestingAsDelegate.setTestValue(testValue),
+      await testHelper.expectRevert(() => aventusStorageExtensionAsDelegate.setTestValue(testValue),
           'Extended functionality StorageContract not found');
 
       let msgHash = testHelper.hash('StorageInstance');
-      await aventusStorage.setAddress(msgHash, aventusStorageForTesting.address);
+      await aventusStorage.setAddress(msgHash, aventusStorageExtension.address);
 
-      await aventusStorageForTestingAsDelegate.setTestValue(testValue);
-      assert.equal((await aventusStorageForTestingAsDelegate.getTestValue()).toNumber(), testValue);
+      await aventusStorageExtensionAsDelegate.setTestValue(testValue);
+      assert.equal((await aventusStorageExtensionAsDelegate.getTestValue()).toNumber(), testValue);
+      // Ensure we haven't overwritten anything in storage by using delegatecall
+      assert.equal(await aventusStorage.owner(), accounts.owner);
     });
   });
 });

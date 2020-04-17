@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity 0.5.2;
 
 import "../interfaces/IERC777Recipient.sol";
 import "../thirdParty/interfaces/IERC1820Registry.sol";

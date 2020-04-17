@@ -1,4 +1,4 @@
-pragma solidity >=0.5.2 <=0.5.12;
+pragma solidity 0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LProposalsEnact.sol";
@@ -127,12 +127,12 @@ library LProposals {
     emit LogGovernanceProposalEnded(_proposalId, votesFor, votesAgainst, implemented);
   }
 
-  function getAventusTime(IAventusStorage _storage)
+  function getProtocolTime(IAventusStorage _storage)
     external
     view
     returns (uint time_)
   {
-    time_ = LAventusTime.getCurrentTime(_storage);
+    time_ = LProtocolTime.getCurrentTime(_storage);
   }
 
   function getTotalRevealedStake(IAventusStorage _storage, uint _proposalId, uint _optionId)

@@ -1,7 +1,7 @@
-pragma solidity >=0.5.2 <=0.5.12;
+pragma solidity 0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
-import "./LAventusTime.sol";
+import "./LProtocolTime.sol";
 
 library LAVTStorage {
 
@@ -95,7 +95,7 @@ library LAVTStorage {
     bytes32 lengthKey = keccak256(abi.encodePacked(avtAccountTable, _account, "HistoryLength"));
     uint length = _storage.getUInt(lengthKey);
     bytes32 timeKey = keccak256(abi.encodePacked(avtAccountTable, _account, "HistoryTimestamp", length));
-    uint timestamp = LAventusTime.getCurrentTime(_storage);
+    uint timestamp = LProtocolTime.getCurrentTime(_storage);
 
     if (timestamp != _storage.getUInt(timeKey))
       timeKey = keccak256(abi.encodePacked(avtAccountTable, _account, "HistoryTimestamp", ++length));

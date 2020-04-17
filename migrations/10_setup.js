@@ -3,6 +3,7 @@ const common = require('./common.js');
 const eip55 = require('eip55');
 const binariesCheck = require('../tools/binariesCheck.js');
 const web3Tools = require('../utils/web3Tools.js');
+const {singletons} = require('@openzeppelin/test-helpers');
 
 const Migrations = artifacts.require('Migrations');
 const AventusStorage = artifacts.require('AventusStorage');
@@ -105,6 +106,18 @@ function exitOnOversizeBinary() {
   if (!binariesCheck()) process.exit(1);
 }
 
+async function deploy1820AndMocks(_deployer, _networkName, _accounts) {
+  if (!_networkName.startsWith('development')) {
+    // TODO: Figure out why Docker needs this when no one else does.
+    require('@openzeppelin/test-helpers/configure')({ provider: 'http://' + _networkName + ':8545' });
+  }
+  console.log('*** Deploying ERC1820Registry...');
+  await singletons.ERC1820Registry(_accounts[0]);
+  console.log('*** Deploying MockERC777Token...');
+  const MockERC777Token = artifacts.require('MockERC777Token');
+  await _deployer.deploy(MockERC777Token);
+}
+
 module.exports = async function(_deployer, _networkName, _accounts) {
   global.web3 = web3; // make web3Tools work
 
@@ -115,6 +128,10 @@ module.exports = async function(_deployer, _networkName, _accounts) {
   console.log('*** Starting setup...');
 
   if (initTestNetAccountBalances) await doInitTestNetAccountBalances(_accounts);
+
+  if (!_networkName.startsWith('rinkeby') && !_networkName.startsWith('mainnet')) {
+    await deploy1820AndMocks(_deployer, _networkName, _accounts);
+  }
 
   await initialDeploy(_deployer, _networkName);
   console.log('*** SETUP COMPLETE');

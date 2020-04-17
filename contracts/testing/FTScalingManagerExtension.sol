@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity 0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
 import "../FTScalingManager.sol";

@@ -1,4 +1,4 @@
-pragma solidity ^0.5.2;
+pragma solidity 0.5.2;
 
 // https://eips.ethereum.org/EIPS/eip-777
 interface IERC777 {

@@ -1,6 +1,6 @@
-pragma solidity >=0.5.2 <=0.5.12;
+pragma solidity 0.5.2;
 
-import "../libraries/testing/LAventusTimeMock.sol";
+import "../libraries/testing/LProtocolTimeMock.sol";
 import "../Owned.sol";
 
 contract TimeMachine is Owned {
@@ -18,20 +18,20 @@ contract TimeMachine is Owned {
     view
     returns (uint time_)
   {
-    time_ = LAventusTimeMock.getCurrentTime(s);
+    time_ = LProtocolTimeMock.getCurrentTime(s);
   }
 
   function init()
     onlyOwner
     external
   {
-    LAventusTimeMock.init(s);
+    LProtocolTimeMock.init(s);
   }
 
   function advanceToTime(uint _timestamp)
     onlyOwner
     external
   {
-    LAventusTimeMock.advanceToTime(s, _timestamp);
+    LProtocolTimeMock.advanceToTime(s, _timestamp);
   }
 }

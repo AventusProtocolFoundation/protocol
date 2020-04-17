@@ -1,6 +1,6 @@
 // From open https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/introspection/IERC1820Registry.sol
 
-pragma solidity ^0.5.2;
+pragma solidity 0.5.2;
 
 /**
  * @dev Interface of the global ERC1820 Registry, as defined in the

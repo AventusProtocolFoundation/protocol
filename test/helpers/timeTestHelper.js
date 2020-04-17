@@ -1,5 +1,3 @@
-const LAventusTime = artifacts.require('LAventusTime');
-const LAventusTimeMock = artifacts.require('LAventusTimeMock');
 const TimeMachine = artifacts.require('TimeMachine');
 const profilingHelper = require('./profilingHelper');
 

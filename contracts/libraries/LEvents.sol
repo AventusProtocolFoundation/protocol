@@ -1,7 +1,7 @@
-pragma solidity >=0.5.2 <=0.5.12;
+pragma solidity 0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
-import "./LAventusTime.sol";
+import "./LProtocolTime.sol";
 import "./LEventsEvents.sol";
 import "./LEventsRoles.sol";
 import "./LEventsRules.sol";

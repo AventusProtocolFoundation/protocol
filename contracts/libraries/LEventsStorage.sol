@@ -1,11 +1,10 @@
-pragma solidity >=0.5.2 <=0.5.12;
+pragma solidity 0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
-import "./LAventusTime.sol";
+import "./LProtocolTime.sol";
 
 library LEventsStorage {
 
-  string constant eventsTable = "Events";
   string constant eventTable = "Event";
 
   function isRoleOnEvent(IAventusStorage _storage, uint _eventId, address _roleAddress, string calldata _role)

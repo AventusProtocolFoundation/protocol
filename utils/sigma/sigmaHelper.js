@@ -4,7 +4,10 @@ const proofGenerator = require('./sigmaProofGenerator.js');
 const web3Tools = require('../web3Tools.js');
 
 async function generateSigmaData(_merchantAddress, _ticketOwnerAddress, _immutableLeafData) {
+  return generateSigmaData(_merchantAddress, _ticketOwnerAddress, _immutableLeafData, null);
+}
 
+async function generateSigmaData(_merchantAddress, _ticketOwnerAddress, _immutableLeafData, _randomness) {
   const ticketUniquenessHash = (web3Tools.hash({t: 'uint', v: _immutableLeafData.eventId},
       {t: 'string', v:_immutableLeafData.ticketRef}, {t: 'address', v: _immutableLeafData.vendor})).substring(2);
 
@@ -14,7 +17,8 @@ async function generateSigmaData(_merchantAddress, _ticketOwnerAddress, _immutab
   const proofInputs = {
     secret : 'some_secretive_secret',
     merchantAddress : merchantAddressPlusHash,
-    ticketOwnerAddress : ticketOwnerAddressPlusHash
+    ticketOwnerAddress : ticketOwnerAddressPlusHash,
+    randomness: _randomness
   }
 
   const sigmaProof = JSON.parse(proofGenerator.generateProof(proofInputs));
@@ -43,9 +47,17 @@ function encodeSigmaData(_sigmaData) {
       _sigmaData.ticketOwnerSignedInputsHash, sigmaProof]);
 }
 
-async function createSigmaData(_merchantAddress, _ticketOwnerAddress, _immutableLeafData) {
-  const sigmaData = await generateSigmaData(_merchantAddress, _ticketOwnerAddress, _immutableLeafData);
+async function createSigmaData(_merchantAddress, _ticketOwnerAddress, _immutableLeafData, _randomness) {
+  const sigmaData = await generateSigmaData(_merchantAddress, _ticketOwnerAddress, _immutableLeafData, _randomness);
   return encodeSigmaData(sigmaData);
+}
+
+async function createSigmaDataAndGetRandomness(_merchantAddress, _ticketOwnerAddress, _immutableLeafData) {
+  const sigmaData = await generateSigmaData(_merchantAddress, _ticketOwnerAddress, _immutableLeafData);
+  return {
+    sigmaData: encodeSigmaData(sigmaData),
+    randomness: sigmaData.sigmaProof.randomness
+  };
 }
 
 async function createInvalidSigmaData(_merchantAddress, _ticketOwnerAddress, _immutableLeafData) {
@@ -56,5 +68,6 @@ async function createInvalidSigmaData(_merchantAddress, _ticketOwnerAddress, _im
 
 module.exports = {
   createSigmaData,
+  createSigmaDataAndGetRandomness,
   createInvalidSigmaData
 }
