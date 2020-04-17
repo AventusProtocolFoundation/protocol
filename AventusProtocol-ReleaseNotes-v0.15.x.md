@@ -47,7 +47,7 @@ New functionality:
 - Fungible Token Scaling Manager: FTScalingManager.
 
 Internal only:
-- Renames of internal libraries to be more generic: AVT -> ProtocolToken, Aventus -> Protocol.
+- Renames of internal libraries to be more generic: Aventus -> Protocol.
 - Locked Solidity version to 0.5.2 rather than a range.
 - Add optional ERC20 method support in interface, eg name().
 - Tidy up.
