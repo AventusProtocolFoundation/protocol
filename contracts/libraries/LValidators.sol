@@ -1,4 +1,4 @@
-pragma solidity >=0.5.2 <=0.5.12;
+pragma solidity 0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LAVTManager.sol";
@@ -22,7 +22,7 @@ library LValidators {
 
   modifier onlyAfterDeregistrationTime(IAventusStorage _storage, address _validatorAddress) {
     uint deregistrationTime = getDeregistrationTime(_storage, _validatorAddress);
-    require(LAventusTime.getCurrentTime(_storage) >= deregistrationTime, "Validator cannot be deregistered yet");
+    require(LProtocolTime.getCurrentTime(_storage) >= deregistrationTime, "Validator cannot be deregistered yet");
     _;
   }
 

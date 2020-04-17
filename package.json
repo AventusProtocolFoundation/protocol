@@ -1,6 +1,6 @@
 {
   "name": "protocol",
-  "version": "0.14.0",
+  "version": "0.15.1",
   "description": "The Aventus Protocol",
   "author": "Artos Systems Ltd",
   "license": "GPL-3.0-only",
@@ -13,15 +13,17 @@
   },
   "homepage": "https://github.com/AventusProtocolFoundation/protocol#readme",
   "dependencies": {
+    "@openzeppelin/test-helpers": "^0.5.4",
+    "@truffle/hdwallet-provider": "^1.0.25",
     "eip55": "^1.0.3",
     "java": "^0.11.0",
     "keccak256": "^1.0.0",
     "merkletreejs": "^0.1.6",
-    "solidity-coverage": "^0.7.0-beta.2",
-    "truffle-hdwallet-provider": "1.0.10",
-    "web3": "^1.2.0"
+    "solidity-coverage": "^0.7.1",
+    "web3": "^1.2.4"
   },
   "devDependencies": {
-    "mocha-jenkins-reporter": "^0.4.0"
+    "mocha": "^5.2.0",
+    "mocha-jenkins-reporter": "^0.4.2"
   }
 }

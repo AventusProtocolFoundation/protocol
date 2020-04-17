@@ -8,8 +8,8 @@ const Versioned = artifacts.require('Versioned');
 
 // Libraries
 const LValidators = artifacts.require('LValidators');
-const LAventusTime = artifacts.require('LAventusTime');
-const LAventusTimeMock = artifacts.require('LAventusTimeMock');
+const LProtocolTime = artifacts.require('LProtocolTime');
+const LProtocolTimeMock = artifacts.require('LProtocolTimeMock');
 const LValidatorsChallenges = artifacts.require('LValidatorsChallenges');
 const LProposalsEnact = artifacts.require('LProposalsEnact');
 const LEvents = artifacts.require('LEvents');
@@ -24,7 +24,7 @@ const LMerkleRoots = artifacts.require('LMerkleRoots');
 const TimeMachine = artifacts.require('TimeMachine');
 
 // Proxies
-const PAventusTime = artifacts.require('PAventusTime');
+const PProtocolTime = artifacts.require('PProtocolTime');
 const PAVTManager = artifacts.require('PAVTManager');
 
 module.exports = async function(_deployer, _networkName, _accounts) {
@@ -33,21 +33,21 @@ module.exports = async function(_deployer, _networkName, _accounts) {
   console.log('*** LIBRARIES PART A DEPLOY COMPLETE');
 };
 
-let deployLAventusTime;
+let deployLProtocolTime;
 let deployLAVTManager;
-let deployLAventusTimeMock;
+let deployLProtocolTimeMock;
 let version;
 
 async function deployLibraries(_deployer, _networkName) {
   const deployAll = common.deployAll(_networkName);
 
-  deployLAventusTime = deployAll;
+  deployLProtocolTime = deployAll;
   deployLAVTManager = deployAll;
-  deployLAventusTimeMock = common.mockTime(_networkName) && deployAll;
+  deployLProtocolTimeMock = common.mockTime(_networkName) && deployAll;
 
   await doDeployVersion(_deployer);
   const storageContract = await common.getStorageContractFromJsonFile(IAventusStorage, _networkName);
-  await doDeployLAventusTime(_deployer, storageContract);
+  await doDeployLProtocolTime(_deployer, storageContract);
   await doDeployLAVTManager(_deployer, storageContract);
 }
 
@@ -63,20 +63,20 @@ async function doDeployVersion(_deployer) {
   version = await common.getVersion(Versioned);
 }
 
-async function doDeployLAventusTime(_deployer, _storage) {
-  const libraryName = 'LAventusTimeInstance';
-  const proxyName = 'PAventusTimeInstance';
-  const library = LAventusTime;
-  const proxy = PAventusTime;
-  const deployLibraryAndProxy = deployLAventusTime;
+async function doDeployLProtocolTime(_deployer, _storage) {
+  const libraryName = 'LProtocolTimeInstance';
+  const proxyName = 'PProtocolTimeInstance';
+  const library = LProtocolTime;
+  const proxy = PProtocolTime;
+  const deployLibraryAndProxy = deployLProtocolTime;
   const dependents = [LAVTStorage, LEventsEvents, LEvents, LEventsStorage, LValidators, LMerkleRoots, LProposalsEnact, LProposals];
 
   await librariesCommon.doDeployLibraryAndProxy(version, deploySubLibraries, _deployer, _storage, libraryName, proxyName,
       library, proxy, deployLibraryAndProxy, dependents);
-  if (deployLAventusTimeMock) {
-    await common.deploy(_deployer, LAventusTimeMock);
-    await _deployer.link(LAventusTimeMock, TimeMachine);
-    await librariesCommon.setProxiedLibraryAddress(version, _storage, libraryName, LAventusTimeMock.address);
+  if (deployLProtocolTimeMock) {
+    await common.deploy(_deployer, LProtocolTimeMock);
+    await _deployer.link(LProtocolTimeMock, TimeMachine);
+    await librariesCommon.setProxiedLibraryAddress(version, _storage, libraryName, LProtocolTimeMock.address);
   }
 }
 

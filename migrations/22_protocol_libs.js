@@ -3,6 +3,7 @@ const librariesCommon = require('./librariesCommon.js');
 const web3Tools = require('../utils/web3Tools.js');
 
 const IAventusStorage = artifacts.require('IAventusStorage');
+const FTScalingManager = artifacts.require('FTScalingManager');
 const EventsManager = artifacts.require('EventsManager');
 const MerkleRootsManager = artifacts.require('MerkleRootsManager');
 const MerkleLeafChallenges = artifacts.require('MerkleLeafChallenges');
@@ -94,7 +95,7 @@ function doDeployLMerkleRoots(_deployer, _storage) {
   const library = LMerkleRoots;
   const proxy = PMerkleRoots;
   const deployLibraryAndProxy = deployLMerkleRoots;
-  const dependents = [MerkleRootsManager, LMerkleLeafChallenges, LMerkleLeafChecks];
+  const dependents = [MerkleRootsManager, FTScalingManager, LMerkleLeafChallenges, LMerkleLeafChecks];
 
   return librariesCommon.doDeployLibraryAndProxy(version, deploySubLibraries, _deployer, _storage, libraryName,
       proxyName, library, proxy, deployLibraryAndProxy, dependents);

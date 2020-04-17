@@ -10,7 +10,10 @@ dependencies.forEach(function(dependency) {
 var pg = java.import('sigma.protocols.pedersen_commitment.SigmaPedersenCommitment');
 
 function generateProof(obj) {
-  return pg.generateProofSync(obj.merchantAddress, obj.ticketOwnerAddress, obj.secret);
+  if(obj.randomness)
+   return pg.generateProofSync(obj.merchantAddress, obj.ticketOwnerAddress, obj.secret, obj.randomness);
+  else
+   return pg.generateProofSync(obj.merchantAddress, obj.ticketOwnerAddress, obj.secret);
 }
 
 module.exports = {

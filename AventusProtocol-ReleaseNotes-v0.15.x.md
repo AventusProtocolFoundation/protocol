@@ -1,6 +1,6 @@
 # Aventus Protocol 0.15.x Release Notes
 
-This set of releases (see v0.14.x for the previous) simplifies Merkle root registration and prepares for audit.
+This set of releases (see v0.14.x for the previous) simplifies Merkle root registration, adds the FTSM and involves minor changes for audit.
 
 The release notes for this version follow, listed by sub-release and category.
 
@@ -37,3 +37,21 @@ Internal only minor changes:
 - Standardisation of attoAVT as smallest unit of AVT: 1*10^-18
 - Fixed more inconsistencies with parameter names starting with underscore
 - Ordering of external, public, private methods
+
+## Release 0.15.1 - 2020-04-16
+
+Breaking changes:
+- None.
+
+New functionality:
+- Fungible Token Scaling Manager: FTScalingManager.
+
+Internal only:
+- Renames of internal libraries to be more generic: Aventus -> Protocol.
+- Locked Solidity version to 0.5.2 rather than a range.
+- Add optional ERC20 method support in interface, eg name().
+- Tidy up.
+- Better logs testing.
+- Rename of storage extension testing.
+- Remove dead scripts.
+- Minor update from zeppelin LECRecovery

@@ -5,6 +5,9 @@ set -e
 clear
 
 if [ "$1" == "coverage" ]; then
+  echo "** Killing old ganache"
+  scripts/linux/kill.sh ganache-cli
+  echo "** Running coverage"
   scripts/linux/coverage.sh SKIP_ASSERTS
   exit 0
 fi

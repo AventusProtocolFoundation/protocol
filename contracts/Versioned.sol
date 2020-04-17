@@ -1,10 +1,10 @@
-pragma solidity >=0.5.2 <=0.5.12;
+pragma solidity 0.5.2;
 
 contract Versioned {
 
   string public constant versionMajor = "0";
-  string public constant versionMinor = "14";
-  string public constant versionPoint = "0";
+  string public constant versionMinor = "15";
+  string public constant versionPoint = "1";
 
   function getVersion()
     public

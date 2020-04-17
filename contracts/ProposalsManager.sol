@@ -1,4 +1,4 @@
-pragma solidity >=0.5.2 <=0.5.12;
+pragma solidity 0.5.2;
 
 import "./interfaces/IAventusStorage.sol";
 import "./interfaces/IProposalsManager.sol";
@@ -86,7 +86,7 @@ contract ProposalsManager is IProposalsManager, Owned, Versioned {
     view
     returns (uint time_)
   {
-    time_ = LProposals.getAventusTime(s);
+    time_ = LProposals.getProtocolTime(s);
   }
 
   function getVotingStartTime(uint _proposalId)

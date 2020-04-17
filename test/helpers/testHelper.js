@@ -2,6 +2,7 @@ const AventusStorage = artifacts.require('AventusStorage');
 const Versioned = artifacts.require('Versioned');
 const ProposalsManager = artifacts.require('ProposalsManager');
 const AVTManager = artifacts.require('AVTManager');
+const FTScalingManager = artifacts.require('FTScalingManager');
 const ValidatorsManager = artifacts.require('ValidatorsManager');
 const MerkleLeafChallenges = artifacts.require('MerkleLeafChallenges');
 const MerkleRootsManager = artifacts.require('MerkleRootsManager');
@@ -16,10 +17,11 @@ const zeroAddress = '0x0000000000000000000000000000000000000000';
 const BN_ZERO = new web3.utils.BN(0);
 const BN_ONE = new web3.utils.BN(1);
 
-let aventusStorage, versioned, proposalsManager, validatorsManager, avtManager, merkleRootsManager, eventsManager, avtIERC20;
+let aventusStorage, ftScalingManager, versioned, proposalsManager, validatorsManager, avtManager, merkleRootsManager,
+    eventsManager, avtIERC20;
 let merkleLeafChallenges;
 let profiledLogArgs = profilingHelper.profileFunction('TestHelper.getLogArgs', getLogArgs);
-let lastEventBlockNumber = -1;
+let lastEventBlockNumbers = {};
 
 async function init() {
   avtManager = await AVTManager.deployed();
@@ -39,7 +41,10 @@ async function init() {
   proposalsManager = profilingHelper.profileContract(proposalsManager, 'proposalsManager');
   versioned = await Versioned.deployed();
   versioned = profilingHelper.profileContract(versioned, 'versioned');
-  lastEventBlockNumber = -1;
+  ftScalingManager = await FTScalingManager.deployed();
+  ftScalingManager = profilingHelper.profileContract(ftScalingManager, 'ftScalingManager');
+
+  lastEventBlockNumbers = {};
 
   accounts = await web3.eth.getAccounts();
 }
@@ -65,14 +70,24 @@ async function sign(_signer, _plainData) {
   return web3.eth.sign( _plainData, _signer);
 }
 
-function getLogArgs(_contract, _event) {
+function getLogArgs(_contract, _event, _expectLog) {
+  const expectLog = (_expectLog === undefined) ? true : _expectLog;
   return new Promise(async (resolve, reject) => {
-    const log = await _contract.getPastEvents(_event, {fromBlock: lastEventBlockNumber + 1})
+    const key = _event + _contract.address;
+    if (!(key in lastEventBlockNumbers)) lastEventBlockNumbers[key] = -1;
+    const log = await _contract.getPastEvents(_event, {fromBlock: lastEventBlockNumbers[key] + 1})
     if (log.length == 0) {
-      reject(new Error('No events found'));
+      if (expectLog) {
+        reject(new Error('No events found'));
+      } else {
+        resolve(true);
+      }
     } else {
+      if (!expectLog) {
+        reject(new Error('Events found!'));
+      }
       const event = log[log.length - 1];
-      lastEventBlockNumber = event.blockNumber;
+      lastEventBlockNumbers[key] = event.blockNumber;
       resolve(event.args);
     }
   });
@@ -138,6 +153,7 @@ module.exports = {
   getAventusStorage: () => aventusStorage,
   getAVTIERC20: () => avtIERC20,
   getAVTManager: () => avtManager,
+  getFTScalingManager: () => ftScalingManager,
   getEventsManager: () => eventsManager,
   getLogArgs: profiledLogArgs,
   getValidatorsManager: () => validatorsManager,

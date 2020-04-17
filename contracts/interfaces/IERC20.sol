@@ -1,15 +1,17 @@
-pragma solidity >=0.5.2 <=0.5.12;
+pragma solidity 0.5.2;
 
-// https://github.com/ethereum/EIPs/issues/20
+// https://eips.ethereum.org/EIPS/eip-20
 interface IERC20 {
-  function totalSupply() external view returns (uint totalSupply_);
-  function balanceOf(address _owner) external view returns (uint balance_);
-  function transfer(address _to, uint _value) external returns (bool success_);
-  function transferFrom(address _from, address _to, uint _value) external returns (bool success_);
-  function approve(address _spender, uint _value) external returns (bool success_);
-  function allowance(address _owner, address _spender) external view returns (uint remaining_);
-  // Triggered when tokens are transferred
-  event Transfer(address indexed _from, address indexed _to, uint _value);
-  // Triggered whenever approve(address _spender, uint _value) is called
-  event Approval(address indexed _owner, address indexed _spender, uint _value);
+  function name() external view returns (string memory); // optional method - see eip spec
+  function symbol() external view returns (string memory); // optional method - see eip spec
+  function decimals() external view returns (uint8); // optional method - see eip spec
+  function totalSupply() external view returns (uint256);
+  function balanceOf(address owner) external view returns (uint256);
+  function transfer(address to, uint256 value) external returns (bool);
+  function transferFrom(address from, address to, uint256 value) external returns (bool);
+  function approve(address spender, uint256 value) external returns (bool);
+  function allowance(address owner, address spender) external view returns (uint256);
+
+  event Transfer(address indexed from, address indexed to, uint256 value);
+  event Approval(address indexed owner, address indexed spender, uint256 value);
 }

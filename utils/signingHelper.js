@@ -53,6 +53,28 @@ async function getTicketSalePropertiesVendorProof(_properties, _vendor){
   return sign(salePropertiesHash, _vendor);
 }
 
+async function getTicketResaleProvenance(_ticketOwner, _eventOwner, _prevLeafHash) {
+  const ticketOwnerProof = await sign(hash(merkleTreeHelper.TransactionType.Resell, _prevLeafHash, _eventOwner), _ticketOwner);
+  const resellerProof = await sign(hash(merkleTreeHelper.TransactionType.Resell, ticketOwnerProof), _eventOwner);
+  return web3Tools.encodeParams(['bytes', 'bytes'], [resellerProof, ticketOwnerProof]);
+}
+
+async function getTicketTransferProvenance(_ticketOwner, _prevLeafHash) {
+  return await sign(hash(merkleTreeHelper.TransactionType.Transfer, _prevLeafHash), _ticketOwner);
+}
+
+async function getTicketUpdateProvenance(_eventOwner, _prevLeafHash, _mutableDataProperties) {
+  return await sign(hash(merkleTreeHelper.TransactionType.Update, _prevLeafHash, _mutableDataProperties), _eventOwner);
+}
+
+async function getTicketRedeemProvenance(_vendorOrEventOwner, _prevLeafHash) {
+  return await sign(hash(merkleTreeHelper.TransactionType.Redeem, _prevLeafHash), _vendorOrEventOwner);
+}
+
+async function getTicketCancelProvenance(_vendorOrEventOwner, _prevLeafHash) {
+  return await sign(hash(merkleTreeHelper.TransactionType.Cancel, _prevLeafHash), _vendorOrEventOwner);
+}
+
 async function getCastVoteSecret(_address, _proposalId, _optionId) {
   const signedMessage = await getRevealVoteSignedMessage(_address, _proposalId, _optionId);
   return getCastVoteSecretFromRevealVoteSignedMessage(signedMessage);
@@ -71,5 +93,10 @@ module.exports = {
   getCreateEventEventOwnerProof,
   getRegisterRoleEventOwnerProof,
   getRevealVoteSignedMessage,
-  getTicketSaleProvenance
+  getTicketCancelProvenance,
+  getTicketRedeemProvenance,
+  getTicketResaleProvenance,
+  getTicketSaleProvenance,
+  getTicketTransferProvenance,
+  getTicketUpdateProvenance
 };

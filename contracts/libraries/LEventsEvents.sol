@@ -1,4 +1,4 @@
-pragma solidity >=0.5.2 <=0.5.12;
+pragma solidity 0.5.2;
 
 import "./LEventsStorage.sol";
 import "./LValidators.sol";

@@ -17,6 +17,17 @@ const EMPTY_ADDRESS = '0x0000000000000000000000000000000000000000';
 const EMPTY_BYTES = '0x';
 const EMPTY_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
+function getBaseFTLeaf(_erc20Address, _from, _to, _amount, _nonce, _proof) {
+  return {
+    erc20Address: _erc20Address,
+    from: _from,
+    to: _to,
+    amount: _amount,
+    nonce: _nonce,
+    proof: _proof
+  };
+}
+
 function getBaseLeaf(_txType) {
   const sell = _txType === TransactionType.Sell;
   const resell = _txType === TransactionType.Resell;
@@ -37,7 +48,7 @@ function getBaseLeaf(_txType) {
   const mutableRulesData = web3Tools.encodeParams(['uint', 'uint'], [0, 0]);
   const prevLeafHash = sell ? EMPTY_HASH : web3Tools.randomBytes32();
   const prevMerklePath = sell ? [] : [web3Tools.randomBytes32()];
-  const properties = 'properties';
+  const properties = 'My event 123 | Doors 19:30 | Seat H';
   const mutableData = {
     sigmaData,
     mutableRulesData,
@@ -73,6 +84,11 @@ function encodeLeaf(_leaf) {
   const mutableData = encodeMutableData(_leaf.mutableData);
   return web3Tools.encodeParams(['uint', 'bytes', 'bytes', 'bytes'],
       [_leaf.txType, immutableData, mutableData, _leaf.provenance]);
+}
+
+function encodeFTLeaf(_leafData) {
+  return web3Tools.encodeParams(['address', 'address', 'address', 'uint', 'uint', 'bytes'],
+      [_leafData.erc20Address, _leafData.from, _leafData.to, _leafData.amount, _leafData.nonce, _leafData.proof]);
 }
 
 function createModificationLeaf(_previousLeaf, _previousLeafMerklePath, _txType) {
@@ -128,7 +144,9 @@ module.exports = {
   createModificationLeaf,
   createTree,
   encodeLeaf,
+  encodeFTLeaf,
   getBaseLeaf,
+  getBaseFTLeaf,
   getSubTreeMerkleProof,
   TransactionType
 }

@@ -193,6 +193,7 @@ contract('Governance proposals voting', async () => {
     });
   });
 
+  // TODO: Move to GovernanceProposalsManagerTests.js
   context('getGovernanceProposalDeposit()', async () => {
     context('succeeds with', async() => {
       it('good parameters', async() => {

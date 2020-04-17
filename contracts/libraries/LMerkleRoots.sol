@@ -1,9 +1,9 @@
-pragma solidity >=0.5.2 <=0.5.12;
+pragma solidity 0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LValidators.sol";
 import "./LMerkleRootsStorage.sol";
-import "./LAventusTime.sol";
+import "./LProtocolTime.sol";
 import "./LAVTManager.sol";
 
 library LMerkleRoots {
@@ -23,7 +23,7 @@ library LMerkleRoots {
   }
 
   modifier onlyAfterUnlockTime(IAventusStorage _storage, bytes32 _rootHash) {
-    uint timeNow = LAventusTime.getCurrentTime(_storage);
+    uint timeNow = LProtocolTime.getCurrentTime(_storage);
     require(timeNow >= getRootDepositUnlockTime(_storage, _rootHash), "Must be after root deposit unlock time");
     _;
   }
@@ -38,7 +38,7 @@ library LMerkleRoots {
     uint deposit = getNewMerkleRootDeposit(_storage);
     LAVTManager.lockDeposit(_storage, msg.sender, deposit);
 
-    uint currentTime = LAventusTime.getCurrentTime(_storage);
+    uint currentTime = LProtocolTime.getCurrentTime(_storage);
     LMerkleRootsStorage.setRootRegistrationTime(_storage, _rootHash, currentTime);
     LMerkleRootsStorage.setRootOwner(_storage, _rootHash, msg.sender);
     LMerkleRootsStorage.setDeposit(_storage, _rootHash, deposit);

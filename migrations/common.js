@@ -65,7 +65,7 @@ function isMainnet(_networkName) {
 
 function isPrivateNetwork(_networkName) {
   // NOTE: truffle dry-run migrations add a suffix: always check with startsWith.
-  return _networkName.startsWith('development') || _networkName.startsWith('coverage');
+  return _networkName.startsWith('development') || _networkName.startsWith('coverage') || _networkName.startsWith('ganache');
 }
 
 function mockTime(_networkName) {

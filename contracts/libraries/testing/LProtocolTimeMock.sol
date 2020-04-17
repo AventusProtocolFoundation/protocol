@@ -1,8 +1,8 @@
-pragma solidity >=0.5.2 <=0.5.12;
+pragma solidity 0.5.2;
 
 import "../../interfaces/IAventusStorage.sol";
 
-library LAventusTimeMock {
+library LProtocolTimeMock {
 
   bytes32 constant mockCurrentTimeKey = keccak256(abi.encodePacked("MockCurrentTime"));
 

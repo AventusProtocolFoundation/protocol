@@ -26,6 +26,9 @@ const MerkleLeafChallengesInterface = artifacts.require('IMerkleLeafChallenges')
 const TimeMachine = artifacts.require('TimeMachine');
 const TimeMachineInterface = artifacts.require('ITimeMachine');
 
+const FTScalingManager = artifacts.require('FTScalingManager');
+const FTScalingManagerInterface = artifacts.require('IFTScalingManager');
+
 const ParameterRegistry = artifacts.require('ParameterRegistry');
 const abiPartLength = 16;
 
@@ -42,6 +45,7 @@ let deployValidatorsManager;
 let deployEventsManager;
 let deployMerkleRootsManager;
 let deployMerkleLeafChallenges;
+let deployFTScalingManager;
 let deployParameterRegistry;
 let deployTimeMachine;
 
@@ -69,6 +73,7 @@ async function deployContracts(_deployer, _networkName) {
   deployEventsManager = deployAll;
   deployMerkleRootsManager = deployAll;
   deployMerkleLeafChallenges = proposalsOn && deployAll;
+  deployFTScalingManager = deployAll;
   deployParameterRegistry = deployAll;
   deployTimeMachine = common.mockTime(_networkName) && deployAll;
 
@@ -82,6 +87,7 @@ async function deployContracts(_deployer, _networkName) {
   await doDeployEventsManager(_deployer, storage);
   await doDeployMerkleRootsManager(_deployer, storage);
   await doDeployMerkleLeafChallenges(_deployer, storage);
+  await doDeployFTScalingManager(_deployer, storage);
   await doDeployParameterRegistry(_deployer, storage);
   await doDeployTimeMachine(_deployer, storage);
 }
@@ -127,6 +133,16 @@ async function doDeployMerkleLeafChallenges(_deployer, _storage) {
   await common.deploy(_deployer, MerkleLeafChallenges, _storage.address);
   await saveInterfaceToStorage(_storage, 'IMerkleLeafChallenges', MerkleLeafChallengesInterface, MerkleLeafChallenges);
   await _storage.allowAccess('write', MerkleLeafChallenges.address);
+}
+
+async function doDeployFTScalingManager(_deployer, _storage) {
+  if (!deployFTScalingManager) return;
+  await common.deploy(_deployer, FTScalingManager, _storage.address);
+  await saveInterfaceToStorage(_storage, 'IFTScalingManager', FTScalingManagerInterface, FTScalingManager);
+  await _storage.allowAccess('write', FTScalingManager.address);
+  // TODO: Can be removed when we get registering with 1820 working in the constructor
+  const ftScalingManager = await FTScalingManager.deployed();
+  await ftScalingManager.init();
 }
 
 async function doDeployParameterRegistry(_deployer, _storage) {
