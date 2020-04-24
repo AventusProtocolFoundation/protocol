@@ -35,6 +35,7 @@ const abiPartLength = 16;
 const Versioned = artifacts.require('Versioned');
 
 module.exports = async function(_deployer, _networkName, _accounts) {
+  global.web3 = web3; // make web3Tools work for truffle migrate without --reset
   await deployContracts(_deployer, _networkName);
   console.log('*** CONTRACTS DEPLOY COMPLETE');
 };

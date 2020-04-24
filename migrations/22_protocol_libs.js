@@ -30,8 +30,7 @@ const PMerkleLeafChallenges = artifacts.require('PMerkleLeafChallenges');
 const proposalsOn = false; // See scripts/SwitchProposalsMode.js
 
 module.exports = async function(_deployer, _networkName, _accounts) {
-  global.web3 = web3; // make web3Tools work
-
+  global.web3 = web3; // make web3Tools work for truffle migrate without --reset
   console.log('*** Deploying Libraries (Part C)...');
   await deployLibraries(_deployer, _networkName);
   console.log('*** LIBRARIES PART C DEPLOY COMPLETE');

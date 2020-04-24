@@ -29,9 +29,10 @@ const PProposals = artifacts.require('PProposals');
 const proposalsOn = false; // See scripts/SwitchProposalsMode.js
 
 module.exports = async function(_deployer, _networkName, _accounts) {
-    console.log('*** Deploying Libraries (Part B)...');
-    await deployLibraries(_deployer, _networkName);
-    console.log('*** LIBRARIES PART B DEPLOY COMPLETE');
+  global.web3 = web3; // make web3Tools work for truffle migrate without --reset
+  console.log('*** Deploying Libraries (Part B)...');
+  await deployLibraries(_deployer, _networkName);
+  console.log('*** LIBRARIES PART B DEPLOY COMPLETE');
 };
 
 let deployLValidators;
