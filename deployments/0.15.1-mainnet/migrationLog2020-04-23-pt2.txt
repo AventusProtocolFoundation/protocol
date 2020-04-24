@@ -1,0 +1,597 @@
+Creating wallet provider using address: https://mainnet.infura.io/v3/d95110bff16340629368ccd5faaa8c37
+
+Compiling your contracts...
+===========================
+> Everything is up to date, there is nothing to compile.
+
+
+
+Migrations dry-run (simulation)
+===============================
+> Network name:    'mainnet-fork'
+> Network id:      1
+> Block gas limit: 9990236 (0x98705c)
+
+
+10_setup.js
+===========
+MAINNET-FORK NETWORK DEPLOYMENT
+*** Version of web3:  1.2.1
+*** Starting setup...
+
+   Replacing 'Migrations'
+   ----------------------
+   > block number:        9929074
+   > block timestamp:     1587649187
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.29557629661111111
+   > gas used:            375241 (0x5b9c9)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00375241 ETH
+
+Using existing storage contract
+AventusStorage: 0xd6589f7CB6AE49f77ee9F666fF8AB84a91c07133
+Using existing AVT contract
+AVT ERC20: 0x0d88eD6E74bbFD96B831231638b66C05571e824F
+*** SETUP COMPLETE
+   -------------------------------------
+   > Total cost:          0.00375241 ETH
+
+
+20_protocol_libs.js
+===================
+*** Deploying Libraries (Part A)...
+
+   Replacing 'Versioned'
+   ---------------------
+   > block number:        9929076
+   > block timestamp:     1587649199
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.29078693661111111
+   > gas used:            451543 (0x6e3d7)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00451543 ETH
+
+Deploying libraries and proxies with version 0.15
+Using pre-existing PProtocolTimeInstance 0x886d0de957ee96f11B7FAC6eF9b8Bc839075B139
+Using pre-existing PAVTManagerInstance 0xA0a0c5C282a6296286f561f9aB41936d46fD2432
+*** LIBRARIES PART A DEPLOY COMPLETE
+   -------------------------------------
+   > Total cost:          0.00451543 ETH
+
+
+21_protocol_libs.js
+===================
+*** Deploying Libraries (Part B)...
+Deploying libraries and proxies with version 0.15
+WARNING: DOES NOT EXIST: PProposalsInstance
+Using pre-existing PValidatorsInstance 0x3fa93B0bC82c6F0d9f6134aE60CeAde53cF631d3
+*** LIBRARIES PART B DEPLOY COMPLETE
+   -------------------------------------
+   > Total cost:                   0 ETH
+
+
+22_protocol_libs.js
+===================
+*** Deploying Libraries (Part C)...
+Deploying libraries and proxies with version 0.15
+
+   Deploying 'LEventsStorage'
+   --------------------------
+   > block number:        9929079
+   > block timestamp:     1587649217
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.28047136661111111
+   > gas used:            976771 (0xee783)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00976771 ETH
+
+
+   Linking
+   -------
+   * Contract: LEventsEvents <--> Library: LEventsStorage 
+
+   Linking
+   -------
+   * Contract: LEventsRoles <--> Library: LEventsStorage 
+
+   Deploying 'LEventsEvents'
+   -------------------------
+   > block number:        9929080
+   > block timestamp:     1587649222
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.27114955661111111
+   > gas used:            932181 (0xe3955)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00932181 ETH
+
+
+   Linking
+   -------
+   * Contract: LEvents <--> Library: LEventsEvents 
+
+   Linking
+   -------
+   * Contract: LEventsRoles <--> Library: LEventsEvents 
+
+   Deploying 'LEventsRules'
+   ------------------------
+   > block number:        9929081
+   > block timestamp:     1587649227
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.26451660661111111
+   > gas used:            663295 (0xa1eff)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00663295 ETH
+
+
+   Linking
+   -------
+   * Contract: LEvents <--> Library: LEventsRules 
+
+   Deploying 'LEventsRoles'
+   ------------------------
+   > block number:        9929082
+   > block timestamp:     1587649231
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.25331403661111111
+   > gas used:            1120257 (0x111801)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.01120257 ETH
+
+
+   Linking
+   -------
+   * Contract: LEvents <--> Library: LEventsRoles 
+
+   Deploying 'LEvents'
+   -------------------
+   > block number:        9929083
+   > block timestamp:     1587649235
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.24212301661111111
+   > gas used:            1119102 (0x11137e)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.01119102 ETH
+
+
+   Deploying 'PEvents'
+   -------------------
+   > block number:        9929084
+   > block timestamp:     1587649239
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.23599501661111111
+   > gas used:            612800 (0x959c0)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.006128 ETH
+
+Setting library hash of LEventsInstance-0.15 to use address 0x3Fa0e712423233f58EA6dD80F9A098A072d10eAA
+Using newly deployed PEventsInstance 0x235d65CC9e81Fc4c71038e538Da98D86B5E29197
+
+   Linking
+   -------
+   * Contract: EventsManager <--> Library: LEvents 
+
+   Linking
+   -------
+   * Contract: LMerkleLeafChecks <--> Library: LEvents 
+
+   Deploying 'LMerkleRootsStorage'
+   -------------------------------
+   > block number:        9929087
+   > block timestamp:     1587649251
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.22598099661111111
+   > gas used:            942994 (0xe6392)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00942994 ETH
+
+
+   Linking
+   -------
+   * Contract: LMerkleRoots <--> Library: LMerkleRootsStorage 
+
+   Deploying 'LMerkleRoots'
+   ------------------------
+   > block number:        9929088
+   > block timestamp:     1587649256
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.20925765661111111
+   > gas used:            1672334 (0x19848e)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.01672334 ETH
+
+
+   Deploying 'PMerkleRoots'
+   ------------------------
+   > block number:        9929089
+   > block timestamp:     1587649260
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.20312917661111111
+   > gas used:            612848 (0x959f0)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00612848 ETH
+
+Setting library hash of LMerkleRootsInstance-0.15 to use address 0xA72Fef4Ee3de2Be8B98137d47998F0B9eDcbd6De
+Using newly deployed PMerkleRootsInstance 0xA088A885Ed43E8e32E18dEED6F4fAF1A460163f3
+
+   Linking
+   -------
+   * Contract: MerkleRootsManager <--> Library: LMerkleRoots 
+
+   Linking
+   -------
+   * Contract: FTScalingManager <--> Library: LMerkleRoots 
+
+   Linking
+   -------
+   * Contract: LMerkleLeafChallenges <--> Library: LMerkleRoots 
+
+   Linking
+   -------
+   * Contract: LMerkleLeafChecks <--> Library: LMerkleRoots 
+WARNING: DOES NOT EXIST: PMerkleLeafChallengesInstance
+*** LIBRARIES PART C DEPLOY COMPLETE
+   -------------------------------------
+   > Total cost:          0.08652582 ETH
+
+
+30_protocol_contracts.js
+========================
+Deploying Contracts...
+Deploying libraries and proxies with version 0.15
+Deploying contracts with version 0.15
+
+   Deploying 'AVTManager'
+   ----------------------
+   > block number:        9929093
+   > block timestamp:     1587649310
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.19217391661111111
+   > gas used:            1009725 (0xf683d)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.01009725 ETH
+
++ saveInterfaceToStorage IAVTManager-0.15
+Saving IAVTManager-0.15 ABI in 1 part(s)...
+- saveInterfaceToStorage IAVTManager-0.15
+
+   Deploying 'ValidatorsManager'
+   -----------------------------
+   > block number:        9929099
+   > block timestamp:     1587649374
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.17388064661111111
+   > gas used:            1449893 (0x161fa5)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.01449893 ETH
+
++ saveInterfaceToStorage IValidatorsManager-0.15
+Saving IValidatorsManager-0.15 ABI in 1 part(s)...
+- saveInterfaceToStorage IValidatorsManager-0.15
+
+   Deploying 'EventsManager'
+   -------------------------
+   > block number:        9929104
+   > block timestamp:     1587649467
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.15488035661111111
+   > gas used:            1284777 (0x139aa9)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.01284777 ETH
+
++ saveInterfaceToStorage IEventsManager-0.15
+Saving IEventsManager-0.15 ABI in 1 part(s)...
+- saveInterfaceToStorage IEventsManager-0.15
+
+   Deploying 'MerkleRootsManager'
+   ------------------------------
+   > block number:        9929109
+   > block timestamp:     1587649584
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.14130067661111111
+   > gas used:            915782 (0xdf946)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00915782 ETH
+
++ saveInterfaceToStorage IMerkleRootsManager-0.15
+Saving IMerkleRootsManager-0.15 ABI in 1 part(s)...
+- saveInterfaceToStorage IMerkleRootsManager-0.15
+
+   Deploying 'FTScalingManager'
+   ----------------------------
+   > block number:        9929114
+   > block timestamp:     1587649635
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.11997421661111111
+   > gas used:            1785426 (0x1b3e52)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.01785426 ETH
+
++ saveInterfaceToStorage IFTScalingManager-0.15
+Saving IFTScalingManager-0.15 ABI in 1 part(s)...
+- saveInterfaceToStorage IFTScalingManager-0.15
+
+   Deploying 'ParameterRegistry'
+   -----------------------------
+   > block number:        9929120
+   > block timestamp:     1587649705
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.09240992661111111
+   > gas used:            2432146 (0x251c92)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.02432146 ETH
+
+*** CONTRACTS DEPLOY COMPLETE
+   -------------------------------------
+   > Total cost:          0.08877749 ETH
+
+
+Summary
+=======
+> Total deployments:   17
+> Final cost:          0.18357115 ETH
+
+
+
+
+
+Starting migrations...
+======================
+> Network name:    'mainnet'
+> Network id:      1
+> Block gas limit: 9985198 (0x985cae)
+
+
+10_setup.js
+===========
+MAINNET NETWORK DEPLOYMENT
+*** Version of web3:  1.2.1
+*** Starting setup...
+
+   Replacing 'Migrations'
+   ----------------------
+   > transaction hash:    0x20ee7ac26cc7c34526b189a665aefea7b96c1292122fdd51fd36a18cdf96354d
+   > Blocks: 18           Seconds: 356
+   > contract address:    0x5BEdFC6531F3Fe1609271ea42f0C47515544Ee0B
+   > block number:        9929121
+   > block timestamp:     1587650088
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.29542629661111111
+   > gas used:            390241 (0x5f461)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00390241 ETH
+
+Using existing storage contract
+AventusStorage: 0xd6589f7CB6AE49f77ee9F666fF8AB84a91c07133
+Using existing AVT contract
+AVT ERC20: 0x0d88eD6E74bbFD96B831231638b66C05571e824F
+*** SETUP COMPLETE
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.00390241 ETH
+
+
+20_protocol_libs.js
+===================
+*** Deploying Libraries (Part A)...
+
+   Replacing 'Versioned'
+   ---------------------
+   > transaction hash:    0x7324427cfe664313964f9d14b88a9ec493e6b37cbbc9cc5b2d6b98889b12eff8
+   > Blocks: 1            Seconds: 20
+   > contract address:    0xAF5740cA0160336Cd06664827eadeB763b4C1b34
+   > block number:        9929129
+   > block timestamp:     1587650198
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.29048693661111111
+   > gas used:            451543 (0x6e3d7)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00451543 ETH
+
+Deploying libraries and proxies with version 0.15
+Using pre-existing PProtocolTimeInstance 0x886d0de957ee96f11B7FAC6eF9b8Bc839075B139
+Using pre-existing PAVTManagerInstance 0xA0a0c5C282a6296286f561f9aB41936d46fD2432
+*** LIBRARIES PART A DEPLOY COMPLETE
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.00451543 ETH
+
+
+21_protocol_libs.js
+===================
+*** Deploying Libraries (Part B)...
+Deploying libraries and proxies with version 0.15
+WARNING: DOES NOT EXIST: PProposalsInstance
+Using pre-existing PValidatorsInstance 0x3fa93B0bC82c6F0d9f6134aE60CeAde53cF631d3
+*** LIBRARIES PART B DEPLOY COMPLETE
+
+   > Saving migration to chain.
+   -------------------------------------
+   > Total cost:                   0 ETH
+
+
+22_protocol_libs.js
+===================
+*** Deploying Libraries (Part C)...
+Deploying libraries and proxies with version 0.15
+
+   Deploying 'LEventsStorage'
+   --------------------------
+   > transaction hash:    0x399a670c2a12b4e5d1243c951df3b502159926956322aac77fe6b5f6d9fdb6d8
+   > Blocks: 2            Seconds: 20
+   > contract address:    0xa0Ff09c6cBD59C2C67030f339A72600fB966c8B9
+   > block number:        9929142
+   > block timestamp:     1587650318
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.28017136661111111
+   > gas used:            976771 (0xee783)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00976771 ETH
+
+
+   Linking
+   -------
+   * Contract: LEventsEvents <--> Library: LEventsStorage (at address: 0xa0Ff09c6cBD59C2C67030f339A72600fB966c8B9)
+
+   Linking
+   -------
+   * Contract: LEventsRoles <--> Library: LEventsStorage (at address: 0xa0Ff09c6cBD59C2C67030f339A72600fB966c8B9)
+
+   Deploying 'LEventsEvents'
+   -------------------------
+   > transaction hash:    0xfab44c862ba0f2e5867c567af45fea582aceb27c562ce56459c2e16f2f21f455
+   > Blocks: 2            Seconds: 9
+   > contract address:    0xcfb74B1101EAc193096f1a29c9AF0DEF6c68c8b9
+   > block number:        9929145
+   > block timestamp:     1587650347
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.27084955661111111
+   > gas used:            932181 (0xe3955)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00932181 ETH
+
+
+   Linking
+   -------
+   * Contract: LEvents <--> Library: LEventsEvents (at address: 0xcfb74B1101EAc193096f1a29c9AF0DEF6c68c8b9)
+
+   Linking
+   -------
+   * Contract: LEventsRoles <--> Library: LEventsEvents (at address: 0xcfb74B1101EAc193096f1a29c9AF0DEF6c68c8b9)
+
+   Deploying 'LEventsRules'
+   ------------------------
+   > transaction hash:    0x656f6689b815a11c08b02d46f6008dc57edb262759a796f312969e52f6d289b0
+   > Blocks: 1            Seconds: 37
+   > contract address:    0xF3f8cfD2Eaee33AD264e9EAB2122ba71E8ECc7Ae
+   > block number:        9929147
+   > block timestamp:     1587650363
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.26421660661111111
+   > gas used:            663295 (0xa1eff)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00663295 ETH
+
+
+   Linking
+   -------
+   * Contract: LEvents <--> Library: LEventsRules (at address: 0xF3f8cfD2Eaee33AD264e9EAB2122ba71E8ECc7Ae)
+
+   Deploying 'LEventsRoles'
+   ------------------------
+   > transaction hash:    0xff4a6880928b1a22369ae62a8542837ff401488888e8335a977816fee28047b2
+   > Blocks: 8            Seconds: 140
+   > contract address:    0xE7db9C10394873ec7FD828BF5CB2F94451a7B19E
+   > block number:        9929158
+   > block timestamp:     1587650543
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.25301403661111111
+   > gas used:            1120257 (0x111801)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.01120257 ETH
+
+
+   Linking
+   -------
+   * Contract: LEvents <--> Library: LEventsRoles (at address: 0xE7db9C10394873ec7FD828BF5CB2F94451a7B19E)
+
+   Deploying 'LEvents'
+   -------------------
+   > transaction hash:    0xe5303b63ed00bf70b655a4215a13fa7f4c17e6efd456034eae69a52a5ec86318
+   > Blocks: 5            Seconds: 44
+   > contract address:    0x3Fa0e712423233f58EA6dD80F9A098A072d10eAA
+   > block number:        9929164
+   > block timestamp:     1587650596
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.24182301661111111
+   > gas used:            1119102 (0x11137e)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.01119102 ETH
+
+
+   Deploying 'PEvents'
+   -------------------
+   > transaction hash:    0xc8f8028247653e4452ba5939a24b0d22870fc073991d64b834c218bbfaf3b6b4
+   > Blocks: 2            Seconds: 20
+   > contract address:    0x235d65CC9e81Fc4c71038e538Da98D86B5E29197
+   > block number:        9929168
+   > block timestamp:     1587650610
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.23569501661111111
+   > gas used:            612800 (0x959c0)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.006128 ETH
+
+Setting library hash of LEventsInstance-0.15 to use address 0x3Fa0e712423233f58EA6dD80F9A098A072d10eAA
+Using newly deployed PEventsInstance 0x235d65CC9e81Fc4c71038e538Da98D86B5E29197
+
+   Linking
+   -------
+   * Contract: EventsManager <--> Library: LEvents (at address: 0x235d65CC9e81Fc4c71038e538Da98D86B5E29197)
+
+   Linking
+   -------
+   * Contract: LMerkleLeafChecks <--> Library: LEvents (at address: 0x235d65CC9e81Fc4c71038e538Da98D86B5E29197)
+
+   Deploying 'LMerkleRootsStorage'
+   -------------------------------
+   > transaction hash:    0x925cb57d4122d997130fce08d5f64420383529f07d82835f9abcf61cb0201b46
+   > Blocks: 11           Seconds: 173
+   > contract address:    0xb330a4E9041cC53b36d5c7663C5C2B719dE2072c
+   > block number:        9929190
+   > block timestamp:     1587650898
+   > account:             0xFc3e8F2Ed7E1a4233b4C1dDeeABF2bf79D1A8445
+   > balance:             0.22553099661111111
+   > gas used:            942994 (0xe6392)
+   > gas price:           10 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00942994 ETH
+
+
+   Linking
+   -------
+   * Contract: LMerkleRoots <--> Library: LMerkleRootsStorage (at address: 0xb330a4E9041cC53b36d5c7663C5C2B719dE2072c)
+
+   Deploying 'LMerkleRoots'
+   ------------------------
+   > transaction hash:    0x15bc24ee7b664a3bc6a3b9cb69581801b2dffe5864ece95abd72f70b9419822f
+
+
+Error:  *** Deployment Failed ***
+
+"LMerkleRoots" -- The contract code couldn't be stored, please check your gas limit..
+
+    at /usr/local/lib/node_modules/truffle/build/webpack:/packages/deployer/src/deployment.js:364:1
+    at process._tickCallback (internal/process/next_tick.js:68:7)
+Truffle v5.1.21 (core: 5.1.21)
+Node v10.6.0

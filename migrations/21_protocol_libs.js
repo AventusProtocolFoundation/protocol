@@ -26,7 +26,7 @@ const LValidatorsStorage = artifacts.require('LValidatorsStorage');
 const PValidators = artifacts.require('PValidators');
 const PProposals = artifacts.require('PProposals');
 
-const proposalsOn = true; // See scripts/SwitchProposalsMode.js
+const proposalsOn = false; // See scripts/SwitchProposalsMode.js
 
 module.exports = async function(_deployer, _networkName, _accounts) {
     console.log('*** Deploying Libraries (Part B)...');

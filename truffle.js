@@ -30,7 +30,7 @@ module.exports = {
       provider: () => getWalletProvider(),
       network_id: 1,
       gas: 4000000, // See https://ethstats.net/ to make sure this is not over the network limit
-      gasPrice: 20e9  // 20 GWEi: see https://ethgasstation.info/ for recommended prices
+      gasPrice: 10e9  // GWEi: see https://ethgasstation.info/ for recommended prices
     }
   },
   compilers: {

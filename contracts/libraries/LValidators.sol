@@ -2,10 +2,10 @@ pragma solidity 0.5.2;
 
 import "../interfaces/IAventusStorage.sol";
 import "./LAVTManager.sol";
-// ONLY_IF_PROPOSALS_ON:
+/* ONLY_IF_PROPOSALS_ON:
 import "./LProposals.sol";
 import "./LValidatorsChallenges.sol";
-// :ONLY_IF_PROPOSALS_ON
+:ONLY_IF_PROPOSALS_ON */
 import "./LValidatorsStorage.sol";
 
 library LValidators {
@@ -13,12 +13,12 @@ library LValidators {
   // See IValidatorsManager interface for logs description.
   event LogValidatorRegistered(address indexed validatorAddress, string evidenceUrl, string desc, uint deposit);
   event LogValidatorDeregistered(address indexed validatorAddress);
-// ONLY_IF_PROPOSALS_ON:
+/* ONLY_IF_PROPOSALS_ON:
   event LogValidatorChallenged(address indexed validatorAddress, uint indexed proposalId, uint lobbyingStart,
       uint votingStart, uint revealingStart, uint revealingEnd);
   event LogValidatorChallengeEnded(address indexed validatorAddress, uint indexed proposalId, uint votesFor, uint votesAgainst);
   event LogVoterWinningsClaimed(uint indexed proposalId);
-// :ONLY_IF_PROPOSALS_ON
+:ONLY_IF_PROPOSALS_ON */
 
   modifier onlyAfterDeregistrationTime(IAventusStorage _storage, address _validatorAddress) {
     uint deregistrationTime = getDeregistrationTime(_storage, _validatorAddress);
@@ -73,7 +73,7 @@ library LValidators {
     external
     onlyRegisteredAndNotUnderChallenge(_storage, _validatorAddress)
   {
-// ONLY_IF_PROPOSALS_ON:
+/* ONLY_IF_PROPOSALS_ON:
     uint lobbyingPeriod = LValidatorsStorage.getLobbyingPeriod(_storage);
     uint votingPeriod = LValidatorsStorage.getVotingPeriod(_storage);
     uint revealingPeriod = LValidatorsStorage.getRevealingPeriod(_storage);
@@ -84,13 +84,13 @@ library LValidators {
     (uint lobbyingStart, uint votingStart, uint revealingStart, uint revealingEnd) =
         LProposals.getTimestamps(_storage, proposalId);
     emit LogValidatorChallenged(_validatorAddress, proposalId, lobbyingStart, votingStart, revealingStart, revealingEnd);
-// :ONLY_IF_PROPOSALS_ON
+:ONLY_IF_PROPOSALS_ON */
   }
 
   function endValidatorChallenge(IAventusStorage _storage, address _validatorAddress)
     external
   {
-// ONLY_IF_PROPOSALS_ON:
+/* ONLY_IF_PROPOSALS_ON:
     uint proposalId = LValidatorsStorage.getChallengeProposalId(_storage, _validatorAddress);
     require(proposalId != 0, "Challenge does not exist");
 
@@ -98,7 +98,7 @@ library LValidators {
     finaliseChallenge(_storage, proposalId, _validatorAddress);
 
     emit LogValidatorChallengeEnded(_validatorAddress, proposalId, votesFor, votesAgainst);
-// :ONLY_IF_PROPOSALS_ON
+:ONLY_IF_PROPOSALS_ON */
   }
 
   function getExistingValidatorDeposit(IAventusStorage _storage, address _validatorAddress)
@@ -132,10 +132,10 @@ library LValidators {
   function claimVoterWinnings(IAventusStorage _storage, uint _proposalId)
     external
   {
-// ONLY_IF_PROPOSALS_ON:
+/* ONLY_IF_PROPOSALS_ON:
     LValidatorsChallenges.claimVoterWinnings(_storage, _proposalId);
     emit LogVoterWinningsClaimed(_proposalId);
-// :ONLY_IF_PROPOSALS_ON
+:ONLY_IF_PROPOSALS_ON */
   }
 
   function isRegistered(IAventusStorage _storage, address _validatorAddress)
@@ -194,7 +194,7 @@ library LValidators {
     notUnderChallenge_ = 0 == LValidatorsStorage.getChallengeProposalId(_storage, _validatorAddress);
   }
 
-// ONLY_IF_PROPOSALS_ON:
+/* ONLY_IF_PROPOSALS_ON:
   function setStatusFraudulent(IAventusStorage _storage, address _validatorAddress)
     private
   {
@@ -249,5 +249,5 @@ library LValidators {
     LProposals.setWinningProposalOption(_storage, _proposalId, winningOption);
     LProposals.setTotalWinningStake(_storage, _proposalId, totalWinningStake);
   }
-// :ONLY_IF_PROPOSALS_ON
+:ONLY_IF_PROPOSALS_ON */
 }
