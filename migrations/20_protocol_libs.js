@@ -28,6 +28,7 @@ const PProtocolTime = artifacts.require('PProtocolTime');
 const PAVTManager = artifacts.require('PAVTManager');
 
 module.exports = async function(_deployer, _networkName, _accounts) {
+  global.web3 = web3; // make web3Tools work for truffle migrate without --reset
   console.log('*** Deploying Libraries (Part A)...');
   await deployLibraries(_deployer, _networkName);
   console.log('*** LIBRARIES PART A DEPLOY COMPLETE');

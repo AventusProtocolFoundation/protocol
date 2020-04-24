@@ -35,6 +35,7 @@ const abiPartLength = 16;
 const Versioned = artifacts.require('Versioned');
 
 module.exports = async function(_deployer, _networkName, _accounts) {
+  global.web3 = web3; // make web3Tools work for truffle migrate without --reset
   await deployContracts(_deployer, _networkName);
   console.log('*** CONTRACTS DEPLOY COMPLETE');
 };
@@ -51,7 +52,7 @@ let deployTimeMachine;
 
 let version;
 
-const proposalsOn = true; // See scripts/SwitchProposalsMode.js
+const proposalsOn = false; // See scripts/SwitchProposalsMode.js
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60; // In seconds.
 
@@ -150,6 +151,7 @@ async function doDeployParameterRegistry(_deployer, _storage) {
   await common.deploy(_deployer, ParameterRegistry, _storage.address);
   await _storage.allowAccess('write', ParameterRegistry.address);
   const parameterRegistry = await ParameterRegistry.deployed();
+  await _storage.setBoolean(web3Tools.hash('ParameterRegistry' + 'Init'), false);
   await parameterRegistry.init();
 }
 
